@@ -1,0 +1,297 @@
+/* ===== TOÀN TRANG ===== */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+}
+
+/* ===== HEADER ===== */
+.header {
+    background-color: #005ab7;
+    padding: 20px 0;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.logo-login-main img {
+    max-width: 500px;
+    height: auto;
+}
+
+/* ===== FORM LOGIN ===== */
+.bg-form {
+    position: relative;
+    border-radius: 10px;
+    padding: 20px 0px 20px 20px;
+    background: none;
+}
+
+.form-wrap {
+    position: relative;
+    border-radius: 10px;
+    padding: 25px;
+    display: inline-block;
+    border: 4px solid #fff;
+    background: #ffffff;
+    box-shadow:
+        0 12px 22px rgba(0,0,0,0.15),
+        0 -4px 8px rgba(0,0,0,0.04),
+        4px 0 10px rgba(0,0,0,0.05),
+        -4px 0 10px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.form-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    background: url('../images/backgroundform.jpg') center center no-repeat;
+    background-size: cover;
+    filter: brightness(0.9);
+    border-radius: 6px;
+    z-index: 0;
+}
+
+.form-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 6px;
+    z-index: 1;
+}
+
+.form-wrap > * {
+    position: relative;
+    z-index: 2;
+}
+
+
+
+.form-login h4 {
+    text-align: center;
+    margin: 15px 0;
+    font-weight: 500;
+    color: #1c67da;
+}
+
+.input {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.input:focus {
+    border-color: #1c67da;
+    outline: none;
+}
+
+/* ===== CAPTCHA ===== */
+.box-captcha {
+    position: relative;
+    height: 37px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.box-captcha input {
+    width: 100px;
+    height: 37px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.box-captcha img {
+    height: 37px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.box-captcha a {
+    width: 28px;
+    height: 28px;
+    background: url('../images/refresh.png') no-repeat center;
+    background-size: contain;
+    cursor: pointer;
+}
+
+/* ===== NÚT ĐĂNG NHẬP ===== */
+.button {
+    background-color: #f76b1c; /* Cam đặc trưng nút đăng nhập */
+    color: #fff;
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    width: 100%;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.button:hover {
+    background-color: #e85e0b;
+}
+
+/* ===== LIÊN KẾT PHỤ ===== */
+.form-footer {
+    margin-top: 10px;
+}
+
+.form-footer a {
+    color: #1c67da;
+    font-weight: 500;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+/* ===== APP MOBILE ===== */
+.box-download-app {
+    margin-top: 20px;
+}
+
+.box-download-app h6 {
+    color: #1c67da;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.box-download-app img {
+    max-width: 140px;
+}
+
+.box-download-app .btn-info {
+    background-color: #25c7ca;
+    border: none;
+    font-weight: 600;
+    text-transform: none;
+}
+
+/*=============THONG BAO=============*/
+
+
+.news-container {
+    background: #fff;
+    border-radius: 6px;
+    padding: 25px 25px;
+    font-family: 'Roboto', sans-serif;
+    color: #0046ad;
+    height: 480px;
+    overflow-y: auto;
+}
+
+/* Tabs */
+.news-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+}
+
+.news-tabs li {
+    padding: 10px 20px;
+    font-weight: 600;
+    color: #0046ad;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: 0.3s;
+}
+
+.news-tabs li.active {
+    border: 1px solid #ddd;
+    border-bottom: 1px solid #fff;
+    background: #fff;
+}
+
+/* Danh sách tin */
+.news-item {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    padding: 15px 0;
+    align-items: flex-start;
+}
+
+.news-date {
+    background: #0046ad;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-align: center;
+    margin-right: 15px;
+}
+
+.news-date .month {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.news-date .day {
+    display: block;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.news-content {
+    flex: 1;
+}
+
+.news-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    color: #0046ad;
+    text-decoration: none;
+    line-height: 1.5;
+}
+
+.news-title:hover {
+    text-decoration: underline;
+}
+
+.news-detail {
+    color: red;
+    font-size: 13px;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+/* Xem thêm */
+.news-more {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.news-more a {
+    color: red;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+
+
+/* ===== FORM RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+    .page-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 30px;
+    }
+    .left-info {
+        max-width: 100%;
+    }
+}

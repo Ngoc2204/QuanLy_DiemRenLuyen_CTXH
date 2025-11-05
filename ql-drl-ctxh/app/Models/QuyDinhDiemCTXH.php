@@ -10,6 +10,7 @@ class QuyDinhDiemCTXH extends Model
     protected $primaryKey = 'MaDiem';
     public $incrementing = false;
     public $timestamps = false;
+    protected $keyType = 'string';
 
     protected $fillable = ['MaDiem', 'TenCongViec', 'DiemNhan'];
 

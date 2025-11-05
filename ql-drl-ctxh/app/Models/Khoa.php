@@ -24,4 +24,9 @@ class Khoa extends Model
     {
         return $this->hasMany(NhanVien::class, 'MaKhoa', 'MaKhoa');
     }
+
+    public function phanBos()
+    {
+        return $this->hasMany(PhanBoSoLuong::class, 'MaKhoa', 'MaKhoa');
+    }
 }

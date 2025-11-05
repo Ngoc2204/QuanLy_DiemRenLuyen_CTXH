@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\NhanVien;
 
 use App\Http\Controllers\Controller;
-use App\Models\HoatDongCtxh;
-use App\Models\QuyDinhDiemCtxh; // Import Model Quy định điểm
+use App\Models\HoatDongCTXH;
+use App\Models\QuyDinhDiemCtxh; 
+use App\Models\DangKyHoatDongCtxh;
+use App\Models\DotDiaChiDo;
+use App\Models\DiaDiemDiaChiDo;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str; // Hỗ trợ tạo Mã hoạt động
+use Illuminate\Support\Str; 
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class HoatDongCTXHController extends Controller
 {
@@ -15,14 +20,16 @@ class HoatDongCTXHController extends Controller
      */
     public function index(Request $request)
     {
-        $query = HoatDongCtxh::withCount('dangKy')->orderBy('ThoiGianBatDau', 'desc'); // Lấy số lượng đăng ký
+        // Tải kèm quan hệ và đếm số lượng đăng ký
+        $query = HoatDongCTXH::withCount('dangKy')
+                            ->with('dotDiaChiDo', 'diaDiem', 'quydinh') // <-- Tải kèm
+                            ->orderBy('ThoiGianBatDau', 'desc'); 
 
-        // Tìm kiếm (ví dụ theo Tên hoạt động)
         if ($request->has('search') && $request->search != '') {
             $query->where('TenHoatDong', 'like', '%' . $request->search . '%');
         }
 
-        $hoatDongs = $query->paginate(10); // Phân trang 10 mục/trang
+        $hoatDongs = $query->paginate(10); 
 
         return view('nhanvien.hoatdong_ctxh.index', compact('hoatDongs'));
     }
@@ -32,9 +39,18 @@ class HoatDongCTXHController extends Controller
      */
     public function create()
     {
-        // Lấy danh sách Quy định điểm để hiển thị trong dropdown
+        // Lấy danh sách Quy định điểm
         $quyDinhDiems = QuyDinhDiemCtxh::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
-        return view('nhanvien.hoatdong_ctxh.create', compact('quyDinhDiems'));
+        
+        // Lấy các đợt Sắp/Đang diễn ra
+        $dots = DotDiaChiDo::whereIn('TrangThai', ['SapDienRa', 'DangDienRa'])
+                            ->orderBy('NgayBatDau', 'desc')
+                            ->get();
+                            
+        // Lấy tất cả địa điểm (bạn có thể lọc theo đợt nếu muốn)
+        $diadiems = DiaDiemDiaChiDo::orderBy('TenDiaDiem')->get(); 
+
+        return view('nhanvien.hoatdong_ctxh.create', compact('quyDinhDiems', 'dots', 'diadiems'));
     }
 
     /**
@@ -44,81 +60,150 @@ class HoatDongCTXHController extends Controller
     {
         $validatedData = $request->validate([
             'TenHoatDong' => 'required|string|max:255',
+            'LoaiHoatDong' => 'required|string|max:100', // <-- Chuyển lên trước để validate
+            
+            // --- SỬA VALIDATE ---
+            // Chỉ bắt buộc khi LoaiHoatDong là 'Địa chỉ đỏ'
+            'dot_id' => 'required_if:LoaiHoatDong,Địa chỉ đỏ|nullable|exists:dot_dia_chi_do,id', 
+            'diadiem_id' => 'required_if:LoaiHoatDong,Địa chỉ đỏ|nullable|exists:diadiemdiachido,id', 
+            // --- KẾT THÚC SỬA ---
+
+            'MaQuyDinhDiem' => 'required|exists:quydinhdiemctxh,MaDiem',
             'MoTa' => 'nullable|string',
             'ThoiGianBatDau' => 'required|date|after_or_equal:now',
             'ThoiGianKetThuc' => 'required|date|after:ThoiGianBatDau',
-            'ThoiHanHuy' => 'nullable|date|before:ThoiGianBatDau',
-            'DiaDiem' => 'nullable|string|max:255',
-            'Diem' => 'required|integer|min:0',
+            'ThoiHanHuy' => 'required|date|before:ThoiGianBatDau',
+            'DiaDiem' => 'required|string|max:255', // Ghi chú cụ thể (luôn bắt buộc)
             'SoLuong' => 'required|integer|min:1',
-            'LoaiHoatDong' => 'required|string|max:100',
-            'MaQuyDinhDiem' => 'required|exists:quydinhdiemctxh,MaDiem',
+        ], [
+            'dot_id.required_if' => 'Bạn phải chọn một đợt cho hoạt động Địa chỉ đỏ.',
+            'diadiem_id.required_if' => 'Bạn phải chọn một địa điểm cho hoạt động Địa chỉ đỏ.',
+            'MaQuyDinhDiem.required' => 'Bạn phải chọn một quy định điểm.',
         ]);
 
-        // Tạo Mã Hoạt động duy nhất (ví dụ: CTXH-YYYYMMDD-XXXX)
+        // --- SỬA LOGIC KIỂM TRA NGÀY ---
+        // Chỉ kiểm tra ngày nếu đây là hoạt động 'Địa chỉ đỏ'
+        if ($validatedData['LoaiHoatDong'] == 'Địa chỉ đỏ') {
+            if (empty($validatedData['dot_id'])) {
+                 return redirect()->back()->withInput()->withErrors(['dot_id' => 'Lỗi: Bạn phải chọn Đợt cho hoạt động Địa chỉ đỏ.']);
+            }
+
+            $dot = DotDiaChiDo::find($validatedData['dot_id']);
+            $ngayBatDauDot = Carbon::parse($dot->NgayBatDau)->startOfDay();
+            $ngayKetThucDot = Carbon::parse($dot->NgayKetThuc)->endOfDay();
+            $ngayBatDauHD = Carbon::parse($validatedData['ThoiGianBatDau']);
+            $ngayKetThucHD = Carbon::parse($validatedData['ThoiGianKetThuc']);
+
+            if ($ngayBatDauHD->lt($ngayBatDauDot) || $ngayKetThucHD->gt($ngayKetThucDot)) {
+                return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['ThoiGianBatDau' => 'Thời gian hoạt động phải nằm trong khoảng thời gian của đợt (Từ ' . $ngayBatDauDot->format('d/m/Y') . ' đến ' . $ngayKetThucDot->format('d/m/Y') . ').']);
+            }
+        } else {
+            // Nếu không phải 'Địa chỉ đỏ', đảm bảo 2 trường này là NULL
+            $validatedData['dot_id'] = null;
+            $validatedData['diadiem_id'] = null;
+        }
+        // --- KẾT THÚC SỬA ---
+
+
+        // Tạo Mã Hoạt động duy nhất
         $maHoatDong = 'CTXH-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
-        // Kiểm tra mã tồn tại (hiếm khi xảy ra)
-        while (HoatDongCtxh::where('MaHoatDong', $maHoatDong)->exists()) {
-             $maHoatDong = 'CTXH-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
+        while (HoatDongCTXH::where('MaHoatDong', $maHoatDong)->exists()) {
+            $maHoatDong = 'CTXH-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
         }
         $validatedData['MaHoatDong'] = $maHoatDong;
 
 
         try {
-             HoatDongCtxh::create($validatedData);
-             return redirect()->route('nhanvien.hoatdong_ctxh.index')
+            HoatDongCTXH::create($validatedData); // <-- Đã sửa (X hoa)
+            return redirect()->route('nhanvien.hoatdong_ctxh.index')
                              ->with('success', 'Tạo hoạt động CTXH thành công.');
         } catch (\Exception $e) {
-             return redirect()->back()
+            Log::error('Lỗi tạo CTXH: ' . $e->getMessage()); // <-- Ghi Log lỗi
+            return redirect()->back()
                              ->with('error', 'Tạo hoạt động thất bại. Lỗi: ' . $e->getMessage())
                              ->withInput();
         }
-
     }
 
     /**
      * Hiển thị chi tiết một Hoạt động CTXH.
      */
-    public function show(HoatDongCtxh $hoatdong_ctxh) // Route Model Binding
+    public function show(HoatDongCTXH $hoatdong_ctxh) // <-- Đã sửa (X hoa)
     {
-        // Tải danh sách sinh viên đã đăng ký
-        $hoatdong_ctxh->load('sinhVienDangKy');
+        $hoatdong_ctxh->load('sinhVienDangKy', 'quydinh', 'dotDiaChiDo', 'diaDiem'); // Tải thêm
         return view('nhanvien.hoatdong_ctxh.show', compact('hoatdong_ctxh'));
     }
 
     /**
      * Hiển thị form chỉnh sửa Hoạt động CTXH.
      */
-    public function edit(HoatDongCtxh $hoatdong_ctxh) // Route Model Binding
+    public function edit(HoatDongCTXH $hoatdong_ctxh) // <-- Đã sửa (X hoa)
     {
         $quyDinhDiems = QuyDinhDiemCtxh::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
-        return view('nhanvien.hoatdong_ctxh.edit', compact('hoatdong_ctxh', 'quyDinhDiems'));
+        $dots = DotDiaChiDo::orderBy('NgayBatDau', 'desc')->get();
+        $diadiems = DiaDiemDiaChiDo::orderBy('TenDiaDiem')->get(); 
+
+        return view('nhanvien.hoatdong_ctxh.edit', compact('hoatdong_ctxh', 'quyDinhDiems', 'dots', 'diadiems'));
     }
 
     /**
      * Cập nhật Hoạt động CTXH trong database.
      */
-    public function update(Request $request, HoatDongCtxh $hoatdong_ctxh) // Route Model Binding
+    public function update(Request $request, HoatDongCTXH $hoatdong_ctxh) // <-- Đã sửa (X hoa)
     {
-         $validatedData = $request->validate([
+        $validatedData = $request->validate([
             'TenHoatDong' => 'required|string|max:255',
-            'MoTa' => 'nullable|string',
-            'ThoiGianBatDau' => 'required|date', // Có thể không cần after:now khi sửa
-            'ThoiGianKetThuc' => 'required|date|after:ThoiGianBatDau',
-            'ThoiHanHuy' => 'nullable|date|before:ThoiGianBatDau',
-            'DiaDiem' => 'nullable|string|max:255',
-            'Diem' => 'required|integer|min:0',
-            'SoLuong' => 'required|integer|min:1',
-            'LoaiHoatDong' => 'required|string|max:100',
-            'MaQuyDinhDiem' => 'required|exists:quydinhdiemctxh,MaDiem',
-        ]);
+            'LoaiHoatDong' => 'required|string|max:100', // <-- Chuyển lên trước
 
-         try {
-             $hoatdong_ctxh->update($validatedData);
-             return redirect()->route('nhanvien.hoatdong_ctxh.index')
+            // --- SỬA VALIDATE ---
+            'dot_id' => 'required_if:LoaiHoatDong,Địa chỉ đỏ|nullable|exists:dot_dia_chi_do,id', 
+            'diadiem_id' => 'required_if:LoaiHoatDong,Địa chỉ đỏ|nullable|exists:diadiemdiachido,id', 
+            // --- KẾT THÚC SỬA ---
+
+            'MaQuyDinhDiem' => 'required|exists:quydinhdiemctxh,MaDiem',
+            'MoTa' => 'nullable|string',
+            'ThoiGianBatDau' => 'required|date',
+            'ThoiGianKetThuc' => 'required|date|after:ThoiGianBatDau',
+            'ThoiHanHuy' => 'required|date|before:ThoiGianBatDau',
+            'DiaDiem' => 'required|string|max:255',
+            'SoLuong' => 'required|integer|min:1',
+        ], [
+            'dot_id.required_if' => 'Bạn phải chọn một đợt cho hoạt động Địa chỉ đỏ.',
+            'diadiem_id.required_if' => 'Bạn phải chọn một địa điểm cho hoạt động Địa chỉ đỏ.',
+        ]);
+        
+        // --- SỬA LOGIC KIỂM TRA NGÀY ---
+        if ($validatedData['LoaiHoatDong'] == 'Địa chỉ đỏ') {
+            if (empty($validatedData['dot_id'])) {
+                 return redirect()->back()->withInput()->withErrors(['dot_id' => 'Lỗi: Bạn phải chọn Đợt cho hoạt động Địa chỉ đỏ.']);
+            }
+            
+            $dot = DotDiaChiDo::find($validatedData['dot_id']);
+            $ngayBatDauDot = Carbon::parse($dot->NgayBatDau)->startOfDay();
+            $ngayKetThucDot = Carbon::parse($dot->NgayKetThuc)->endOfDay();
+            $ngayBatDauHD = Carbon::parse($validatedData['ThoiGianBatDau']);
+            $ngayKetThucHD = Carbon::parse($validatedData['ThoiGianKetThuc']);
+
+            if ($ngayBatDauHD->lt($ngayBatDauDot) || $ngayKetThucHD->gt($ngayKetThucDot)) {
+                return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['ThoiGianBatDau' => 'Thời gian hoạt động phải nằm trong khoảng thời gian của đợt (Từ ' . $ngayBatDauDot->format('d/m/Y') . ' đến ' . $ngayKetThucDot->format('d/m/Y') . ').']);
+            }
+        } else {
+            $validatedData['dot_id'] = null;
+            $validatedData['diadiem_id'] = null;
+        }
+        // --- KẾT THÚC SỬA ---
+
+        try {
+            $hoatdong_ctxh->update($validatedData);
+            return redirect()->route('nhanvien.hoatdong_ctxh.index')
                              ->with('success', 'Cập nhật hoạt động CTXH thành công.');
         } catch (\Exception $e) {
-             return redirect()->back()
+            Log::error('Lỗi cập nhật CTXH: ' . $e->getMessage());
+            return redirect()->back()
                              ->with('error', 'Cập nhật hoạt động thất bại. Lỗi: ' . $e->getMessage())
                              ->withInput();
         }
@@ -127,31 +212,75 @@ class HoatDongCTXHController extends Controller
     /**
      * Xóa Hoạt động CTXH khỏi database.
      */
-    public function destroy(HoatDongCtxh $hoatdong_ctxh) // Route Model Binding
+    public function destroy(HoatDongCTXH $hoatdong_ctxh) // <-- Đã sửa (X hoa)
     {
         try {
-            // ---- THÊM ĐOẠN KIỂM TRA NÀY ----
-            // Kiểm tra xem có sinh viên nào đã đăng ký hoạt động này chưa
-            if ($hoatdong_ctxh->dangKy()->exists()) { // Sử dụng exists() cho hiệu quả
+            if ($hoatdong_ctxh->dangKy()->exists()) { 
                 return redirect()->route('nhanvien.hoatdong_ctxh.index')
-                                ->with('error', 'Không thể xóa hoạt động "' . $hoatdong_ctxh->TenHoatDong . '" vì đã có sinh viên đăng ký.');
+                                 ->with('error', 'Không thể xóa hoạt động "' . $hoatdong_ctxh->TenHoatDong . '" vì đã có sinh viên đăng ký.');
             }
-            // ---- KẾT THÚC ĐOẠN KIỂM TRA ----
-
+            
             $hoatdong_ctxh->delete();
             return redirect()->route('nhanvien.hoatdong_ctxh.index')
-                            ->with('success', 'Xóa hoạt động CTXH thành công.');
+                             ->with('success', 'Xóa hoạt động CTXH thành công.');
 
         } catch (\Illuminate\Database\QueryException $e) {
-             // Bắt lỗi QueryException cụ thể hơn (bao gồm lỗi khóa ngoại)
-             // Ghi log lỗi để debug nếu cần: Log::error($e->getMessage());
-            return redirect()->route('nhanvien.hoatdong_ctxh.index')
-                            ->with('error', 'Không thể xóa hoạt động này do có lỗi cơ sở dữ liệu hoặc ràng buộc dữ liệu.');
+             Log::error('Lỗi DB khi xóa CTXH: ' . $e->getMessage());
+             return redirect()->route('nhanvien.hoatdong_ctxh.index')
+                              ->with('error', 'Không thể xóa hoạt động này do có lỗi cơ sở dữ liệu hoặc ràng buộc dữ liệu.');
         }
-         catch (\Exception $e) { // Bắt các lỗi chung khác
-            // Ghi log lỗi để debug nếu cần: Log::error($e->getMessage());
-            return redirect()->route('nhanvien.hoatdong_ctxh.index')
-                            ->with('error', 'Đã xảy ra lỗi không mong muốn khi xóa.');
+         catch (\Exception $e) { 
+             Log::error('Lỗi chung khi xóa CTXH: ' . $e->getMessage());
+             return redirect()->route('nhanvien.hoatdong_ctxh.index')
+                              ->with('error', 'Đã xảy ra lỗi không mong muốn khi xóa.');
+         }
+    }
+
+    // ===================================================================
+    // === CÁC HÀM ĐIỂM DANH (Không đổi) ===
+    // ===================================================================
+
+    public function generateQrTokens(Request $request, HoatDongCTXH $hoatdong_ctxh) // <-- Đã sửa (X hoa)
+    {
+        try {
+            $hoatdong_ctxh->CheckInToken = Str::random(40);
+            $hoatdong_ctxh->CheckOutToken = Str::random(40);
+            $hoatdong_ctxh->TokenExpiresAt = $hoatdong_ctxh->ThoiGianKetThuc->addHours(2);
+            $hoatdong_ctxh->save();
+
+            return redirect()->back()->with('success', 'Đã tạo mã QR điểm danh thành công!');
+        } catch (\Exception $e) {
+            Log::error('Lỗi tạo QR CTXH: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Không thể tạo mã QR. Vui lòng thử lại.');
+        }
+    }
+
+    public function finalizeAttendance(Request $request, HoatDongCTXH $hoatdong_ctxh) // <-- Đã sửa (X hoa)
+    {
+        try {
+            $maHoatDong = $hoatdong_ctxh->MaHoatDong;
+
+            // Vắng
+            DangKyHoatDongCtxh::where('MaHoatDong', $maHoatDong)
+                ->where('TrangThaiDangKy', 'Đã duyệt')
+                ->where(function ($query) {
+                    $query->whereNull('CheckInAt')
+                          ->orWhereNull('CheckOutAt');
+                })
+                ->update(['TrangThaiThamGia' => 'Vắng']);
+                
+            // Đã tham gia
+            DangKyHoatDongCtxh::where('MaHoatDong', $maHoatDong)
+                ->where('TrangThaiDangKy', 'Đã duyệt')
+                ->whereNotNull('CheckInAt')
+                ->whereNotNull('CheckOutAt')
+                ->update(['TrangThaiThamGia' => 'Đã tham gia']);
+
+            return redirect()->back()->with('success', 'Đã tổng kết điểm danh thành công!');
+
+        } catch (\Exception $e) {
+            Log::error('Lỗi tổng kết điểm danh CTXH: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Có lỗi xảy ra khi tổng kết. Vui lòng thử lại.');
         }
     }
 }

@@ -13,140 +13,42 @@
 @endphp
 
 @push('styles')
-{{-- Thêm CSS giống như trang edit --}}
 <style>
-.form-section {
-    background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid #e9ecef;
-}
-
-.section-header h6 {
-    font-weight: 600;
-}
-
-.section-header hr {
-    border-top: 2px solid currentColor;
-    opacity: 0.2;
-}
-
-.form-label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
-    display: flex; /* Align icon and text */
-    align-items: center;
-}
-.form-label i {
-    width: 20px; /* Fixed width for icons */
-    text-align: center; /* Center icon */
-}
-
-.form-control,
-.form-select {
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-    padding: 0.625rem 0.875rem;
-    transition: all 0.3s ease;
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.form-control:disabled,
-.form-control[readonly] {
-    background-color: #f8f9fa;
-    border-color: #e9ecef;
-}
-
-.input-group-text {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-.btn {
-    border-radius: 8px;
-    padding: 0.625rem 1.25rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
-}
-
-.alert {
-    border-radius: 12px;
-}
-
-.card {
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.shadow-sm {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-}
-
-.text-muted {
-    color: #6c757d !important;
-}
-
-textarea.form-control {
-    resize: vertical;
-    min-height: 100px;
-}
-
-/* Animation for form validation */
-.form-control:invalid:not(:placeholder-shown) {
-    border-color: #dc3545;
-}
-
-.form-control:valid:not(:placeholder-shown) {
-    border-color: #28a745;
-}
-
-/* Datalist styling */
-input[list]::-webkit-calendar-picker-indicator {
-    opacity: 0.6;
-}
-
-/* Number input buttons */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-    opacity: 1;
-}
-.form-group {
-    margin-bottom: 1rem; /* Add consistent spacing */
-}
+    .form-section { background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e9ecef; }
+    .section-header h6 { font-weight: 600; }
+    .section-header hr { border-top: 2px solid currentColor; opacity: 0.2; }
+    .form-label { font-weight: 600; color: #495057; margin-bottom: 0.5rem; display: flex; align-items: center; }
+    .form-label i { width: 20px; text-align: center; }
+    .form-control, .form-select { border-radius: 8px; border: 1px solid #dee2e6; padding: 0.625rem 0.875rem; transition: all 0.3s ease; }
+    .form-control:focus, .form-select:focus { border-color: #667eea; box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25); }
+    .form-control:disabled, .form-control[readonly] { background-color: #f8f9fa; border-color: #e9ecef; }
+    .input-group-text { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; font-weight: 500; }
+    .btn { border-radius: 8px; padding: 0.625rem 1.25rem; font-weight: 500; transition: all 0.3s ease; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+    .btn-primary:hover { background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%); }
+    .alert { border-radius: 12px; }
+    .card { border-radius: 12px; overflow: hidden; }
+    .shadow-sm { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; }
+    .text-muted { color: #6c757d !important; }
+    textarea.form-control { resize: vertical; min-height: 100px; }
+    .form-control:invalid:not(:placeholder-shown) { border-color: #dc3545; }
+    .form-control:valid:not(:placeholder-shown) { border-color: #28a745; }
+    input[list]::-webkit-calendar-picker-indicator { opacity: 0.6; }
+    input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    .form-group { margin-bottom: 1rem; }
 </style>
 @endpush
 
-
 @section('content')
 <div class="card shadow-sm border-0">
-     <div class="card-header bg-gradient text-white py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <h5 class="mb-0">
+    <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <h5 class="mb-0 text-white">
             <i class="fa-solid fa-plus me-2"></i>
             Thêm mới Hoạt động CTXH
         </h5>
     </div>
+
     <div class="card-body p-4">
         {{-- Error Messages --}}
         @if ($errors->any())
@@ -165,6 +67,7 @@ input[type="number"]::-webkit-outer-spin-button {
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
+
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="fa-solid fa-exclamation-circle me-2"></i>
@@ -173,7 +76,7 @@ input[type="number"]::-webkit-outer-spin-button {
             </div>
         @endif
 
-        <form action="{{ route('nhanvien.hoatdong_ctxh.store') }}" method="POST" id="createForm" novalidate> {{-- Added novalidate --}}
+        <form action="{{ route('nhanvien.hoatdong_ctxh.store') }}" method="POST" id="createForm" novalidate>
             @csrf
 
             {{-- Thông tin cơ bản --}}
@@ -187,71 +90,95 @@ input[type="number"]::-webkit-outer-spin-button {
                 </div>
 
                 <div class="row g-3">
-                     <div class="col-md-12"> {{-- Tên lên đầu cho dễ nhìn --}}
+                    <div class="col-md-12">
                         <div class="form-group">
                             <label for="TenHoatDong" class="form-label">
                                 <i class="fa-solid fa-heading me-1 text-muted"></i>
                                 Tên Hoạt động
                                 <span class="text-danger">*</span>
                             </label>
-                            <input type="text"
-                                   class="form-control"
-                                   id="TenHoatDong"
-                                   name="TenHoatDong"
-                                   value="{{ old('TenHoatDong') }}"
-                                   required
-                                   placeholder="Nhập tên hoạt động">
+                            <input type="text" class="form-control" id="TenHoatDong" name="TenHoatDong" value="{{ old('TenHoatDong') }}" required placeholder="Nhập tên hoạt động">
                         </div>
                     </div>
+
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="LoaiHoatDong" class="form-label">
                                 <i class="fa-solid fa-tag me-1 text-muted"></i>
-                                Loại Hoạt động
+                                Phân loại
                                 <span class="text-danger">*</span>
                             </label>
-                            <input type="text"
-                                   class="form-control"
-                                   id="LoaiHoatDong"
-                                   name="LoaiHoatDong"
-                                   value="{{ old('LoaiHoatDong', 'Khác') }}"
-                                   required
-                                   list="loaihd-list"
-                                   placeholder="Chọn hoặc nhập loại hoạt động">
-                            <datalist id="loaihd-list">
-                                <option value="Tình nguyện">
-                                <option value="Học thuật">
-                                <option value="Văn hóa - Văn nghệ">
-                                <option value="Thể dục - Thể thao">
-                                <option value="Khác">
-                            </datalist>
+                            <select class="form-select" id="LoaiHoatDong" name="LoaiHoatDong" required>
+                                <option value="Tình nguyện" {{ old('LoaiHoatDong') == 'Tình nguyện' ? 'selected' : '' }}>Tình nguyện</option>
+                                <option value="Hội thảo" {{ old('LoaiHoatDong') == 'Hội thảo' ? 'selected' : '' }}>Hội thảo</option>
+                                <option value="Tập huấn" {{ old('LoaiHoatDong') == 'Tập huấn' ? 'selected' : '' }}>Tập huấn</option>
+                                <option value="Địa chỉ đỏ" {{ old('LoaiHoatDong') == 'Địa chỉ đỏ' ? 'selected' : '' }}>Địa chỉ đỏ</option>
+                                <option value="Học thuật" {{ old('LoaiHoatDong') == 'Học thuật' ? 'selected' : '' }}>Học thuật</option>
+                                <option value="Văn hóa - Văn nghệ" {{ old('LoaiHoatDong') == 'Văn hóa - Văn nghệ' ? 'selected' : '' }}>Văn hóa - Văn nghệ</option>
+                                <option value="Thể dục - Thể thao" {{ old('LoaiHoatDong') == 'Thể dục - Thể thao' ? 'selected' : '' }}>Thể dục - Thể thao</option>
+                                <option value="Khác" {{ old('LoaiHoatDong') == 'Khác' ? 'selected' : '' }}>Khác</option>
+                            </select>
                         </div>
                     </div>
-                     <div class="col-md-6"> {{-- Địa điểm --}}
+
+                    <div class="col-md-6">
                         <div class="form-group">
                             <label for="DiaDiem" class="form-label">
                                 <i class="fa-solid fa-location-dot me-1 text-muted"></i>
-                                Địa điểm
+                                Địa điểm cụ thể (Ghi chú) <span class="text-danger">*</span>
                             </label>
-                            <input type="text"
-                                   class="form-control"
-                                   id="DiaDiem"
-                                   name="DiaDiem"
-                                   value="{{ old('DiaDiem') }}"
-                                   placeholder="Nhập địa điểm tổ chức">
+                            <input type="text" class="form-control" id="DiaDiem" name="DiaDiem" value="{{ old('DiaDiem', 'Như địa điểm tổ chức') }}" placeholder="Ví dụ: Sảnh A, Phòng B102..." required>
                         </div>
                     </div>
-                     <div class="col-md-12"> {{-- Mô tả --}}
+
+                    {{-- KHỐI ĐỊA CHỈ ĐỎ --}}
+                    <div class="row g-3" id="diaChiDoFields" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="dot_id" class="form-label">
+                                    <i class="fa-solid fa-calendar-week me-1 text-muted"></i>
+                                    Thuộc Đợt
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="dot_id" name="dot_id">
+                                    <option value="">-- Chọn Đợt --</option>
+                                    @forelse($dots as $dot)
+                                        <option value="{{ $dot->id }}" {{ old('dot_id') == $dot->id ? 'selected' : '' }}>
+                                            {{ $dot->TenDot }} ({{ $dot->TrangThai }})
+                                        </option>
+                                    @empty
+                                        <option value="" disabled>Không có đợt nào đang/sắp diễn ra.</option>
+                                    @endforelse
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="diadiem_id" class="form-label">
+                                    <i class="fa-solid fa-map-location-dot me-1 text-muted"></i>
+                                    Địa điểm tổ chức
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="diadiem_id" name="diadiem_id">
+                                    <option value="">-- Chọn Địa điểm --</option>
+                                    @foreach($diadiems as $diadiem)
+                                        <option value="{{ $diadiem->id }}" {{ old('diadiem_id') == $diadiem->id ? 'selected' : '' }}>
+                                            {{ $diadiem->TenDiaDiem }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- END KHỐI ĐỊA CHỈ ĐỎ --}}
+
+                    <div class="col-md-12">
                         <div class="form-group">
                             <label for="MoTa" class="form-label">
                                 <i class="fa-solid fa-align-left me-1 text-muted"></i>
                                 Mô tả
                             </label>
-                            <textarea class="form-control"
-                                      id="MoTa"
-                                      name="MoTa"
-                                      rows="4"
-                                      placeholder="Nhập mô tả chi tiết về hoạt động...">{{ old('MoTa') }}</textarea>
+                            <textarea class="form-control" id="MoTa" name="MoTa" rows="4" placeholder="Nhập mô tả chi tiết về hoạt động...">{{ old('MoTa') }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -275,12 +202,7 @@ input[type="number"]::-webkit-outer-spin-button {
                                 Thời gian Bắt đầu
                                 <span class="text-danger">*</span>
                             </label>
-                            <input type="datetime-local"
-                                   class="form-control"
-                                   id="ThoiGianBatDau"
-                                   name="ThoiGianBatDau"
-                                   value="{{ old('ThoiGianBatDau') }}"
-                                   required>
+                            <input type="datetime-local" class="form-control" id="ThoiGianBatDau" name="ThoiGianBatDau" value="{{ old('ThoiGianBatDau') }}" required>
                         </div>
                     </div>
 
@@ -291,12 +213,7 @@ input[type="number"]::-webkit-outer-spin-button {
                                 Thời gian Kết thúc
                                 <span class="text-danger">*</span>
                             </label>
-                            <input type="datetime-local"
-                                   class="form-control"
-                                   id="ThoiGianKetThuc"
-                                   name="ThoiGianKetThuc"
-                                   value="{{ old('ThoiGianKetThuc') }}"
-                                   required>
+                            <input type="datetime-local" class="form-control" id="ThoiGianKetThuc" name="ThoiGianKetThuc" value="{{ old('ThoiGianKetThuc') }}" required>
                         </div>
                     </div>
 
@@ -304,23 +221,15 @@ input[type="number"]::-webkit-outer-spin-button {
                         <div class="form-group">
                             <label for="ThoiHanHuy" class="form-label">
                                 <i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i>
-                                Thời hạn Hủy đăng ký
+                                Thời hạn Hủy đăng ký <span class="text-danger">*</span>
                             </label>
-                            <input type="datetime-local"
-                                   class="form-control"
-                                   id="ThoiHanHuy"
-                                   name="ThoiHanHuy"
-                                   value="{{ old('ThoiHanHuy') }}">
-                            <small class="form-text text-muted">
-                                <i class="fa-solid fa-info-circle me-1"></i>
-                                Để trống nếu không cho phép sinh viên hủy đăng ký.
-                            </small>
+                            <input type="datetime-local" class="form-control" id="ThoiHanHuy" name="ThoiHanHuy" value="{{ old('ThoiHanHuy') }}" required>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Điểm số và Số lượng --}}
+            {{-- Điểm số & Số lượng --}}
             <div class="form-section mb-4">
                 <div class="section-header mb-3">
                     <h6 class="text-warning mb-0">
@@ -331,29 +240,7 @@ input[type="number"]::-webkit-outer-spin-button {
                 </div>
 
                 <div class="row g-3">
-                    <div class="col-md-6"> {{-- Changed from md-4 --}}
-                        <div class="form-group">
-                            <label for="Diem" class="form-label">
-                                <i class="fa-solid fa-star me-1 text-warning"></i>
-                                Điểm CTXH
-                                <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number"
-                                       class="form-control"
-                                       id="Diem"
-                                       name="Diem"
-                                       value="{{ old('Diem') }}"
-                                       min="0"
-                                       step="0.01" {{-- Cho phép điểm lẻ --}}
-                                       required
-                                       placeholder="0">
-                                <span class="input-group-text">điểm</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6"> {{-- Changed from md-4 --}}
+                    <div class="col-md-6">
                         <div class="form-group">
                             <label for="SoLuong" class="form-label">
                                 <i class="fa-solid fa-users me-1 text-primary"></i>
@@ -361,20 +248,13 @@ input[type="number"]::-webkit-outer-spin-button {
                                 <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input type="number"
-                                       class="form-control"
-                                       id="SoLuong"
-                                       name="SoLuong"
-                                       value="{{ old('SoLuong') }}"
-                                       min="1"
-                                       required
-                                       placeholder="0">
+                                <input type="number" class="form-control" id="SoLuong" name="SoLuong" value="{{ old('SoLuong') }}" min="1" required placeholder="0">
                                 <span class="input-group-text">SV</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <div class="form-group">
                             <label for="MaQuyDinhDiem" class="form-label">
                                 <i class="fa-solid fa-clipboard-list me-1 text-info"></i>
@@ -394,9 +274,9 @@ input[type="number"]::-webkit-outer-spin-button {
                 </div>
             </div>
 
-            {{-- Warning Box --}}
+            {{-- Lưu ý --}}
             <div class="alert alert-info border-0 shadow-sm mb-4">
-                 <div class="d-flex">
+                <div class="d-flex">
                     <div class="flex-shrink-0">
                         <i class="fa-solid fa-lightbulb fa-2x text-info"></i>
                     </div>
@@ -406,10 +286,10 @@ input[type="number"]::-webkit-outer-spin-button {
                             Lưu ý khi tạo mới
                         </h6>
                         <ul class="mb-0 small">
-                             <li>Điền đầy đủ thông tin vào các trường có dấu <span class="text-danger">*</span></li>
-                             <li>Thời gian kết thúc phải diễn ra sau thời gian bắt đầu</li>
-                             <li>Thời hạn hủy (nếu có) phải trước thời gian bắt đầu</li>
-                             <li>Chọn Quy định điểm phù hợp để tính điểm tự động (nếu có)</li>
+                            <li>Điền đầy đủ thông tin vào các trường có dấu <span class="text-danger">*</span></li>
+                            <li>Thời gian kết thúc phải diễn ra sau thời gian bắt đầu</li>
+                            <li>Thời hạn hủy (nếu có) phải trước thời gian bắt đầu</li>
+                            <li>Chọn Quy định điểm phù hợp để tính điểm tự động (nếu có)</li>
                         </ul>
                     </div>
                 </div>
@@ -417,11 +297,11 @@ input[type="number"]::-webkit-outer-spin-button {
 
             {{-- Action Buttons --}}
             <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                 <a href="{{ route('nhanvien.hoatdong_ctxh.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('nhanvien.hoatdong_ctxh.index') }}" class="btn btn-outline-secondary">
                     <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
                 </a>
                 <div>
-                     <button type="reset" class="btn btn-outline-warning me-2">
+                    <button type="reset" class="btn btn-outline-warning me-2">
                         <i class="fa-solid fa-rotate-left me-2"></i>Đặt lại
                     </button>
                     <button type="submit" class="btn btn-primary shadow">
@@ -435,63 +315,68 @@ input[type="number"]::-webkit-outer-spin-button {
 @endsection
 
 @push('scripts')
-{{-- Thêm JS giống như trang edit --}}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Form validation using Bootstrap's built-in styles
-    const form = document.getElementById('createForm');
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('createForm');
+        const thoiGianBatDau = document.getElementById('ThoiGianBatDau');
+        const thoiGianKetThuc = document.getElementById('ThoiGianKetThuc');
+        const thoiHanHuy = document.getElementById('ThoiHanHuy');
+        const loaiHoatDong = document.getElementById('LoaiHoatDong');
+        const diaChiDoFields = document.getElementById('diaChiDoFields');
 
-    // Validate thời gian
-    const thoiGianBatDau = document.getElementById('ThoiGianBatDau');
-    const thoiGianKetThuc = document.getElementById('ThoiGianKetThuc');
-    const thoiHanHuy = document.getElementById('ThoiHanHuy');
+        function validateDates() {
+            const start = thoiGianBatDau.value ? new Date(thoiGianBatDau.value) : null;
+            const end = thoiGianKetThuc.value ? new Date(thoiGianKetThuc.value) : null;
+            const cancel = thoiHanHuy.value ? new Date(thoiHanHuy.value) : null;
 
-    function validateDates() {
-        const start = thoiGianBatDau.value ? new Date(thoiGianBatDau.value) : null;
-        const end = thoiGianKetThuc.value ? new Date(thoiGianKetThuc.value) : null;
-        const cancel = thoiHanHuy.value ? new Date(thoiHanHuy.value) : null;
+            thoiGianKetThuc.setCustomValidity('');
+            thoiHanHuy.setCustomValidity('');
 
-        // Reset custom validity
-        thoiGianKetThuc.setCustomValidity('');
-        thoiHanHuy.setCustomValidity('');
+            if (start && end && end <= start) {
+                thoiGianKetThuc.setCustomValidity('Thời gian kết thúc phải sau thời gian bắt đầu.');
+            }
+            if (start && cancel && cancel >= start) {
+                thoiHanHuy.setCustomValidity('Thời hạn hủy phải trước thời gian bắt đầu.');
+            }
 
-        if (start && end && end <= start) {
-            thoiGianKetThuc.setCustomValidity('Thời gian kết thúc phải sau thời gian bắt đầu.');
+            thoiGianKetThuc.reportValidity();
+            thoiHanHuy.reportValidity();
         }
 
-        if (start && cancel && cancel >= start) {
-             thoiHanHuy.setCustomValidity('Thời hạn hủy phải trước thời gian bắt đầu.');
+        function toggleDiaChiDo() {
+            const show = loaiHoatDong.value === 'Địa chỉ đỏ';
+            diaChiDoFields.style.display = show ? 'flex' : 'none';
         }
 
-         // Trigger validation feedback
-        thoiGianKetThuc.reportValidity();
-        thoiHanHuy.reportValidity();
-    }
+        thoiGianBatDau.addEventListener('change', validateDates);
+        thoiGianKetThuc.addEventListener('change', validateDates);
+        thoiHanHuy.addEventListener('change', validateDates);
+        loaiHoatDong.addEventListener('change', toggleDiaChiDo);
 
-    thoiGianBatDau.addEventListener('change', validateDates);
-    thoiGianKetThuc.addEventListener('change', validateDates);
-    thoiHanHuy.addEventListener('change', validateDates);
+        // Init states
+        validateDates();
+        toggleDiaChiDo();
 
-    // Bootstrap validation on submit
-    form.addEventListener('submit', function(event) {
-        if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-             // Manually trigger date validation feedback if needed
-             validateDates();
+        // Bootstrap-like validation
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                validateDates();
+            }
+            form.classList.add('was-validated');
+        }, false);
+
+        const resetButton = form.querySelector('button[type="reset"]');
+        if (resetButton) {
+            resetButton.addEventListener('click', function () {
+                form.classList.remove('was-validated');
+                thoiGianKetThuc.setCustomValidity('');
+                thoiHanHuy.setCustomValidity('');
+                // reset visibility based on default/old value
+                setTimeout(toggleDiaChiDo, 0);
+            });
         }
-        form.classList.add('was-validated');
-    }, false);
-
-     // Optional: Reset validation state on reset button click
-     const resetButton = form.querySelector('button[type="reset"]');
-     if (resetButton) {
-         resetButton.addEventListener('click', function() {
-             form.classList.remove('was-validated');
-             thoiGianKetThuc.setCustomValidity('');
-             thoiHanHuy.setCustomValidity('');
-         });
-     }
-});
+    });
 </script>
 @endpush

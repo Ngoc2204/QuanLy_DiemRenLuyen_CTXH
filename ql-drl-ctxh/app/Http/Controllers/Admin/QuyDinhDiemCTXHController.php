@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\QuyDinhDiemCTXH;
+use Illuminate\Support\Facades\DB;
 
 class QuyDinhDiemCTXHController extends Controller
 {
@@ -21,29 +22,47 @@ class QuyDinhDiemCTXHController extends Controller
 
     public function store(Request $request)
     {
+        // <--- SỬA: Bỏ validation cho 'MaDiem'
         $validated = $request->validate([
-            'MaDiem' => 'required|unique:quydinhdiemctxh,MaDiem|max:10',
-            // Corrected from TenHoatDong to TenCongViec to match the model
-            'TenCongViec' => 'required|string|max:255', 
+            'TenCongViec' => 'required|string|max:255',
             'DiemNhan' => 'required|integer|min:0',
         ]);
 
-        // Ensure the validated data keys match the fillable fields
-        // If the form input name is different, you might need to map it here.
-        // Assuming form input name matches 'TenCongViec' now.
-        QuyDinhDiemCTXH::create($validated);
-        return redirect()->route('admin.quydinhdiemctxh.index')->with('success', 'Thêm quy định CTXH thành công!');
+
+        try {
+
+            $lastQuyDinh = QuyDinhDiemCTXH::orderBy('MaDiem', 'desc')->first();
+
+            $nextIdNumber = 1; // Bắt đầu từ 1 nếu chưa có
+            if ($lastQuyDinh) {
+
+                $lastIdNumber = (int) substr($lastQuyDinh->MaDiem, 4); // 'CTXH' là 4 ký tự
+                $nextIdNumber = $lastIdNumber + 1; // Tăng lên 1 (ví dụ: 2)
+            }
+
+
+            $newMaDiem = 'CTXH' . str_pad($nextIdNumber, 2, '0', STR_PAD_LEFT);
+
+
+            $validated['MaDiem'] = $newMaDiem;
+
+            QuyDinhDiemCTXH::create($validated);
+            return redirect()->route('admin.quydinhdiemctxh.index')->with('success', 'Thêm quy định CTXH (' . $newMaDiem . ') thành công!');
+        } catch (\Exception $e) {
+
+            return redirect()->back()->with('error', 'Không thể tạo quy định: ' . $e->getMessage())->withInput();
+        }
     }
 
-    public function edit($id)
+    public function edit($maDiem)
     {
-        $quydinhctxh = QuyDinhDiemCTXH::findOrFail($id);
+        $quydinhctxh = QuyDinhDiemCTXH::findOrFail($maDiem);
         return view('admin.quydinhdiemctxh.edit', compact('quydinhctxh'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $maDiem)
     {
-        $quydinhctxh = QuyDinhDiemCTXH::findOrFail($id);
+        $quydinhctxh = QuyDinhDiemCTXH::findOrFail($maDiem);
 
         $validated = $request->validate([
             // Corrected from TenHoatDong to TenCongViec to match the model
@@ -55,9 +74,23 @@ class QuyDinhDiemCTXHController extends Controller
         return redirect()->route('admin.quydinhdiemctxh.index')->with('success', 'Cập nhật quy định CTXH thành công!');
     }
 
-    public function destroy($id)
+    public function destroy($maDiem)
     {
-        QuyDinhDiemCTXH::findOrFail($id)->delete();
-        return redirect()->route('admin.quydinhdiemctxh.index')->with('success', 'Xóa quy định CTXH thành công!');
+        try {
+
+            $quydinhctxh = QuyDinhDiemCTXH::findOrFail($maDiem);
+
+            if ($quydinhctxh->hoatDongs()->count() > 0) {
+                return redirect()->route('admin.quydinhdiemctxh.index')->with('error', 'Không thể xóa quy định (' . $maDiem . ') vì nó đang được sử dụng bởi ' . $quydinhctxh->hoatDongs()->count() . ' hoạt động.');
+            }
+
+            $quydinhctxh->delete();
+            return redirect()->route('admin.quydinhdiemctxh.index')->with('success', 'Xóa quy định CTXH (' . $maDiem . ') thành công!');
+        } catch (\Illuminate\Database\QueryException $e) {
+
+            return redirect()->route('admin.quydinhdiemctxh.index')->with('error', 'Không thể xóa quy định: Có lỗi ràng buộc cơ sở dữ liệu.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.quydinhdiemctxh.index')->with('error', 'Đã xảy ra lỗi: ' . $e->getMessage());
+        }
     }
 }

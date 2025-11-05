@@ -446,7 +446,7 @@
                 <span>Hoạt động DRL</span>
             </a>
 
-            <a href="" class="{{ request()->routeIs('nhanvien.duyetsinhvien*') ? 'active' : '' }}">
+            <a href="{{ route('nhanvien.duyet_dang_ky.index') }}" class="{{ request()->routeIs('nhanvien.duyetsinhvien*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-check"></i>
                 <span>Duyệt đăng ký SV</span>
             </a>
@@ -458,15 +458,11 @@
 
             <div class="nav-section-title">Báo cáo & thống kê</div>
 
-            <a href="" class="{{ request()->routeIs('nhanvien.thongke.drl*') ? 'active' : '' }}">
-                <i class="fa-solid fa-chart-line"></i>
-                <span>Thống kê điểm DRL</span>
+            <a href="{{ route('nhanvien.thongke.index') }}" class="{{ request()->routeIs('nhanvien.thongke.index*') ? 'active' : '' }}">
+                <i class="fa-solid fa-chart-area"></i> 
+                <span>Báo cáo & Thống kê</span>
             </a>
 
-            <a href="" class="{{ request()->routeIs('nhanvien.thongke.ctxh*') ? 'active' : '' }}">
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>Thống kê CTXH</span>
-            </a>
 
             <div class="nav-section-title">Tài khoản</div>
 
@@ -476,7 +472,7 @@
             </a>
 
             <a href="{{ route('logout') }}" class="text-danger"
-               onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span>Đăng xuất</span>
             </a>
@@ -503,18 +499,18 @@
     <main class="main-content">
         <div class="container-fluid py-4">
             {{-- Include partial for alerts --}}
-            
+
             @if(isset($breadcrumbs))
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb breadcrumb-custom">
                     @foreach($breadcrumbs as $breadcrumb)
-                        @if($loop->last)
-                            <li class="breadcrumb-item active">{{ $breadcrumb['title'] }}</li>
-                        @else
-                            <li class="breadcrumb-item">
-                                <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['title'] }}</a>
-                            </li>
-                        @endif
+                    @if($loop->last)
+                    <li class="breadcrumb-item active">{{ $breadcrumb['title'] }}</li>
+                    @else
+                    <li class="breadcrumb-item">
+                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['title'] }}</a>
+                    </li>
+                    @endif
                     @endforeach
                 </ol>
             </nav>
@@ -552,18 +548,18 @@
         // Auto-hide alerts after 5 seconds using Bootstrap's Alert component
         document.addEventListener('DOMContentLoaded', function() {
             const alertList = document.querySelectorAll('.alert:not(.alert-dismissible)'); // Find alerts without close button initially
-             alertList.forEach(function (alert) {
-                 // Add dismissible functionality dynamically if needed, or rely on timeout
-                 // For timeout dismissal:
+            alertList.forEach(function(alert) {
+                // Add dismissible functionality dynamically if needed, or rely on timeout
+                // For timeout dismissal:
                 setTimeout(() => {
                     const bsAlert = new bootstrap.Alert(alert); // Create Bootstrap Alert instance
                     bsAlert.close(); // Use Bootstrap's close method
                 }, 5000); // 5 seconds
             });
 
-             // Handle alerts that are already dismissible
+            // Handle alerts that are already dismissible
             const dismissibleAlertList = document.querySelectorAll('.alert.alert-dismissible');
-            dismissibleAlertList.forEach(function (alert) {
+            dismissibleAlertList.forEach(function(alert) {
                 setTimeout(() => {
                     const bsAlert = bootstrap.Alert.getInstance(alert) || new bootstrap.Alert(alert);
                     bsAlert.close();

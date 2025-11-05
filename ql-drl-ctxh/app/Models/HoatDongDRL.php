@@ -12,7 +12,7 @@ class HoatDongDRL extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'MaHoatDong', 'TenHoatDong', 'MoTa', 
+        'MaHoatDong', 'TenHoatDong', 'MaGV', 'MoTa', 
         'ThoiGianBatDau', 'ThoiGianKetThuc', 'ThoiHanHuy', 'DiaDiem', 'SoLuong', 'LoaiHoatDong','MaHocKy', 'MaQuyDinhDiem'
     ];
 
@@ -37,9 +37,18 @@ class HoatDongDRL extends Model
         return $this->belongsTo(HocKy::class, 'MaHocKy', 'MaHocKy');
     }
 
-    public function sinhVienDangKy() // <- Sửa lại tên hàm này (chữ 's' viết thường)
+    public function sinhVienDangKy()
     {
         return $this->belongsToMany(SinhVien::class, 'dangkyhoatdongdrl', 'MaHoatDong', 'MSSV')
-                    ->withPivot('NgayDangKy', 'TrangThaiDangKy'); // Lấy thêm cột từ bảng trung gian nếu cần
+                    ->withPivot('NgayDangKy', 'TrangThaiDangKy');
+    }
+
+    public function giangVienPhuTrach()
+    {
+        return $this->belongsTo(GiangVien::class, 'MaGV', 'MaGV');
+    }
+    public function phanBos()
+    {
+        return $this->hasMany(PhanBoSoLuong::class, 'MaHoatDong', 'MaHoatDong');
     }
 }

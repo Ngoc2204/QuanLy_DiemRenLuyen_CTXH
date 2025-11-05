@@ -28,11 +28,16 @@ class SinhVien extends Model
 
     public function diemctxh()
     {
-        return $this->hasMany(DiemCTXH::class, 'MSSV', 'MSSV');
+        return $this->hasOne(DiemCTXH::class, 'MSSV', 'MSSV');
     }
 
     public function taikhoan()
     {
         return $this->belongsTo(TaiKhoan::class, 'MSSV', 'TenDangNhap');
+    }
+    
+    public function chucVus()
+    {
+        return $this->hasMany(ChucVuSinhVien::class, 'MSSV', 'MSSV');
     }
 }

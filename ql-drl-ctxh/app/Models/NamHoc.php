@@ -8,8 +8,13 @@ class NamHoc extends Model
 {
     protected $table = 'namhoc';
     protected $primaryKey = 'MaNamHoc';
-    public $incrementing = false;
+    public $incrementing = true;
     public $timestamps = false;
 
-    protected $fillable = ['MaNamHoc', 'TenNamHoc'];
+    protected $fillable = ['TenNamHoc', 'NgayBatDau', 'NgayKetThuc'];
+
+    public function hockys()
+    {
+        return $this->hasMany(HocKy::class, 'MaNamHoc', 'MaNamHoc');
+    }
 }

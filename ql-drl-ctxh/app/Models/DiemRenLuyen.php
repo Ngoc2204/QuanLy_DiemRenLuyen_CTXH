@@ -11,7 +11,7 @@ class DiemRenLuyen extends Model
     public $incrementing = false;
     public $timestamps = false;
 
-    protected $fillable = ['MaDRL', 'MSSV', 'MaHocKy', 'TongDiem', 'XepLoai'];
+    protected $fillable = ['MaDRL', 'MSSV', 'MaHocKy', 'TongDiem', 'XepLoai','NgayCapNhat'];
 
     public function sinhvien()
     {

@@ -10,9 +10,11 @@ class DangKyHoatDongDRL extends Model
     protected $primaryKey = 'MaDangKy';
     public $incrementing = false;
     public $timestamps = false;
-    protected $dates = ['NgayDangKy'];
+    protected $casts = [
+        'NgayDangKy' => 'datetime',
+    ];
 
-    protected $fillable = ['MaDangKy', 'MSSV', 'MaHoatDong', 'NgayDangKy', 'TrangThaiDangKy	'];
+    protected $fillable = ['MaDangKy', 'MSSV', 'MaHoatDong', 'NgayDangKy', 'TrangThaiDangKy'];
 
     public function sinhvien()
     {

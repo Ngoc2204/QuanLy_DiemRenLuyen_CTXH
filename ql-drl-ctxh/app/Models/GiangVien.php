@@ -17,4 +17,9 @@ class GiangVien extends Model
     {
         return $this->belongsToMany(Lop::class, 'covanht', 'MaGiangVien', 'MaLop');
     }
+
+    public function hoatDongsPhuTrach()
+    {
+        return $this->hasMany(HoatDongDRL::class, 'MaGV', 'MaGV');
+    }
 }

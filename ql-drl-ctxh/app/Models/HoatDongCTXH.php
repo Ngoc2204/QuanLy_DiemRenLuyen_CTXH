@@ -9,11 +9,25 @@ class HoatDongCTXH extends Model
     protected $table = 'hoatdongctxh';
     protected $primaryKey = 'MaHoatDong';
     public $incrementing = false;
+    protected $keyType = 'string';
     public $timestamps = false;
 
     protected $fillable = [
-        'MaHoatDong', 'TenHoatDong', 'MoTa', 
-        'ThoiGianBatDau', 'ThoiGianKetThuc', 'ThoiHanHuy', 'DiaDiem', 'SoLuong', 'LoaiHoatDong', 'MaQuyDinhDiem'
+        'MaHoatDong',
+        'TenHoatDong',
+        'MoTa',
+        'ThoiGianBatDau',
+        'ThoiGianKetThuc',
+        'ThoiHanHuy',
+        'DiaDiem',
+        'SoLuong',
+        'LoaiHoatDong',
+        'MaQuyDinhDiem',
+        'CheckInToken',
+        'CheckOutToken',
+        'TokenExpiresAt',
+        'dot_id',
+        'diadiem_id',
     ];
 
     protected $casts = [
@@ -37,5 +51,14 @@ class HoatDongCTXH extends Model
     {
         return $this->belongsToMany(SinhVien::class, 'dangkyhoatdongctxh', 'MaHoatDong', 'MSSV')
                     ->withPivot('NgayDangKy', 'TrangThaiDangKy'); // Lấy thêm cột từ bảng trung gian nếu cần
+    }
+
+    public function dotDiaChiDo()
+    {
+        return $this->belongsTo(DotDiaChiDo::class, 'dot_id', 'id');
+    }
+    public function diaDiem()
+    {
+        return $this->belongsTo(DiaDiemDiaChiDo::class, 'diadiem_id', 'id');
     }
 }

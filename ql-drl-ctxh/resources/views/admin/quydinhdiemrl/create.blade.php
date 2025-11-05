@@ -519,7 +519,6 @@
                 </div>
                 <div class="form-info-box-content">
                      <ul>
-                        <li><strong>Mã điểm</strong> là duy nhất và không được trùng với các mã đã có.</li>
                         <li><strong>Điểm nhận</strong> phải là một số nguyên.</li>
                     </ul>
                 </div>
@@ -530,38 +529,7 @@
             <form action="{{ route('admin.quydinhdiemrl.store') }}" method="POST">
                 @csrf
 
-                {{-- Mã điểm --}}
-                <div class="form-group-modern">
-                    <label for="MaDiem" class="form-label-modern">
-                        <i class="fa-solid fa-hashtag"></i>
-                        Mã điểm
-                        <span class="required-mark">*</span>
-                    </label>
-                    <div class="input-wrapper">
-                        <i class="input-icon fa-solid fa-barcode"></i>
-                        <input type="text"
-                               id="MaDiem"
-                               name="MaDiem"
-                               value="{{ old('MaDiem') }}"
-                               class="form-control-modern @error('MaDiem') is-invalid @enderror"
-                               placeholder="Ví dụ: DRL01, THAMGIAHD"
-                               required
-                               autofocus>
-                        @error('MaDiem')
-                        <i class="invalid-icon fa-solid fa-circle-exclamation"></i>
-                        @enderror
-                    </div>
-                    @error('MaDiem')
-                    <div class="error-message">
-                        <i class="fa-solid fa-circle-xmark"></i> {{ $message }}
-                    </div>
-                    @else
-                    <div class="input-hint">
-                        <i class="fa-solid fa-circle-info"></i>
-                        Mã điểm là định danh duy nhất cho quy định này.
-                    </div>
-                    @enderror
-                </div>
+                
 
                 {{-- Tên công việc --}}
                 <div class="form-group-modern">

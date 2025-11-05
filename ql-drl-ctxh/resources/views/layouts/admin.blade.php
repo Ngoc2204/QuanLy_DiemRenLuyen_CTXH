@@ -445,6 +445,8 @@
                 <span>Nhân viên</span>
             </a>
 
+            <div class="nav-section-title">Quản lý học vụ</div>
+
             <a href="{{ route('admin.khoa.index') }}" class="{{ request()->routeIs('admin.khoa*') ? 'active' : '' }}">
                 <i class="fa-solid fa-building-columns"></i>
                 <span>Khoa</span>
@@ -452,20 +454,29 @@
 
             <a href="{{ route('admin.lop.index') }}" class="{{ request()->routeIs('admin.lop*') ? 'active' : '' }}">
                 <i class="fa-solid fa-users-line"></i>
-
                 <span>Lớp</span>
             </a>
 
-            <div class="nav-section-title">Hoạt động</div>
-
-            <a href="" class="{{ request()->routeIs('admin.hoatdong.ctxh*') ? 'active' : '' }}">
-                <i class="fa-solid fa-hand-holding-heart"></i>
-                <span>Cộng tác xã hội</span>
+            <a href="{{ route('admin.namhoc.index') }}" class="{{ request()->routeIs('admin.namhoc*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users-line"></i>
+                <span>Năm học</span>
             </a>
 
-            <a href="" class="{{ request()->routeIs('admin.hoatdong.drl*') ? 'active' : '' }}">
+            <a href="{{ route('admin.hocky.index') }}" class="{{ request()->routeIs('admin.hocky*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users-line"></i>
+                <span>Học kỳ</span>
+            </a>
+
+            <div class="nav-section-title">Quản lý địa chỉ đỏ</div>
+
+            <a href="{{ route('admin.diadiem.index') }}" class="{{ request()->routeIs('admin.diemdiem*') ? 'active' : '' }}">
+                <i class="fa-solid fa-hand-holding-heart"></i>
+                <span>Địa điểm</span>
+            </a>
+
+            <a href="{{ route('admin.dotdiachido.index') }}" class="{{ request()->routeIs('admin.dotdiachido*') ? 'active' : '' }}">
                 <i class="fa-solid fa-clipboard-check"></i>
-                <span>Điểm rèn luyện</span>
+                <span>Đợt hoạt động</span>
             </a>
 
             <div class="nav-section-title">Thiết lập quy định</div>

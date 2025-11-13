@@ -136,17 +136,34 @@ $breadcrumbs = [
                     </div>
                     <div class="card-body">
                         <p class="text-muted small mb-3">Top 10 hoạt động có nhiều sinh viên tham gia nhất.</p>
-                        <div class="chart-placeholder">
+                        <div class="chart-placeholder p-3">
                             <div class="chart-icon">
                                 <i class="fa-solid fa-chart-column"></i>
                             </div>
-                            <p class="chart-text">Biểu đồ cột đang được xây dựng</p>
-                            <div class="chart-bars">
-                                <div class="bar-item" style="height: 85%"></div>
-                                <div class="bar-item" style="height: 70%"></div>
-                                <div class="bar-item" style="height: 95%"></div>
-                                <div class="bar-item" style="height: 60%"></div>
-                                <div class="bar-item" style="height: 80%"></div>
+                            <p class="chart-text">Top 10 hoạt động theo số lượt tham gia</p>
+                            @php
+                                $maxJoin = $topActivities->max('thamgia_count') ?? 1;
+                            @endphp
+                            <div class="list-group w-100">
+                                @forelse($topActivities as $i => $a)
+                                    @php
+                                        $width = $maxJoin > 0 ? round(($a->thamgia_count / $maxJoin) * 100) : 0;
+                                    @endphp
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div style="width:36px;" class="text-center fw-bold">{{ $i+1 }}</div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <div class="fw-semibold">{{ Str::limit($a->TenHoatDong ?? $a['TenHoatDong'] ?? 'N/A', 60) }}</div>
+                                                <div class="text-muted">{{ $a->thamgia_count ?? $a['thamgia_count'] ?? 0 }} SV</div>
+                                            </div>
+                                            <div class="progress mt-1" style="height:8px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $width }}%;" aria-valuenow="{{ $width }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">Không có hoạt động để hiển thị.</div>
+                                @endforelse
                             </div>
                         </div>
                     </div>
@@ -164,15 +181,24 @@ $breadcrumbs = [
                             <small class="d-block mt-1 opacity-75">(Tất cả các Khoa)</small>
                         @endif
                     </div>
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                        <div class="chart-placeholder">
-                            <div class="chart-icon">
-                                <i class="fa-solid fa-chart-pie"></i>
-                            </div>
-                            <p class="chart-text">Biểu đồ tròn đang được xây dựng</p>
-                            <div class="pie-preview">
-                                <div class="pie-segment" style="--percentage: 75; --color: #10b981;"></div>
-                            </div>
+                    <div class="card-body">
+                        <p class="text-muted small">Tỷ lệ hoàn thành CTXH theo Khoa (mục tiêu: 50đ)</p>
+                        <div class="list-group">
+                            @if(isset($ctxhByKhoa) && $ctxhByKhoa->isNotEmpty())
+                                @foreach($ctxhByKhoa as $k)
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <div class="fw-semibold">{{ $k['TenKhoa'] }}</div>
+                                            <div class="text-muted">{{ $k['completed'] }}/{{ $k['total'] }} ({{ $k['percent'] }}%)</div>
+                                        </div>
+                                        <div class="progress" style="height:10px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ $k['percent'] }}%;" aria-valuenow="{{ $k['percent'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="text-muted">Không có dữ liệu CTXH theo Khoa.</div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -291,7 +317,7 @@ $breadcrumbs = [
             </div>
             @if($thongKeHoatDong->hasPages())
             <div class="pagination-wrapper">
-                {{ $thongKeHoatDong->appends(request()->query())->links(null, 'page_hd') }}
+                {{ $thongKeHoatDong->appends(request()->query())->links(null, ['pageName' => 'page_hd']) }}
             </div>
             @endif
         </div>
@@ -361,7 +387,7 @@ $breadcrumbs = [
             </div>
             @if($thongKeLop->hasPages())
             <div class="pagination-wrapper">
-                {{ $thongKeLop->appends(request()->query())->links(null, 'page_lop') }}
+                {{ $thongKeLop->appends(request()->query())->links(null, ['pageName' => 'page_lop']) }}
             </div>
             @endif
         </div>
@@ -792,17 +818,56 @@ $breadcrumbs = [
         border-top: 1px solid #e5e7eb;
     }
 
-    .pagination {
+    /* pagination default container (ul.pagination) and fallback anchors */
+    .pagination, .pagination-wrapper .pagination-inline {
+        display: inline-flex;
         gap: 0.5rem;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        align-items: center;
     }
 
-    .page-link {
+    /* Generic page item styling covers both <li><a> and plain <a> outputs */
+    .pagination li, .pagination a, .pagination span, .pagination-wrapper a.page-link, .pagination-wrapper .page-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+        padding: 0 0.9rem;
         border: 2px solid #e5e7eb;
         border-radius: 8px;
         color: #374151;
         font-weight: 600;
-        padding: 0.5rem 0.875rem;
-        transition: all 0.2s ease;
+        text-decoration: none;
+        background: #fff;
+        transition: all 0.12s ease;
+        box-sizing: border-box;
+    }
+
+    .pagination a:hover, .pagination span:hover, .pagination li:hover a {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(102,126,234,0.12);
+        border-color: rgba(102,126,234,0.2);
+    }
+
+    /* Active page */
+    .pagination .active > a,
+    .pagination li.active,
+    .pagination .active {
+        background: var(--primary-gradient);
+        color: #fff !important;
+        border-color: transparent;
+        box-shadow: 0 8px 24px rgba(102,126,234,0.18);
+    }
+
+    /* Disabled previous/next */
+    .pagination .disabled, .pagination li.disabled, .pagination span.disabled {
+        opacity: 0.45;
+        pointer-events: none;
+        background: #fafafa;
+        border-color: #f3f4f6;
     }
 
     .page-link:hover {
@@ -816,6 +881,14 @@ $breadcrumbs = [
         background: var(--primary-gradient);
         border-color: transparent;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Small helper for the 'Showing' text above pagination */
+    .pagination-info {
+        text-align: center;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
     }
 
     /* Responsive */

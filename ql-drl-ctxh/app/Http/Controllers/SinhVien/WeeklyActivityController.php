@@ -52,6 +52,9 @@ class WeeklyActivityController extends Controller
                 'type' => 'DRL',
                 'hoatdong' => $reg->hoatdong,
                 'trang_thai' => $reg->TrangThaiDangKy,
+                'trang_thai_tham_gia' => $reg->TrangThaiThamGia,
+                'check_in_at' => $reg->CheckInAt, // Thời gian Check In
+                'check_out_at' => $reg->CheckOutAt, // Thời gian Check Out
             ]);
         }
         foreach ($ctxhRegistrations as $reg) {
@@ -59,6 +62,9 @@ class WeeklyActivityController extends Controller
                 'type' => 'CTXH',
                 'hoatdong' => $reg->hoatdong,
                 'trang_thai' => $reg->TrangThaiDangKy,
+                'trang_thai_tham_gia' => $reg->TrangThaiThamGia,
+                'check_in_at' => $reg->CheckInAt, // Thời gian Check In
+                'check_out_at' => $reg->CheckOutAt, // Thời gian Check Out
             ]);
         }
 
@@ -70,7 +76,7 @@ class WeeklyActivityController extends Controller
         // 6. Nhóm các hoạt động lại theo ngày (Thứ 2, Thứ 3...)
         $groupedActivities = $sortedActivities->groupBy(function ($item) {
             // 'w' trả về 1 (Thứ 2) đến 7 (Chủ nhật)
-            return $item['hoatdong']->ThoiGianBatDau->format('w'); 
+            return $item['hoatdong']->ThoiGianBatDau->format('w');
         });
 
         // 7. Tạo mảng 7 ngày cho View

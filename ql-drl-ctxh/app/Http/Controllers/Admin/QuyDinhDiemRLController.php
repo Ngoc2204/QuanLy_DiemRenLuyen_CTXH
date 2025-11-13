@@ -25,7 +25,7 @@ class QuyDinhDiemRLController extends Controller
         // <--- SỬA: Bỏ validation cho 'MaDiem'
         $validated = $request->validate([
             'TenCongViec' => 'required|string|max:255',
-            'DiemNhan' => 'required|integer|min:0',
+            'DiemNhan' => 'required|integer|between:-100,100',
         ]);
 
         // <--- THÊM: Logic tự động tạo MaDiem
@@ -73,9 +73,9 @@ class QuyDinhDiemRLController extends Controller
 
         $validated = $request->validate([
             'TenCongViec' => 'required|string|max:255',
-            'DiemNhan' => 'required|integer|min:0',
+            'DiemNhan' => 'required|integer|between:-100,100',
             // Không validate MaDiem khi update
-        ]);
+        ]); 
 
         $quydinhdiem->update($validated);
         return redirect()->route('admin.quydinhdiemrl.index')->with('success', 'Cập nhật quy định điểm (' . $maDiem . ') thành công!');

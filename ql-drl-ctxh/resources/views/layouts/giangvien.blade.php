@@ -233,6 +233,15 @@
             font-size: 14px;
         }
 
+        /* When avatar image is present inside .user-avatar */
+        .user-avatar img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+
         .user-details {
             display: flex;
             flex-direction: column;
@@ -458,7 +467,7 @@
 
             <div class="nav-section-title">Tài khoản</div>
 
-            <a href="" class="{{ request()->routeIs('giangvien.profile*') ? 'active' : '' }}">
+            <a href="{{ route('giangvien.profile.edit') }}" class="{{ request()->routeIs('giangvien.profile*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-gear"></i>
                 <span>Thông tin cá nhân</span>
             </a>
@@ -476,8 +485,13 @@
         <div class="navbar-right">
             <div class="user-info">
                 <div class="user-avatar">
-                    {{-- Đổi chữ cái mặc định thành 'G' cho Giảng viên --}}
-                    {{ strtoupper(substr(Auth::user()->TenDangNhap ?? 'G', 0, 1)) }}
+                    @php $avatar = Auth::user()->Avatar ?? null; @endphp
+                    @if (!empty($avatar))
+                        <img src="{{ asset('storage/' . $avatar) }}" alt="Avatar">
+                    @else
+                        {{-- Đổi chữ cái mặc định thành 'G' cho Giảng viên --}}
+                        {{ strtoupper(substr(Auth::user()->TenDangNhap ?? 'G', 0, 1)) }}
+                    @endif
                 </div>
                 <div class="user-details">
                     <div class="user-name">{{ Auth::user()->TenDangNhap ?? 'Giảng viên' }}</div>

@@ -9,6 +9,7 @@ use App\Models\HocKy;
 use App\Models\DiemRenLuyen;
 use App\Models\DangKyHoatDongDrl;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class DiemRenLuyenController extends Controller
 {
@@ -24,32 +25,30 @@ class DiemRenLuyenController extends Controller
         // 1. Lấy tất cả học kỳ để làm bộ lọc
         $allHocKys = HocKy::orderBy('NgayBatDau', 'desc')->get();
 
-        // 2. Xác định học kỳ đang xem
+        // 2. Xác định học kỳ đang xem (Giữ nguyên)
         $selectedHocKyMa = $request->input('hocky');
         $currentHocKy = null;
 
         if ($selectedHocKyMa) {
             $currentHocKy = HocKy::find($selectedHocKyMa);
         } else {
-            // Nếu không chọn, tìm học kỳ hiện tại
             $currentHocKy = HocKy::where('NgayBatDau', '<=', $now)
                                  ->where('NgayKetThuc', '>=', $now)
                                  ->first() 
-                                 ?? $allHocKys->first(); // Lấy cái gần nhất nếu không có
+                                 ?? $allHocKys->first();
         }
         
         // Khởi tạo các biến
-        $diemCongThem = 0;
-        $diemTruDi = 0; // <-- BIẾN MỚI
         $diemRenLuyen = null;
-        $cacHoatDongDaThamGia = collect();
+        // Danh sách tất cả các mục ảnh hưởng đến điểm (Điểm cơ bản, hoạt động, điều chỉnh)
+        $cacMucAnhHuongDenDiem = collect(); 
         $tongDiemMoi = $diemGoc; 
         $xepLoaiMoi = $this->getXepLoai($diemGoc);
 
         // 3. Chỉ tính toán nếu có một học kỳ hợp lệ
         if ($currentHocKy) {
             
-            // 4. Lấy (hoặc tạo) điểm DRL gốc cho học kỳ này (Logic 70 điểm)
+            // 4. Lấy (hoặc tạo) điểm DRL gốc
             $diemRenLuyen = DiemRenLuyen::firstOrCreate(
                 [
                     'MSSV' => $mssv,
@@ -57,64 +56,96 @@ class DiemRenLuyenController extends Controller
                 ],
                 [
                     'TongDiem' => $diemGoc,
-                    'XepLoai' => 'Khá', // 70 điểm là Khá
+                    'XepLoai' => 'Khá',
                     'NgayCapNhat' => $now
                 ]
             );
 
-            // 5. Lấy tất cả hoạt động DRL đã tham gia trong học kỳ này
-            $cacHoatDongDaThamGia = DangKyHoatDongDrl::with('hoatdong.quydinh')
+            $tongDiemDaLuu = $diemRenLuyen->TongDiem;
+            
+            // 5. Lấy TẤT CẢ đăng ký đã được duyệt trong học kỳ này (Dù đã/chưa tham gia)
+            $cacDangKyTrongKy = DangKyHoatDongDrl::with('hoatdong.quydinh')
                 ->where('MSSV', $mssv)
-                // Chỉ lấy hoạt động đã được duyệt VÀ có trạng thái "Đã tham gia"
                 ->where('TrangThaiDangKy', 'Đã duyệt') 
-                ->where('TrangThaiThamGia', 'Đã tham gia')
                 ->whereHas('hoatdong', function ($query) use ($currentHocKy) {
                     $query->where('MaHocKy', $currentHocKy->MaHocKy);
                 })
                 ->get();
 
-            // 6. TÍNH TOÁN LẠI: Phân loại điểm cộng và điểm trừ
-            $diemCongThem = 0;
-            $diemTruDi = 0; 
-            foreach ($cacHoatDongDaThamGia as $dangKy) {
-                // Đảm bảo có thông tin quy định điểm
-                if ($dangKy->hoatdong && $dangKy->hoatdong->quydinh) {
-                    $diem = $dangKy->hoatdong->quydinh->DiemNhan;
-                    
-                    if ($diem > 0) {
-                        $diemCongThem += $diem;
-                    } elseif ($diem < 0) {
-                        $diemTruDi += $diem; // $diemTruDi sẽ là số âm (vd: -10)
-                    }
+            // Tính điểm tự động để phát hiện điều chỉnh thủ công
+            $diemCongTuHoatDong = 0;
+            foreach ($cacDangKyTrongKy as $dangKy) {
+                if ($dangKy->TrangThaiThamGia === 'Đã tham gia' && $dangKy->hoatdong && $dangKy->hoatdong->quydinh) {
+                    $diemCongTuHoatDong += $dangKy->hoatdong->quydinh->DiemNhan;
                 }
             }
-
-            // 7. Tính tổng điểm mới (Không vượt quá 100 và không thấp hơn 0)
-            $tongDiemMoi = max(0, min(100, $diemGoc + $diemCongThem + $diemTruDi));
-
-            // 8. Cập nhật điểm và xếp loại trong CSDL
-            $xepLoaiMoi = $this->getXepLoai($tongDiemMoi);
+            $tongDiemTuDong = max(0, min(100, $diemGoc + $diemCongTuHoatDong));
             
-            // Chỉ cập nhật nếu có thay đổi
-            if ($diemRenLuyen->TongDiem != $tongDiemMoi || $diemRenLuyen->XepLoai != $xepLoaiMoi) {
-                $diemRenLuyen->TongDiem = $tongDiemMoi;
-                $diemRenLuyen->XepLoai = $xepLoaiMoi;
+            // 8. CẬP NHẬT ĐIỂM VÀ TÍNH ĐIỂM ĐIỀU CHỈNH
+            $diemDieuChinhThuCong = 0;
+            
+            if ($tongDiemDaLuu != $tongDiemTuDong) {
+                // Có can thiệp thủ công -> Giữ nguyên điểm đã lưu
+                $tongDiemMoi = $tongDiemDaLuu;
+                $diemDieuChinhThuCong = $tongDiemDaLuu - $tongDiemTuDong;
+            } else {
+                // Không có can thiệp thủ công -> Cập nhật điểm mới
+                $diemRenLuyen->TongDiem = $tongDiemTuDong;
+                $diemRenLuyen->XepLoai = $this->getXepLoai($tongDiemTuDong);
                 $diemRenLuyen->NgayCapNhat = $now;
                 $diemRenLuyen->save();
+                
+                $tongDiemMoi = $tongDiemTuDong;
+            }
+
+            $xepLoaiMoi = $this->getXepLoai($tongDiemMoi);
+
+
+            // 9. CHUẨN BỊ DỮ LIỆU CHO BẢNG CHI TIẾT
+            
+            // 9.1. Thêm Dòng Điểm Cơ Bản (70)
+            $cacMucAnhHuongDenDiem->push((object)[
+                'loai' => 'goc',
+                'ten' => 'Điểm rèn luyện Cơ bản (Quy định)',
+                'ma' => 'BASE-SCORE',
+                'diem' => $diemGoc,
+                'ngay' => $diemRenLuyen->NgayCapNhat->format('d/m/Y'),
+                'trang_thai' => 'Ghi nhận',
+            ]);
+
+            // 9.2. Thêm Dòng Điều Chỉnh Thủ Công (nếu có)
+            if ($diemDieuChinhThuCong != 0) {
+                $cacMucAnhHuongDenDiem->push((object)[
+                    'loai' => 'dieu_chinh',
+                    'ten' => 'Điều chỉnh thủ công từ Phòng CTSV',
+                    'ma' => 'ADJ-' . $currentHocKy->MaHocKy,
+                    'diem' => $diemDieuChinhThuCong,
+                    'ngay' => $diemRenLuyen->NgayCapNhat->format('d/m/Y'),
+                    'trang_thai' => 'Điều chỉnh',
+                ]);
+            }
+
+            // 9.3. Thêm các Hoạt Động (có/không điểm)
+            foreach ($cacDangKyTrongKy as $dangKy) {
+                $diemNhan = optional(optional($dangKy->hoatdong)->quydinh)->DiemNhan ?? 0;
+                $cacMucAnhHuongDenDiem->push((object)[
+                    'loai' => 'hoat_dong',
+                    'ten' => $dangKy->hoatdong->TenHoatDong ?? 'Không rõ tên',
+                    'ma' => $dangKy->hoatdong->MaHoatDong ?? 'N/A',
+                    'diem' => ($dangKy->TrangThaiThamGia === 'Đã tham gia') ? $diemNhan : 0, // Chỉ tính điểm nếu đã tham gia
+                    'ngay' => $dangKy->CheckOutAt ? \Carbon\Carbon::parse($dangKy->CheckOutAt)->format('d/m/Y') : (\Carbon\Carbon::parse($dangKy->NgayDangKy)->format('d/m/Y') ?? 'N/A'),
+                    'trang_thai' => $dangKy->TrangThaiThamGia,
+                ]);
             }
         }
 
-        // 9. Trả về view
+        // 10. Trả về view
         return view('sinhvien.diem_ren_luyen.index', [
             'allHocKys' => $allHocKys,
             'currentHocKy' => $currentHocKy,
-            'diemRenLuyen' => $diemRenLuyen, // Dòng điểm gốc từ CSDL
-            'cacHoatDongDaThamGia' => $cacHoatDongDaThamGia,
-            'diemGoc' => $diemGoc,
-            'diemCongThem' => $diemCongThem,
-            'diemTruDi' => $diemTruDi, // <-- TRUYỀN BIẾN MỚI
             'tongDiemMoi' => $tongDiemMoi,
-            'xepLoaiMoi' => $xepLoaiMoi
+            'xepLoaiMoi' => $xepLoaiMoi,
+            'cacMucAnhHuongDenDiem' => $cacMucAnhHuongDenDiem->reverse()->values(), // Đảo ngược để Điểm cơ bản ở cuối
         ]);
     }
 

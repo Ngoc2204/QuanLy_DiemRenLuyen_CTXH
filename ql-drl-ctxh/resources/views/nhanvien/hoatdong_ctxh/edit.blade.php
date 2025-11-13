@@ -4,7 +4,6 @@
 @section('page_title', 'Chỉnh sửa Hoạt động CTXH')
 
 @php
-    // Breadcrumbs
     $breadcrumbs = [
         ['url' => route('nhanvien.home'), 'title' => 'Bảng điều khiển'],
         ['url' => route('nhanvien.hoatdong_ctxh.index'), 'title' => 'Hoạt động CTXH'],
@@ -34,8 +33,6 @@
     textarea.form-control { resize: vertical; min-height: 100px; }
     .form-control:invalid:not(:placeholder-shown) { border-color: #dc3545; }
     .form-control:valid:not(:placeholder-shown) { border-color: #28a745; }
-    input[list]::-webkit-calendar-picker-indicator { opacity: 0.6; }
-    .form-group { margin-bottom: 1rem; }
 </style>
 @endpush
 
@@ -49,7 +46,6 @@
     </div>
 
     <div class="card-body p-4">
-        {{-- Error Messages --}}
         @if ($errors->any())
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <div class="d-flex align-items-start">
@@ -73,7 +69,7 @@
                 {{ session('error') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        @endif
+        @endif>
 
         <form action="{{ route('nhanvien.hoatdong_ctxh.update', $hoatdong_ctxh->MaHoatDong) }}" method="POST" id="editForm" novalidate>
             @csrf
@@ -91,106 +87,60 @@
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="MaHoatDong" class="form-label">
-                                <i class="fa-solid fa-hashtag me-1 text-muted"></i>
-                                Mã Hoạt động
-                            </label>
-                            <input type="text" class="form-control" id="MaHoatDong" value="{{ $hoatdong_ctxh->MaHoatDong }}" disabled readonly>
-                        </div>
+                        <label for="MaHoatDong" class="form-label">
+                            <i class="fa-solid fa-hashtag me-1 text-muted"></i> Mã Hoạt động
+                        </label>
+                        <input type="text" class="form-control" id="MaHoatDong" value="{{ $hoatdong_ctxh->MaHoatDong }}" disabled readonly>
                     </div>
 
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="LoaiHoatDong" class="form-label">
-                                <i class="fa-solid fa-tag me-1 text-muted"></i>
-                                Phân loại
-                                <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select" id="LoaiHoatDong" name="LoaiHoatDong" required>
-                                <option value="Tình nguyện" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Tình nguyện' ? 'selected' : '' }}>Tình nguyện</option>
-                                <option value="Hội thảo" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Hội thảo' ? 'selected' : '' }}>Hội thảo</option>
-                                <option value="Tập huấn" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Tập huấn' ? 'selected' : '' }}>Tập huấn</option>
-                                <option value="Địa chỉ đỏ" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Địa chỉ đỏ' ? 'selected' : '' }}>Địa chỉ đỏ</option>
-                                <option value="Học thuật" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Học thuật' ? 'selected' : '' }}>Học thuật</option>
-                                <option value="Văn hóa - Văn nghệ" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Văn hóa - Văn nghệ' ? 'selected' : '' }}>Văn hóa - Văn nghệ</option>
-                                <option value="Thể dục - Thể thao" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Thể dục - Thể thao' ? 'selected' : '' }}>Thể dục - Thể thao</option>
-                                <option value="Khác" {{ old('LoaiHoatDong', $hoatdong_ctxh->LoaiHoatDong) == 'Khác' ? 'selected' : '' }}>Khác</option>
-                            </select>
-                        </div>
+                        <label class="form-label">
+                            <i class="fa-solid fa-tag me-1 text-muted"></i> Phân loại
+                        </label>
+                        {{-- Khóa/readonly: không cho đổi loại --}}
+                        <input type="text" class="form-control" value="{{ $hoatdong_ctxh->LoaiHoatDong }}" disabled readonly>
                     </div>
 
                     <div class="col-md-12">
-                        <div class="form-group">
-                            <label for="TenHoatDong" class="form-label">
-                                <i class="fa-solid fa-heading me-1 text-muted"></i>
-                                Tên Hoạt động
-                                <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="TenHoatDong" name="TenHoatDong" value="{{ old('TenHoatDong', $hoatdong_ctxh->TenHoatDong) }}" required placeholder="Nhập tên hoạt động">
-                        </div>
+                        <label for="TenHoatDong" class="form-label">
+                            <i class="fa-solid fa-heading me-1 text-muted"></i> Tên Hoạt động <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="TenHoatDong" name="TenHoatDong"
+                               value="{{ old('TenHoatDong', $hoatdong_ctxh->TenHoatDong) }}" required>
                     </div>
 
                     <div class="col-md-12">
-                        <div class="form-group">
-                            <label for="MoTa" class="form-label">
-                                <i class="fa-solid fa-align-left me-1 text-muted"></i>
-                                Mô tả
-                            </label>
-                            <textarea class="form-control" id="MoTa" name="MoTa" rows="4" placeholder="Nhập mô tả chi tiết về hoạt động...">{{ old('MoTa', $hoatdong_ctxh->MoTa) }}</textarea>
-                        </div>
+                        <label for="MoTa" class="form-label">
+                            <i class="fa-solid fa-align-left me-1 text-muted"></i> Mô tả
+                        </label>
+                        <textarea class="form-control" id="MoTa" name="MoTa" rows="4">{{ old('MoTa', $hoatdong_ctxh->MoTa) }}</textarea>
                     </div>
 
                     <div class="col-md-12">
-                        <div class="form-group">
-                            <label for="DiaDiem" class="form-label">
-                                <i class="fa-solid fa-location-dot me-1 text-muted"></i>
-                                Địa điểm cụ thể (Ghi chú) <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="DiaDiem" name="DiaDiem" value="{{ old('DiaDiem', $hoatdong_ctxh->DiaDiem) }}" placeholder="Ví dụ: Sảnh A, Phòng B102..." required>
-                        </div>
+                        <label for="DiaDiem" class="form-label">
+                            <i class="fa-solid fa-location-dot me-1 text-muted"></i> Địa điểm cụ thể (Ghi chú) <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="DiaDiem" name="DiaDiem"
+                               value="{{ old('DiaDiem', $hoatdong_ctxh->DiaDiem) }}" required>
                     </div>
 
-                    {{-- KHỐI ĐỊA CHỈ ĐỎ --}}
-                    <div class="row g-3" id="diaChiDoFields" style="display: none; width: 100%; margin-left: 0;">
+                    {{-- Chỉ hiển thị (readonly) nếu là Địa chỉ đỏ --}}
+                    @if($hoatdong_ctxh->LoaiHoatDong == 'Địa chỉ đỏ')
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="dot_id" class="form-label">
-                                    <i class="fa-solid fa-calendar-week me-1 text-muted"></i>
-                                    Thuộc Đợt
-                                    <span class="text-danger" id="dot_id_star" style="display: none;">*</span>
-                                </label>
-                                <select class="form-select" id="dot_id" name="dot_id">
-                                    <option value="">-- Chọn Đợt --</option>
-                                    @forelse($dots as $dot)
-                                        <option value="{{ $dot->id }}" {{ old('dot_id', $hoatdong_ctxh->dot_id) == $dot->id ? 'selected' : '' }}>
-                                            {{ $dot->TenDot }} ({{ $dot->TrangThai }})
-                                        </option>
-                                    @empty
-                                        <option value="" disabled>Không có đợt nào.</option>
-                                    @endforelse
-                                </select>
-                            </div>
+                            <label class="form-label">
+                                <i class="fa-solid fa-calendar-week me-1 text-muted"></i> Thuộc Đợt
+                            </label>
+                            <input type="text" class="form-control"
+                                   value="{{ $hoatdong_ctxh->dotDiaChiDo->TenDot ?? 'N/A' }}" disabled readonly>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="diadiem_id" class="form-label">
-                                    <i class="fa-solid fa-map-location-dot me-1 text-muted"></i>
-                                    Địa điểm tổ chức
-                                    <span class="text-danger" id="diadiem_id_star" style="display: none;">*</span>
-                                </label>
-                                <select class="form-select" id="diadiem_id" name="diadiem_id">
-                                    <option value="">-- Chọn Địa điểm --</option>
-                                    @foreach($diadiems as $diadiem)
-                                        <option value="{{ $diadiem->id }}" {{ old('diadiem_id', $hoatdong_ctxh->diadiem_id) == $diadiem->id ? 'selected' : '' }}>
-                                            {{ $diadiem->TenDiaDiem }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            <label class="form-label">
+                                <i class="fa-solid fa-map-location-dot me-1 text-muted"></i> Địa điểm tổ chức
+                            </label>
+                            <input type="text" class="form-control"
+                                   value="{{ $hoatdong_ctxh->diaDiem->TenDiaDiem ?? 'N/A' }}" disabled readonly>
                         </div>
-                    </div>
-                    {{-- END KHỐI ĐỊA CHỈ ĐỎ --}}
+                    @endif
                 </div>
             </div>
 
@@ -198,43 +148,37 @@
             <div class="form-section mb-4">
                 <div class="section-header mb-3">
                     <h6 class="text-success mb-0">
-                        <i class="fa-solid fa-calendar-days me-2"></i>
-                        Thời gian tổ chức
+                        <i class="fa-solid fa-calendar-days me-2"></i> Thời gian tổ chức
                     </h6>
                     <hr class="mt-2">
                 </div>
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="ThoiGianBatDau" class="form-label">
-                                <i class="fa-solid fa-calendar-plus me-1 text-success"></i>
-                                Thời gian Bắt đầu
-                                <span class="text-danger">*</span>
-                            </label>
-                            <input type="datetime-local" class="form-control" id="ThoiGianBatDau" name="ThoiGianBatDau" value="{{ old('ThoiGianBatDau', $hoatdong_ctxh->ThoiGianBatDau ? $hoatdong_ctxh->ThoiGianBatDau->format('Y-m-d\TH:i') : '') }}" required>
-                        </div>
+                        <label for="ThoiGianBatDau" class="form-label">
+                            <i class="fa-solid fa-calendar-plus me-1 text-success"></i> Thời gian Bắt đầu <span class="text-danger">*</span>
+                        </label>
+                        <input type="datetime-local" class="form-control" id="ThoiGianBatDau" name="ThoiGianBatDau"
+                               value="{{ old('ThoiGianBatDau', $hoatdong_ctxh->ThoiGianBatDau ? $hoatdong_ctxh->ThoiGianBatDau->format('Y-m-d\TH:i') : '') }}"
+                               required>
                     </div>
 
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="ThoiGianKetThuc" class="form-label">
-                                <i class="fa-solid fa-calendar-xmark me-1 text-danger"></i>
-                                Thời gian Kết thúc
-                                <span class="text-danger">*</span>
-                            </label>
-                            <input type="datetime-local" class="form-control" id="ThoiGianKetThuc" name="ThoiGianKetThuc" value="{{ old('ThoiGianKetThuc', $hoatdong_ctxh->ThoiGianKetThuc ? $hoatdong_ctxh->ThoiGianKetThuc->format('Y-m-d\TH:i') : '') }}" required>
-                        </div>
+                        <label for="ThoiGianKetThuc" class="form-label">
+                            <i class="fa-solid fa-calendar-xmark me-1 text-danger"></i> Thời gian Kết thúc <span class="text-danger">*</span>
+                        </label>
+                        <input type="datetime-local" class="form-control" id="ThoiGianKetThuc" name="ThoiGianKetThuc"
+                               value="{{ old('ThoiGianKetThuc', $hoatdong_ctxh->ThoiGianKetThuc ? $hoatdong_ctxh->ThoiGianKetThuc->format('Y-m-d\TH:i') : '') }}"
+                               required>
                     </div>
 
                     <div class="col-md-12">
-                        <div class="form-group">
-                            <label for="ThoiHanHuy" class="form-label">
-                                <i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i>
-                                Thời hạn Hủy đăng ký <span class="text-danger">*</span>
-                            </label>
-                            <input type="datetime-local" class="form-control" id="ThoiHanHuy" name="ThoiHanHuy" value="{{ old('ThoiHanHuy', $hoatdong_ctxh->ThoiHanHuy ? $hoatdong_ctxh->ThoiHanHuy->format('Y-m-d\TH:i') : '') }}" required>
-                        </div>
+                        <label for="ThoiHanHuy" class="form-label">
+                            <i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> Thời hạn Hủy đăng ký <span class="text-danger">*</span>
+                        </label>
+                        <input type="datetime-local" class="form-control" id="ThoiHanHuy" name="ThoiHanHuy"
+                               value="{{ old('ThoiHanHuy', $hoatdong_ctxh->ThoiHanHuy ? $hoatdong_ctxh->ThoiHanHuy->format('Y-m-d\TH:i') : '') }}"
+                               required>
                     </div>
                 </div>
             </div>
@@ -243,75 +187,62 @@
             <div class="form-section mb-4">
                 <div class="section-header mb-3">
                     <h6 class="text-warning mb-0">
-                        <i class="fa-solid fa-chart-simple me-2"></i>
-                        Điểm số & Số lượng
+                        <i class="fa-solid fa-chart-simple me-2"></i> Điểm số & Số lượng
                     </h6>
                     <hr class="mt-2">
                 </div>
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="SoLuong" class="form-label">
-                                <i class="fa-solid fa-users me-1 text-primary"></i>
-                                Số lượng tối đa
-                                <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="SoLuong" name="SoLuong" value="{{ old('SoLuong', $hoatdong_ctxh->SoLuong) }}" min="1" required placeholder="0">
-                                <span class="input-group-text">SV</span>
-                            </div>
+                        <label for="SoLuong" class="form-label">
+                            <i class="fa-solid fa-users me-1 text-primary"></i> Số lượng tối đa <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="SoLuong" name="SoLuong"
+                                   value="{{ old('SoLuong', $hoatdong_ctxh->SoLuong) }}" min="1" required placeholder="0">
+                            <span class="input-group-text">SV</span>
                         </div>
                     </div>
 
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="current_registered" class="form-label">
-                                <i class="fa-solid fa-user-check me-1 text-success"></i>
-                                Đã đăng ký
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="current_registered" value="{{ $hoatdong_ctxh->dangKy_count ?? $hoatdong_ctxh->dangKy()->count() }}" disabled readonly>
-                                <span class="input-group-text">SV</span>
-                            </div>
+                        <label for="current_registered" class="form-label">
+                            <i class="fa-solid fa-user-check me-1 text-success"></i> Đã đăng ký
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="current_registered"
+                                   value="{{ $hoatdong_ctxh->dangKy_count ?? $hoatdong_ctxh->dangKy()->count() }}" disabled readonly>
+                            <span class="input-group-text">SV</span>
                         </div>
                     </div>
 
                     <div class="col-md-12">
-                        <div class="form-group">
-                            <label for="MaQuyDinhDiem" class="form-label">
-                                <i class="fa-solid fa-clipboard-list me-1 text-info"></i>
-                                Quy định điểm liên quan
-                                <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select" id="MaQuyDinhDiem" name="MaQuyDinhDiem" required>
-                                <option value="">-- Chọn quy định điểm --</option>
-                                @foreach($quyDinhDiems as $maDiem => $tenCongViec)
-                                    <option value="{{ $maDiem }}" {{ old('MaQuyDinhDiem', $hoatdong_ctxh->MaQuyDinhDiem) == $maDiem ? 'selected' : '' }}>
-                                        {{ $maDiem }} - {{ $tenCongViec }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <label for="MaQuyDinhDiem" class="form-label">
+                            <i class="fa-solid fa-clipboard-list me-1 text-info"></i> Quy định điểm liên quan <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="MaQuyDinhDiem" name="MaQuyDinhDiem" required>
+                            <option value="">-- Chọn quy định điểm --</option>
+                            @foreach($quyDinhDiems as $maDiem => $tenCongViec)
+                                <option value="{{ $maDiem }}" {{ old('MaQuyDinhDiem', $hoatdong_ctxh->MaQuyDinhDiem) == $maDiem ? 'selected' : '' }}>
+                                    {{ $maDiem }} - {{ $tenCongViec }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
             </div>
 
-            {{-- Warning Box --}}
+            {{-- Lưu ý --}}
             <div class="alert alert-info border-0 shadow-sm mb-4">
                 <div class="d-flex">
                     <div class="flex-shrink-0">
                         <i class="fa-solid fa-lightbulb fa-2x text-info"></i>
                     </div>
                     <div class="flex-grow-1 ms-3">
-                        <h6 class="alert-heading mb-2">
-                            <i class="fa-solid fa-circle-info me-1"></i>
-                            Lưu ý khi chỉnh sửa
-                        </h6>
+                        <h6 class="alert-heading mb-2"><i class="fa-solid fa-circle-info me-1"></i> Lưu ý khi chỉnh sửa</h6>
                         <ul class="mb-0 small">
                             <li>Nếu giảm số lượng tối đa, cần kiểm tra số lượng sinh viên đã đăng ký</li>
                             <li>Thay đổi thời gian có thể ảnh hưởng đến lịch đăng ký của sinh viên</li>
-                            <li>Chọn 'Địa chỉ đỏ' sẽ yêu cầu chọn Đợt và Địa điểm tổ chức.</li>
+                            <li>Nếu là “Địa chỉ đỏ”, Đợt & Địa điểm chỉ hiển thị để tham chiếu.</li>
                         </ul>
                     </div>
                 </div>
@@ -338,95 +269,74 @@
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Toggle khối Địa chỉ đỏ
-        const loaiHoatDongSelect = document.getElementById('LoaiHoatDong');
-        const diaChiDoFields = document.getElementById('diaChiDoFields');
-        const dotIdSelect = document.getElementById('dot_id');
-        const diaDiemIdSelect = document.getElementById('diadiem_id');
-        const dotIdStar = document.getElementById('dot_id_star');
-        const diaDiemIdStar = document.getElementById('diadiem_id_star');
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('editForm');
 
-        function toggleDiaChiDoFields() {
-            const isDiaChiDo = loaiHoatDongSelect.value === 'Địa chỉ đỏ';
-            diaChiDoFields.style.display = isDiaChiDo ? 'flex' : 'none';
-            [dotIdStar, diaDiemIdStar].forEach(el => el.style.display = isDiaChiDo ? 'inline' : 'none');
-            [dotIdSelect, diaDiemIdSelect].forEach(el => isDiaChiDo ? el.setAttribute('required', 'required') : el.removeAttribute('required'));
+    // Validate số lượng tối đa >= số đã đăng ký
+    const soLuongInput = document.getElementById('SoLuong');
+    const currentRegistered = parseInt(document.getElementById('current_registered').value || '0', 10);
+
+    function validateSoLuong() {
+        const v = parseInt(soLuongInput.value, 10);
+        soLuongInput.setCustomValidity('');
+        if (!isNaN(v) && v < currentRegistered) {
+            soLuongInput.setCustomValidity(`Số lượng mới (${v}) không thể nhỏ hơn số lượng đã đăng ký (${currentRegistered}).`);
         }
+    }
 
-        // Validate số lượng tối đa không nhỏ hơn số đã đăng ký
-        const form = document.getElementById('editForm');
-        const soLuongInput = document.getElementById('SoLuong');
-        const currentRegisteredInput = document.getElementById('current_registered');
-        const currentRegistered = parseInt(currentRegisteredInput.value, 10) || 0;
+    // Validate thời gian
+    const tgBatDau = document.getElementById('ThoiGianBatDau');
+    const tgKetThuc = document.getElementById('ThoiGianKetThuc');
+    const tgHuy = document.getElementById('ThoiHanHuy');
 
-        function validateSoLuong() {
-            const newValue = parseInt(soLuongInput.value, 10);
-            soLuongInput.setCustomValidity('');
-            if (!isNaN(newValue) && newValue < currentRegistered) {
-                soLuongInput.setCustomValidity(`Số lượng mới (${newValue}) không thể nhỏ hơn số lượng đã đăng ký (${currentRegistered}).`);
-            }
+    function validateDates() {
+        const start = tgBatDau.value ? new Date(tgBatDau.value) : null;
+        const end   = tgKetThuc.value ? new Date(tgKetThuc.value) : null;
+        const cancel= tgHuy.value ? new Date(tgHuy.value) : null;
+
+        tgKetThuc.setCustomValidity('');
+        tgHuy.setCustomValidity('');
+
+        if (start && end && end <= start) {
+            tgKetThuc.setCustomValidity('Thời gian kết thúc phải sau thời gian bắt đầu.');
         }
-
-        // Validate thời gian
-        const thoiGianBatDau = document.getElementById('ThoiGianBatDau');
-        const thoiGianKetThuc = document.getElementById('ThoiGianKetThuc');
-        const thoiHanHuy = document.getElementById('ThoiHanHuy');
-
-        function validateDates() {
-            const start = thoiGianBatDau.value ? new Date(thoiGianBatDau.value) : null;
-            const end = thoiGianKetThuc.value ? new Date(thoiGianKetThuc.value) : null;
-            const cancel = thoiHanHuy.value ? new Date(thoiHanHuy.value) : null;
-
-            thoiGianKetThuc.setCustomValidity('');
-            thoiHanHuy.setCustomValidity('');
-
-            if (start && end && end <= start) {
-                thoiGianKetThuc.setCustomValidity('Thời gian kết thúc phải sau thời gian bắt đầu.');
-            }
-            if (start && cancel && cancel >= start) {
-                thoiHanHuy.setCustomValidity('Thời hạn hủy phải trước thời gian bắt đầu.');
-            }
+        if (start && cancel && cancel >= start) {
+            tgHuy.setCustomValidity('Thời hạn hủy phải trước thời gian bắt đầu.');
         }
+    }
 
-        // Init
-        toggleDiaChiDoFields();
+    // Init
+    validateSoLuong();
+    validateDates();
+
+    // Listeners
+    soLuongInput.addEventListener('input', validateSoLuong);
+    tgBatDau.addEventListener('change', validateDates);
+    tgKetThuc.addEventListener('change', validateDates);
+    tgHuy.addEventListener('change', validateDates);
+
+    // Submit
+    form.addEventListener('submit', function (e) {
         validateSoLuong();
         validateDates();
-
-        // Listeners
-        loaiHoatDongSelect.addEventListener('change', toggleDiaChiDoFields);
-        soLuongInput.addEventListener('change', validateSoLuong);
-        thoiGianBatDau.addEventListener('change', validateDates);
-        thoiGianKetThuc.addEventListener('change', validateDates);
-        thoiHanHuy.addEventListener('change', validateDates);
-
-        // Submit
-        form.addEventListener('submit', function (event) {
-            validateSoLuong();
-            validateDates();
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-            form.classList.add('was-validated');
-        }, false);
-
-        // Reset
-        const resetButton = form.querySelector('button[type="reset"]');
-        if (resetButton) {
-            resetButton.addEventListener('click', function () {
-                form.classList.remove('was-validated');
-                thoiGianKetThuc.setCustomValidity('');
-                thoiHanHuy.setCustomValidity('');
-                soLuongInput.setCustomValidity('');
-                // Khôi phục giá trị Loại hoạt động ban đầu và toggle lại
-                const originalLoai = @json($hoatdong_ctxh->LoaiHoatDong);
-                loaiHoatDongSelect.value = originalLoai;
-                toggleDiaChiDoFields();
-            });
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+        form.classList.add('was-validated');
     });
+
+    // Reset
+    const resetBtn = form.querySelector('button[type="reset"]');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+            form.classList.remove('was-validated');
+            tgKetThuc.setCustomValidity('');
+            tgHuy.setCustomValidity('');
+            soLuongInput.setCustomValidity('');
+        });
+    }
+});
 </script>
 @endpush

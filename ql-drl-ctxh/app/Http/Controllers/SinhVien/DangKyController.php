@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\DangKyHoatDongDrl;
 use App\Models\DangKyHoatDongCtxh;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB; // Thêm DB
+use Illuminate\Support\Facades\Log; // Thêm Log
 
 class DangKyController extends Controller
 {
@@ -25,8 +27,9 @@ class DangKyController extends Controller
             ->get()
             ->sortByDesc('hoatdong.ThoiGianBatDau'); // Sắp xếp theo ngày bắt đầu
 
-        // Lấy tất cả CTXH đã đăng ký (kèm theo thông tin hoạt động)
-        $ctxhRegistrations = DangKyHoatDongCtxh::with('hoatdong.quydinh')
+        // SỬA: Thêm 'thanhToan' vào 'with()'
+        // Tải kèm Hóa đơn (nếu có) để lấy ID của hóa đơn
+        $ctxhRegistrations = DangKyHoatDongCtxh::with('hoatdong.quydinh', 'thanhToan')
             ->where('MSSV', $mssv)
             ->get()
             ->sortByDesc('hoatdong.ThoiGianBatDau'); // Sắp xếp
@@ -73,13 +76,15 @@ class DangKyController extends Controller
 
     /**
      * Xử lý Hủy đăng ký hoạt động CTXH
+     * SỬA: Thêm logic xóa Hóa đơn khi hủy
      */
     public function huyCtxh($maDangKy)
     {
         $mssv = Auth::user()->TenDangNhap;
         $now = Carbon::now();
 
-        $registration = DangKyHoatDongCtxh::with('hoatdong')->find($maDangKy);
+        // SỬA: Tải kèm 'thanhToan' để xóa
+        $registration = DangKyHoatDongCtxh::with('hoatdong', 'thanhToan')->find($maDangKy);
 
         if (!$registration) {
             return redirect()->back()->with('error', 'Không tìm thấy đơn đăng ký.');
@@ -94,8 +99,38 @@ class DangKyController extends Controller
             return redirect()->back()->with('error', 'Đã quá thời hạn hủy cho hoạt động này.');
         }
 
-        $registration->delete();
+        // Nếu có hóa đơn đã được thanh toán, không cho hủy từ phía sinh viên
+        $thanhToanCheck = $registration->thanhToan;
+        if ($thanhToanCheck && (($thanhToanCheck->TrangThai ?? '') == 'DaThanhToan')) {
+            return redirect()->back()->with('error', 'Đã thanh toán cho đăng ký này, không thể hủy. Vui lòng liên hệ nhân viên để xử lý.');
+        }
 
-        return redirect()->back()->with('success', 'Đã hủy đăng ký hoạt động "' . $activity->TenHoatDong . '" thành công.');
+        // SỬA: Dùng Transaction để đảm bảo xóa cả Đơn ĐK và Hóa đơn
+        try {
+            DB::beginTransaction();
+            
+            // 1. Lấy hóa đơn liên kết (nếu có)
+            $thanhToan = $registration->thanhToan;
+            
+            // 2. Xóa Đơn Đăng Ký
+            $registration->delete();
+            
+            // 3. Nếu có hóa đơn -> Xóa luôn hóa đơn
+            // (Lưu ý: Cần đảm bảo `thanh_toan_id` trong `dangkyhoatdongctxh`
+            // được set là ON DELETE SET NULL hoặc CASCADE. 
+            // Nếu là SET NULL, hóa đơn sẽ mồ côi, ta nên xóa thủ công)
+            if ($thanhToan) {
+                // Xóa hóa đơn
+                $thanhToan->delete();
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Đã hủy đăng ký hoạt động "' . $activity->TenHoatDong . '" thành công.');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("Lỗi hủy CTXH: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Lỗi hệ thống khi hủy. Vui lòng thử lại.');
+        }
     }
 }

@@ -6,12 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class DiemRenLuyen extends Model
 {
+    
     protected $table = 'diemrenluyen';
-    protected $primaryKey = 'MaDRL';
-    public $incrementing = false;
+    protected $primaryKey = 'MaDiemRenLuyen'; 
+    public $incrementing = true;
+    protected $keyType = 'int';
     public $timestamps = false;
 
-    protected $fillable = ['MaDRL', 'MSSV', 'MaHocKy', 'TongDiem', 'XepLoai','NgayCapNhat'];
+    protected $fillable = [
+        'MSSV',
+        'MaHocKy',
+        'TongDiem',
+        'XepLoai',
+        'NgayCapNhat',
+    ];
+
+    protected $casts = [
+        'NgayCapNhat' => 'datetime',
+    ];
 
     public function sinhvien()
     {

@@ -3,146 +3,219 @@
 namespace App\Http\Controllers\SinhVien;
 
 use App\Http\Controllers\Controller;
-
 use Illuminate\Http\Request;
 use App\Models\HoatDongDRL;
 use App\Models\HoatDongCTXH;
+use App\Models\DangKyHoatDongDrl;
+use App\Models\DangKyHoatDongCtxh;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-use App\Models\DangKyHoatDongDrl;  // <-- THÊM DÒNG NÀY
-use App\Models\DangKyHoatDongCtxh; // <-- THÊM DÒNG NÀY
-use Illuminate\Support\Facades\Auth; // <-- THÊM DÒNG NÀY
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use App\Models\ThanhToan;
 
 class ActivityNotificationController extends Controller
 {
     /**
-     * Hiển thị danh sách các hoạt động (DRL và CTXH) còn hạn.
+     * === (HÀM NÀY ĐÃ ĐÚNG) ===
+     * Hiển thị danh sách hoạt động DRL & CTXH còn hạn.
+     * Hoạt động "Địa chỉ đỏ" sẽ được gom nhóm theo (Đợt + Địa điểm).
      */
     public function index()
     {
-        $now = Carbon::now();
-        $mssv = Auth::user()->TenDangNhap; // Lấy MSSV của sinh viên
+        $now  = now();
+        $mssv = Auth::user()->TenDangNhap;
 
-        // 1. Lấy danh sách ID các hoạt động đã đăng ký
-        $registeredDrlIds = DangKyHoatDongDrl::where('MSSV', $mssv)
-            ->pluck('MaHoatDong')
-            ->all();
-            
-        $registeredCtxhIds = DangKyHoatDongCtxh::where('MSSV', $mssv)
-            ->pluck('MaHoatDong')
-            ->all();
+        // 1. Lấy Hoạt động DRL (Giữ nguyên)
+        $activitiesDRL = HoatDongDRL::with(['quydinh', 'hocKy'])
+            ->withCount('dangky') // Đếm số lượng đăng ký
+            ->where('ThoiGianKetThuc', '>', $now)
+            ->withExists(['dangky as is_registered' => function ($query) use ($mssv) {
+                $query->where('MSSV', $mssv);
+            }])
+            ->orderBy('ThoiGianBatDau')
+            ->get();
 
-        // 2. Lấy danh sách hoạt động
-        $activitiesDRL = HoatDongDRL::with('quydinh', 'dangky') // 'dangky' để đếm số lượng
-                                    ->where('ThoiGianKetThuc', '>', $now)
-                                    ->orderBy('ThoiGianBatDau', 'asc')
-                                    ->get();
+        // 2. Lấy TẤT CẢ Hoạt động CTXH
+        $allActivitiesCTXH = HoatDongCTXH::with(['quydinh', 'dotDiaChiDo', 'diaDiem'])
+            ->withCount('dangky') // Đếm số lượng của từng ngày
+            ->where('ThoiGianKetThuc', '>', $now)
+            ->withExists(['dangky as is_registered' => function ($query) use ($mssv) {
+                $query->where('MSSV', $mssv);
+            }])
+            ->orderBy('ThoiGianBatDau') // Sắp xếp các ngày theo thứ tự
+            ->get();
 
-        $activitiesCTXH = HoatDongCTXH::with('quydinh', 'dangky')
-                                      ->where('ThoiGianKetThuc', '>', $now)
-                                      ->orderBy('ThoiGianBatDau', 'asc')
-                                      ->get();
+        // 3. Phân loại Hoạt động CTXH
+        list($diaChiDoActivities, $normalActivities) = $allActivitiesCTXH->partition(function ($activity) {
+            return $activity->LoaiHoatDong === 'Địa chỉ đỏ' && $activity->dot_id && $activity->diadiem_id;
+        });
 
-        // 3. Trả về view với đầy đủ dữ liệu
+        // 4. Gom nhóm các hoạt động "Địa chỉ đỏ"
+        $groupedActivities = $diaChiDoActivities->groupBy(function ($activity) {
+            return $activity->dot_id . '_' . $activity->diadiem_id;
+        });
+
+        // 5. Truyền 3 biến sang View:
         return view('sinhvien.thongbao_hoatdong.index', compact(
-            'activitiesDRL', 
-            'activitiesCTXH',
-            'registeredDrlIds',  // <-- Truyền biến này
-            'registeredCtxhIds'  // <-- Truyền biến này
+            'activitiesDRL',      // Danh sách HĐ Rèn luyện
+            'normalActivities',   // Danh sách HĐ CTXH thường (Tình nguyện, Hội thảo...)
+            'groupedActivities'   // Danh sách ĐÃ GOM NHÓM của Địa chỉ đỏ
         ));
     }
 
+    /**
+     * === (HÀM NÀY ĐÃ ĐÚNG) ===
+     * Đăng ký hoạt động DRL (Chuyển sang 'Chờ duyệt').
+     */
     public function registerDRL(Request $request, $maHoatDong)
     {
         $mssv = Auth::user()->TenDangNhap;
-        $now = Carbon::now();
+        $now  = now();
 
-        // 1. Tìm hoạt động và đếm số lượng đã đăng ký
         $activity = HoatDongDRL::withCount('dangky')->find($maHoatDong);
+
         if (!$activity) {
-            return redirect()->back()->with('error', 'Hoạt động không tồn tại.');
+            return back()->with('error', 'Hoạt động không tồn tại.');
         }
 
-        // 2. Kiểm tra hạn đăng ký (ví dụ: không cho đăng ký sau khi HĐ bắt đầu)
+        // 1. Kiểm tra hạn đăng ký
         if ($now->gt($activity->ThoiGianBatDau)) {
-            return redirect()->back()->with('error', 'Đã quá hạn đăng ký cho hoạt động này.');
+            return back()->with('error', 'Đã quá hạn đăng ký cho hoạt động này.');
         }
 
-        // 3. Kiểm tra đăng ký trùng lặp
-        $isRegistered = DangKyHoatDongDrl::where('MSSV', $mssv)
-                                         ->where('MaHoatDong', $maHoatDong)
-                                         ->exists();
-        if ($isRegistered) {
-            return redirect()->back()->with('error', 'Bạn đã đăng ký hoạt động này rồi.');
+        // 2. Gọi hàm kiểm tra logic chung (đã đơn giản hóa)
+        $validationError = $this->validateRegistration($activity, DangKyHoatDongDrl::class, $mssv);
+
+        if ($validationError) {
+            return back()->with('error', $validationError);
         }
 
-        // 4. Kiểm tra số lượng
-        if ($activity->dangky_count >= $activity->SoLuong) {
-            return redirect()->back()->with('error', 'Hoạt động đã đủ số lượng.');
-        }
-
-        // 5. Tạo đăng ký mới
         try {
             DangKyHoatDongDrl::create([
-                'MSSV' => $mssv,
-                'MaHoatDong' => $maHoatDong,
-                'NgayDangKy' => $now,
-                'TrangThaiDangKy' => 'Chờ duyệt', // Bạn có thể đổi thành 'Đã đăng ký' nếu muốn
+                'MSSV'              => $mssv,
+                'MaHoatDong'        => $maHoatDong,
+                'NgayDangKy'        => $now,
+                'TrangThaiDangKy'   => 'Chờ duyệt', // <-- ĐÃ SỬA
             ]);
 
-            return redirect()->back()->with('success', 'Đăng ký hoạt động "' . $activity->TenHoatDong . '" thành công.');
-
-        } catch (\Exception $e) {
-            // Nên Log lỗi lại: Log::error('Lỗi đăng ký DRL: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại.');
+            return back()->with('success', 'Đăng ký hoạt động "' . $activity->TenHoatDong . '" thành công (chờ duyệt).');
+        } catch (\Throwable $e) {
+            Log::error('LỖI ĐĂNG KÝ DRL: ' . $e->getMessage());
+            return back()->with('error', 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại.');
         }
     }
 
     /**
-     * THÊM HÀM NÀY: Xử lý đăng ký hoạt động CTXH
+     * === SỬA (DỌN DẸP THEO MÔ HÌNH MỚI) ===
+     * Đăng ký hoạt động CTXH (mặc định chờ duyệt).
+     * (Hàm này giờ áp dụng CHUNG cho cả CTXH thường và Địa chỉ đỏ)
      */
     public function registerCTXH(Request $request, $maHoatDong)
     {
         $mssv = Auth::user()->TenDangNhap;
-        $now = Carbon::now();
+        $now  = now();
 
-        // 1. Tìm hoạt động
-        $activity = HoatDongCTXH::withCount('dangky')->find($maHoatDong);
+        // Load kèm 'diaDiem' để lấy giá tiền (CHO BƯỚC THANH TOÁN)
+        $activity = HoatDongCTXH::withCount('dangky')->with('diaDiem')->find($maHoatDong);
+
         if (!$activity) {
-            return redirect()->back()->with('error', 'Hoạt động không tồn tại.');
+            return back()->with('error', 'Hoạt động không tồn tại.');
         }
 
-        // 2. Kiểm tra hạn đăng ký
+        // 1. Kiểm tra hạn đăng ký (chung)
         if ($now->gt($activity->ThoiGianBatDau)) {
-            return redirect()->back()->with('error', 'Đã quá hạn đăng ký cho hoạt động này.');
+            return back()->with('error', 'Đã quá hạn đăng ký cho hoạt động này.');
         }
 
-        // 3. Kiểm tra đăng ký trùng lặp
-        $isRegistered = DangKyHoatDongCtxh::where('MSSV', $mssv)
-                                         ->where('MaHoatDong', $maHoatDong)
-                                         ->exists();
-        if ($isRegistered) {
-            return redirect()->back()->with('error', 'Bạn đã đăng ký hoạt động này rồi.');
+        // 2. Gọi hàm validate chung (đã đơn giản hóa)
+        $validationError = $this->validateRegistration($activity, DangKyHoatDongCtxh::class, $mssv);
+
+        if ($validationError) {
+            return back()->with('error', $validationError);
         }
 
-        // 4. Kiểm tra số lượng
-        if ($activity->dangky_count >= $activity->SoLuong) {
-            return redirect()->back()->with('error', 'Hoạt động đã đủ số lượng.');
-        }
+        // === BẮT ĐẦU LOGIC THANH TOÁN ===
 
-        // 5. Tạo đăng ký mới
+        // 3. Kiểm tra xem hoạt động này có phí không
+        $giaTien = $activity->diaDiem?->GiaTien ?? 0;
+
+        // Dùng DB Transaction để đảm bảo tạo Đăng ký và Hóa đơn cùng lúc
         try {
-            DangKyHoatDongCtxh::create([
-                'MSSV' => $mssv,
-                'MaHoatDong' => $maHoatDong,
-                'NgayDangKy' => $now,
-                'TrangThaiDangKy' => 'Chờ duyệt',
+            DB::beginTransaction();
+
+            $thanhToan = null;
+            // Nếu có phí thì "Chờ thanh toán", nếu miễn phí thì "Chờ duyệt"
+            $trangThaiDangKy = ($giaTien > 0) ? 'Chờ thanh toán' : 'Chờ duyệt';
+
+            // 4. TẠO ĐƠN ĐĂNG KÝ TRƯỚC
+            $dangKy = DangKyHoatDongCtxh::create([
+                'MSSV'              => $mssv,
+                'MaHoatDong'        => $maHoatDong,
+                'NgayDangKy'        => $now,
+                'TrangThaiDangKy'   => $trangThaiDangKy,
+                // 'thanh_toan_id' sẽ được gán sau
             ]);
 
-            return redirect()->back()->with('success', 'Đăng ký hoạt động "' . $activity->TenHoatDong . '" thành công.');
+            // 5. NẾU CÓ PHÍ (GiaTien > 0), TẠO HÓA ĐƠN
+            if ($giaTien > 0) {
 
-        } catch (\Exception $e) {
-            // Nên Log lỗi lại: Log::error('Lỗi đăng ký CTXH: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại.');
+                $thanhToan = ThanhToan::create([
+                    'MSSV'      => $mssv,
+                    'TongTien'  => $giaTien,
+                    'TrangThai' => 'Chờ thanh toán',
+                    'PhuongThuc' => null,
+                ]);
+
+                // Cập nhật lại đơn đăng ký với ID thanh toán
+                $dangKy->thanh_toan_id = $thanhToan->id;
+                $dangKy->save();
+            }
+
+            DB::commit(); // Hoàn tất giao dịch
+
+            // 6. Chuyển hướng
+            if ($thanhToan) {
+                // (Giả sử bạn có route tên là 'sinhvien.thanhtoan.show')
+
+                // <-- KÍCH HOẠT DÒNG NÀY
+                return redirect()->route('sinhvien.thanhtoan.show', $thanhToan->id)
+                    ->with('success', 'Đăng ký thành công! Vui lòng hoàn tất thanh toán.');
+
+                // <-- BỎ DÒNG NÀY
+                // return back()->with('success', 'Đăng ký thành công! Vui lòng thanh toán (ID: '.$thanhToan->id.').');
+            }
+
+            // Nếu miễn phí, quay lại như cũ
+            return back()->with('success', 'Đăng ký hoạt động "' . $activity->TenHoatDong . '" thành công (chờ duyệt).');
+        } catch (\Throwable $e) {
+            DB::rollBack(); // Hoàn tác nếu có lỗi
+            Log::error('LỖI ĐĂNG KÝ CTXH (THANH TOÁN): ' . $e->getMessage());
+            return back()->with('error', 'Đã xảy ra lỗi hệ thống khi tạo đơn. Vui lòng thử lại.');
         }
+    }
+
+    /**
+     * === (Hàm này giữ nguyên, không đổi) ===
+     * Hàm private để xử lý logic validation chung.
+     */
+    private function validateRegistration(Model $activity, string $registrationModel, string $mssv): ?string
+    {
+        // 1. Kiểm tra đã đăng ký hoạt động này chưa
+        $alreadyRegistered = $registrationModel::where('MSSV', $mssv)
+            ->where('MaHoatDong', $activity->MaHoatDong)
+            ->exists();
+
+        if ($alreadyRegistered) {
+            return 'Bạn đã đăng ký hoạt động này rồi.';
+        }
+
+        // 2. Kiểm tra số lượng (dùng 'dangky_count' đã load)
+        if ($activity->dangky_count >= $activity->SoLuong) {
+            return 'Hoạt động này đã đủ số lượng.';
+        }
+
+        return null; // Hợp lệ
     }
 }

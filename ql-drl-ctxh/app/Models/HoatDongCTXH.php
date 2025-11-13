@@ -25,16 +25,26 @@ class HoatDongCTXH extends Model
         'MaQuyDinhDiem',
         'CheckInToken',
         'CheckOutToken',
+        'CheckInOpenAt',
+        'CheckInExpiresAt',
+        'CheckOutOpenAt',
+        'CheckOutExpiresAt',
         'TokenExpiresAt',
         'dot_id',
         'diadiem_id',
     ];
 
     protected $casts = [
-        'ThoiGianBatDau' => 'datetime',
-        'ThoiGianKetThuc' => 'datetime',
-        'ThoiHanHuy' => 'datetime',
+        'ThoiGianBatDau'    => 'datetime',
+        'ThoiGianKetThuc'   => 'datetime',
+        'ThoiHanHuy'        => 'datetime',
+        'CheckInOpenAt'     => 'datetime',
+        'CheckInExpiresAt'  => 'datetime',
+        'CheckOutOpenAt'    => 'datetime',
+        'CheckOutExpiresAt' => 'datetime',
+        'TokenExpiresAt'    => 'datetime',
     ];
+
 
 
     public function quydinh()
@@ -50,7 +60,7 @@ class HoatDongCTXH extends Model
     public function sinhVienDangKy() // <- Sửa lại tên hàm này (chữ 's' viết thường)
     {
         return $this->belongsToMany(SinhVien::class, 'dangkyhoatdongctxh', 'MaHoatDong', 'MSSV')
-                    ->withPivot('NgayDangKy', 'TrangThaiDangKy'); // Lấy thêm cột từ bảng trung gian nếu cần
+            ->withPivot('NgayDangKy', 'TrangThaiDangKy'); // Lấy thêm cột từ bảng trung gian nếu cần
     }
 
     public function dotDiaChiDo()

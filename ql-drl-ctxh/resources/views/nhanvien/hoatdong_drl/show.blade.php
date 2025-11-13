@@ -54,10 +54,10 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
         <div class="row g-4">
             {{-- Left Column - Thông tin chi tiết --}}
             <div class="col-lg-8">
-                {{-- Card Thông tin chi tiết (Cập nhật style) --}}
+                {{-- Card Thông tin chi tiết --}}
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">
+                        <h6 class="mb-0 text-dark">
                             <i class="fa-solid fa-circle-info me-2 text-primary"></i>
                             Thông tin chi tiết
                         </h6>
@@ -192,7 +192,7 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
                 {{-- Danh sách sinh viên đăng ký (Cập nhật bảng) --}}
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">
+                        <h6 class="mb-0 text-dark">
                             <i class="fa-solid fa-users me-2 text-primary"></i>
                             Danh sách Sinh viên Đăng ký
                             <span class="badge bg-primary ms-2">{{ $hoatdong_drl->sinhVienDangKy->count() }}</span>
@@ -299,14 +299,15 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
                 {{-- THÊM MỚI: CARD ĐIỂM DANH QR --}}
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">
+                        <h6 class="mb-0 text-dark">
                             <i class="fa-solid fa-qrcode me-2 text-primary"></i>
                             Điểm danh QR Code
                         </h6>
                     </div>
                     <div class="card-body text-center">
-                        @if($hoatdong_drl->CheckInToken)
+                        @if($hoatdong_drl->CheckInToken || $hoatdong_drl->CheckOutToken)
                         <div class="row g-3">
+                            @if($hoatdong_drl->CheckInToken)
                             <div class="col-6">
                                 <h6 class="fw-bold small text-uppercase mb-2">Check-In</h6>
                                 <div class="qr-code-wrapper-small">
@@ -318,6 +319,9 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
                                 </button>
                                 <small class="text-muted d-block mt-1">Quét khi bắt đầu</small>
                             </div>
+                            @endif
+                            
+                            @if($hoatdong_drl->CheckOutToken)
                             <div class="col-6">
                                 <h6 class="fw-bold small text-uppercase mb-2">Check-Out</h6>
                                 <div class="qr-code-wrapper-small">
@@ -329,12 +333,13 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
                                 </button>
                                 <small class="text-muted d-block mt-1">Quét khi kết thúc</small>
                             </div>
+                            @endif
                         </div>
                         @else
                         <div class="text-center py-3 text-muted">
                             <i class="fa-solid fa-camera fa-3x mb-3 d-block opacity-25"></i>
                             <p class="mb-0">Chưa tạo mã QR.</p>
-                            <small>Nhấn nút "Tạo/Làm mới Mã QR" ở bên dưới.</small>
+                            <small>Nhấn nút "Phát Mã QR Check-In" hoặc "Phát Mã QR Check-Out" ở bên dưới.</small>
                         </div>
                         @endif
                     </div>
@@ -359,7 +364,7 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
                 {{-- Statistics Cards (Cập nhật DRL) --}}
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">
+                        <h6 class="mb-0 text-dark">
                             <i class="fa-solid fa-chart-pie me-2 text-primary"></i>
                             Thống kê
                         </h6>
@@ -448,25 +453,31 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
                 {{-- THÊM MỚI: CARD TÁC VỤ --}}
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">
+                        <h6 class="mb-0 text-dark">
                             <i class="fa-solid fa-cogs me-2 text-primary"></i>
                             Quản lý & Tác vụ
                         </h6>
                     </div>
                     <div class="card-body d-grid gap-2">
+                        <a href="{{ route('nhanvien.hoatdong_drl.ghi_nhan_ket_qua', $hoatdong_drl) }}"
+                            class="btn btn-info w-100 mb-2">
+                            <i class="fa-solid fa-marker me-2"></i> Ghi nhận/Điều chỉnh Kết quả
+                        </a>
 
-                        <form action="{{ route('nhanvien.hoatdong_drl.generate_qr', $hoatdong_drl) }}" method="POST"
-                            onsubmit="return confirm('Tạo mã QR mới sẽ vô hiệu hóa mã cũ (nếu có). Bạn có chắc chắn?')">
-                            @csrf
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fa-solid fa-arrows-rotate me-2"></i> Tạo / Làm mới Mã QR
-                            </button>
-                        </form>
+                        {{-- Nút tạo Check-In QR --}}
+                        <a href="{{ route('nhanvien.hoatdong_drl.create_checkin_qr', $hoatdong_drl) }}" class="btn btn-success w-100">
+                            <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Phát Mã QR Check-In
+                        </a>
+
+                        {{-- Nút tạo Check-Out QR --}}
+                        <a href="{{ route('nhanvien.hoatdong_drl.create_checkout_qr', $hoatdong_drl) }}" class="btn btn-warning text-white w-100">
+                            <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Phát Mã QR Check-Out
+                        </a>
 
                         <form action="{{ route('nhanvien.hoatdong_drl.finalize', $hoatdong_drl) }}" method="POST"
                             onsubmit="return confirm('Bạn có chắc muốn tổng kết điểm danh? Hành động này sẽ ghi nhận trạng thái (Đã tham gia/Vắng) cho tất cả sinh viên đã được duyệt.')">
                             @csrf
-                            <button type="submit" class="btn btn-success w-100" {{ $daKetThuc ? '' : 'disabled' }}
+                            <button type="submit" class="btn btn-primary w-100" {{ $daKetThuc ? '' : 'disabled' }}
                                 title="{{ $daKetThuc ? 'Tổng kết điểm danh' : 'Chỉ có thể tổng kết sau khi hoạt động đã kết thúc' }}">
                                 <i class="fa-solid fa-clipboard-check me-2"></i> Tổng kết Điểm danh
                             </button>
@@ -475,7 +486,7 @@ $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKe
                         <hr class="my-2">
 
                         <a href="{{ route('nhanvien.hoatdong_drl.edit', $hoatdong_drl->MaHoatDong) }}"
-                            class="btn btn-warning">
+                            class="btn btn-outline-warning">
                             <i class="fa-solid fa-pen-to-square me-2"></i>Chỉnh sửa
                         </a>
                         <a href="{{ route('nhanvien.hoatdong_drl.index') }}"

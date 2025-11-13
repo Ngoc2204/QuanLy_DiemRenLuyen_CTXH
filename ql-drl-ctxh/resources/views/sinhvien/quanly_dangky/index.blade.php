@@ -10,7 +10,8 @@
         --accent: #f5576c;
         --success: #10b981;
         --danger: #ef4444;
-        --warning: #f59e0b;
+        --warning: #f59e0b; /* Màu cho Chờ duyệt */
+        --orange: #d9480f;  /* Màu cho Chờ thanh toán */
         --gray: #6c757d;
         --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
         --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -70,23 +71,45 @@
         padding: 1rem 2rem; background: #fafbfc;
         display: flex; justify-content: space-between; align-items: center;
         border-top: 1px solid #e2e8f0;
+        gap: 0.75rem; /* Thêm gap để các nút không dính vào nhau */
     }
     .status-badge {
         font-weight: 600; padding: 0.5rem 1rem; border-radius: 50px;
         font-size: 0.85rem;
     }
-    .status-badge.cho-duyet { background-color: rgba(245, 158, 11, 0.1); color: #d97706; }
-    .status-badge.da-duyet { background-color: rgba(16, 185, 129, 0.1); color: #059669; }
-    .status-badge.bi-tu-choi { background-color: rgba(239, 68, 68, 0.1); color: #dc2626; }
+    /* Các class trạng thái (Sử dụng style của bạn) */
+    .status-badge.cho-duyet { background-color: rgba(245, 158, 11, 0.1); color: #d97706; } /* Warning */
+    .status-badge.da-duyet { background-color: rgba(16, 185, 129, 0.1); color: #059669; } /* Success */
+    .status-badge.bi-tu-choi { background-color: rgba(239, 68, 68, 0.1); color: #dc2626; } /* Danger */
     
+    /* THÊM MỚI: CSS Cho trạng thái Chờ thanh toán */
+    .status-badge.cho-thanh-toan { background-color: rgba(249, 115, 22, 0.1); color: #d9480f; } /* Orange */
+
+    /* Nút Hủy (Sử dụng style của bạn) */
     .btn-cancel {
         background: var(--danger); color: white; border: none;
         padding: 0.6rem 1.2rem; border-radius: 50px; font-weight: 600;
         font-size: 0.9rem; transition: var(--transition);
+        text-decoration: none;
+        display: inline-flex; align-items: center; gap: .5rem;
     }
     .btn-cancel:hover { background: #dc2626; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
     .btn-cancel:disabled { background: var(--gray); opacity: 0.7; cursor: not-allowed; }
 
+    /* THÊM MỚI: CSS Cho nút Thanh toán (Copy từ file tôi đã tạo) */
+     .btn-payment {
+        background: linear-gradient(135deg, var(--accent) 0%, #ff6b9d 100%);
+        color: #fff; box-shadow: 0 4px 15px rgba(245,87,108,.3);
+        padding: 0.6rem 1.2rem; border-radius: 50px; font-weight: 600;
+        font-size: 0.9rem; transition: var(--transition);
+        text-decoration: none;
+        display: inline-flex; align-items: center; gap: .5rem;
+    }
+    .btn-payment:hover {
+        transform: translateY(-2px); color: #fff;
+        box-shadow: 0 6px 20px rgba(245,87,108,.4);
+    }
+    
     .empty-state { background: white; border-radius: 20px; padding: 4rem 2rem; text-align: center; box-shadow: var(--card-shadow); }
 </style>
 @endpush
@@ -139,154 +162,202 @@
         
         {{-- TAB 1: DANH SÁCH DRL --}}
         <div class="tab-pane fade show active" id="drl-content" role="tabpanel" aria-labelledby="drl-tab">
-            @forelse($drlRegistrations as $registration)
-                @php
-                    $activity = $registration->hoatdong; // Lấy thông tin hoạt động
+            <div class="row">
+                @forelse($drlRegistrations as $registration)
+                    @php
+                        $activity = $registration->hoatdong; // Lấy thông tin hoạt động
+                        
+                        // Logic kiểm tra Hủy (Sử dụng route name của bạn)
+                        $canCancel = (!$activity->ThoiHanHuy || $currentTime->lt($activity->ThoiHanHuy));
+                        
+                        // Logic Badge Trạng Thái (Sử dụng class của bạn)
+                        $statusClass = '';
+                        if ($registration->TrangThaiDangKy == 'Chờ duyệt') $statusClass = 'cho-duyet';
+                        elseif ($registration->TrangThaiDangKy == 'Đã duyệt') $statusClass = 'da-duyet';
+                        elseif ($registration->TrangThaiDangKy == 'Bị từ chối') $statusClass = 'bi-tu-choi';
+                    @endphp
                     
-                    // Logic kiểm tra Hủy
-                    $canCancel = (!$activity->ThoiHanHuy || $currentTime->lt($activity->ThoiHanHuy));
-                    
-                    // Logic Badge Trạng Thái
-                    $statusClass = '';
-                    if ($registration->TrangThaiDangKy == 'Chờ duyệt') $statusClass = 'cho-duyet';
-                    elseif ($registration->TrangThaiDangKy == 'Đã duyệt') $statusClass = 'da-duyet';
-                    elseif ($registration->TrangThaiDangKy == 'Bị từ chối') $statusClass = 'bi-tu-choi';
-                @endphp
-                
-                <div class="activity-card drl-card">
-                    <div class="activity-header">
-                        <span class="activity-type drl">
-                            <i class="fas fa-star"></i> {{ $activity->LoaiHoatDong ?? 'Rèn luyện' }}
-                        </span>
-                        <span class="activity-points">
-                            +{{ $activity->quydinh->DiemNhan ?? 0 }} điểm
-                        </span>
-                    </div>
-                    <div class="activity-body">
-                        <h4>{{ $activity->TenHoatDong }}</h4>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="activity-meta">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <span>Bắt đầu: <strong>{{ \Carbon\Carbon::parse($activity->ThoiGianBatDau)->format('d/m/Y H:i') }}</strong></span>
-                                </p>
-                                <p class="activity-meta">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>Địa điểm: <strong>{{ $activity->DiaDiem }}</strong></span>
-                                </p>
+                    <div class="col-lg-6">
+                        <div class="activity-card drl-card">
+                            <div class="activity-header">
+                                <span class="activity-type drl">
+                                    <i class="fas fa-star"></i> {{ $activity->LoaiHoatDong ?? 'Rèn luyện' }}
+                                </span>
+                                <span class="activity-points">
+                                    +{{ $activity->quydinh->DiemNhan ?? 0 }} điểm
+                                </span>
                             </div>
-                            <div class="col-md-6">
-                                <p class="activity-meta">
-                                    <i class="fas fa-calendar-times"></i>
-                                    <span>Hạn hủy: <strong>{{ $activity->ThoiHanHuy ? \Carbon\Carbon::parse($activity->ThoiHanHuy)->format('d/m/Y H:i') : 'Không có' }}</strong></span>
-                                </p>
-                                <p class="activity-meta">
-                                    <i class="fas fa-calendar-day"></i>
-                                    <span>Ngày ĐK: <strong>{{ \Carbon\Carbon::parse($registration->NgayDangKy)->format('d/m/Y H:i') }}</strong></span>
-                                </p>
+                            <div class="activity-body">
+                                <h4>{{ $activity->TenHoatDong }}</h4>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="activity-meta">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <span>Bắt đầu: <strong>{{ \Carbon\Carbon::parse($activity->ThoiGianBatDau)->format('d/m/Y H:i') }}</strong></span>
+                                        </p>
+                                        <p class="activity-meta">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>Địa điểm: <strong>{{ $activity->DiaDiem }}</strong></span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="activity-meta">
+                                            <i class="fas fa-calendar-times"></i>
+                                            <span>Hạn hủy: <strong>{{ $activity->ThoiHanHuy ? \Carbon\Carbon::parse($activity->ThoiHanHuy)->format('d/m/Y H:i') : 'Không có' }}</strong></span>
+                                        </p>
+                                        <p class="activity-meta">
+                                            <i class="fas fa-calendar-day"></i>
+                                            <span>Ngày ĐK: <strong>{{ \Carbon\Carbon::parse($registration->NgayDangKy)->format('d/m/Y H:i') }}</strong></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="activity-footer">
+                                <span class="status-badge {{ $statusClass }}">
+                                    {{ $registration->TrangThaiDangKy }}
+                                </span>
+                                
+                                {{-- Nút Hủy (Sử dụng route name của bạn) --}}
+                                {{-- Cho phép hủy cả khi đã "Đã duyệt" nếu còn trong hạn hủy --}}
+                                @if(in_array($registration->TrangThaiDangKy, ['Chờ duyệt', 'Đã duyệt']) && $canCancel)
+                                    <form action="{{ route('sinhvien.quanly_dangky.huy_drl', $registration->MaDangKy) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-cancel">
+                                            <i class="fas fa-times-circle me-1"></i> Hủy Đăng Ký
+                                        </button>
+                                    </form>
+                                @elseif(!$canCancel)
+                                    <button class="btn-cancel" disabled>
+                                        <i class="fas fa-lock me-1"></i> Đã qua hạn hủy
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
-                    <div class="activity-footer">
-                        <span class="status-badge {{ $statusClass }}">
-                            {{ $registration->TrangThaiDangKy }}
-                        </span>
-                        
-                        @if($canCancel)
-                            <form action="{{ route('sinhvien.quanly_dangky.huy_drl', $registration->MaDangKy) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-cancel">
-                                    <i class="fas fa-times-circle me-1"></i> Hủy Đăng Ký
-                                </button>
-                            </form>
-                        @else
-                            <button class="btn-cancel" disabled>
-                                <i class="fas fa-lock me-1"></i> Đã qua hạn hủy
-                            </button>
-                        @endif
+                @empty
+                    <div class="col-12">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h5>Bạn chưa đăng ký hoạt động rèn luyện nào</h5>
+                        </div>
                     </div>
-                </div>
-            @empty
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <h5>Bạn chưa đăng ký hoạt động rèn luyện nào</h5>
-                </div>
-            @endforelse
+                @endforelse
+            </div>
         </div>
 
         {{-- TAB 2: DANH SÁCH CTXH --}}
         <div class="tab-pane fade" id="ctxh-content" role="tabpanel" aria-labelledby="ctxh-tab">
-            @forelse($ctxhRegistrations as $registration)
-                @php
-                    $activity = $registration->hoatdong;
-                    $canCancel = (!$activity->ThoiHanHuy || $currentTime->lt($activity->ThoiHanHuy));
-                    $statusClass = '';
-                    if ($registration->TrangThaiDangKy == 'Chờ duyệt') $statusClass = 'cho-duyet';
-                    elseif ($registration->TrangThaiDangKy == 'Đã duyệt') $statusClass = 'da-duyet';
-                    elseif ($registration->TrangThaiDangKy == 'Bị từ chối') $statusClass = 'bi-tu-choi';
-                @endphp
-                
-                <div class="activity-card ctxh-card">
-                    <div class="activity-header">
-                        <span class="activity-type ctxh">
-                            <i class="fas fa-heart"></i> {{ $activity->LoaiHoatDong ?? 'Công tác xã hội' }}
-                        </span>
-                        <span class="activity-points">
-                            +{{ $activity->quydinh->DiemNhan ?? 0 }} điểm
-                        </span>
-                    </div>
-                    <div class="activity-body">
-                        <h4>{{ $activity->TenHoatDong }}</h4>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="activity-meta ctxh">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <span>Bắt đầu: <strong>{{ \Carbon\Carbon::parse($activity->ThoiGianBatDau)->format('d/m/Y H:i') }}</strong></span>
-                                </p>
-                                <p class="activity-meta ctxh">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>Địa điểm: <strong>{{ $activity->DiaDiem }}</strong></span>
-                                </p>
+            <div class="row">
+                @forelse($ctxhRegistrations as $registration)
+                    @php
+                        $activity = $registration->hoatdong;
+                        $canCancel = (!$activity->ThoiHanHuy || $currentTime->lt($activity->ThoiHanHuy));
+                        
+                        // THÊM MỚI: Lấy hóa đơn từ relationship đã tải
+                        $thanhToan = $registration->thanhToan; 
+                        
+                        // THÊM MỚI: Logic trạng thái cho CTXH
+                        $statusClass = '';
+                        if ($registration->TrangThaiDangKy == 'Chờ duyệt') $statusClass = 'cho-duyet';
+                        elseif ($registration->TrangThaiDangKy == 'Đã duyệt') $statusClass = 'da-duyet';
+                        elseif ($registration->TrangThaiDangKy == 'Bị từ chối') $statusClass = 'bi-tu-choi';
+                        elseif ($registration->TrangThaiDangKy == 'Chờ thanh toán') $statusClass = 'cho-thanh-toan'; // <-- Thêm
+                    @endphp
+                    
+                    <div class="col-lg-6">
+                        <div class="activity-card ctxh-card">
+                            <div class="activity-header">
+                                <span class="activity-type ctxh">
+                                    <i class="fas fa-heart"></i> {{ $activity->LoaiHoatDong ?? 'Công tác xã hội' }}
+                                </span>
+                                <span class="activity-points">
+                                    +{{ $activity->quydinh->DiemNhan ?? 0 }} điểm
+                                </span>
                             </div>
-                            <div class="col-md-6">
-                                <p class="activity-meta ctxh">
-                                    <i class="fas fa-calendar-times"></i>
-                                    <span>Hạn hủy: <strong>{{ $activity->ThoiHanHuy ? \Carbon\Carbon::parse($activity->ThoiHanHuy)->format('d/m/Y H:i') : 'Không có' }}</strong></span>
-                                </p>
-                                <p class="activity-meta ctxh">
-                                    <i class="fas fa-calendar-day"></i>
-                                    <span>Ngày ĐK: <strong>{{ \Carbon\Carbon::parse($registration->NgayDangKy)->format('d/m/Y H:i') }}</strong></span>
-                                </p>
+                            <div class="activity-body">
+                                <h4>{{ $activity->TenHoatDong }}</h4>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="activity-meta ctxh">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <span>Bắt đầu: <strong>{{ \Carbon\Carbon::parse($activity->ThoiGianBatDau)->format('d/m/Y H:i') }}</strong></span>
+                                        </p>
+                                        <p class="activity-meta ctxh">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>Địa điểm: <strong>{{ $activity->DiaDiem }}</strong></span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="activity-meta ctxh">
+                                            <i class="fas fa-calendar-times"></i>
+                                            <span>Hạn hủy: <strong>{{ $activity->ThoiHanHuy ? \Carbon\Carbon::parse($activity->ThoiHanHuy)->format('d/m/Y H:i') : 'Không có' }}</strong></span>
+                                        </p>
+                                        <p class="activity-meta ctxh">
+                                            <i class="fas fa-calendar-day"></i>
+                                            <span>Ngày ĐK: <strong>{{ \Carbon\Carbon::parse($registration->NgayDangKy)->format('d/m/Y H:i') }}</strong></span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {{-- THÊM MỚI: Hiển thị số tiền nếu có --}}
+                                @if($thanhToan)
+                                    <p class="activity-meta ctxh mb-0">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <span>Số tiền: <strong class="text-danger">{{ number_format($thanhToan->TongTien, 0, ',', '.') }} đ</strong></span>
+                                    </p>
+                                @endif
+                            </div>
+                            <div class="activity-footer">
+                                <span class="status-badge {{ $statusClass }}">
+                                    {{ $registration->TrangThaiDangKy }}
+                                </span>
+                                
+                                <div class="d-flex align-items-center" style="gap: 0.75rem;">
+                                    {{-- Nút Hủy (Sử dụng route name của bạn) --}}
+                                    {{-- Cho phép hủy khi Chờ duyệt / Chờ thanh toán / Đã duyệt nhưng KHÔNG cho phép nếu đã thanh toán hoàn tất --}}
+                                    @php
+                                        $allowCancelCtxh = in_array($registration->TrangThaiDangKy, ['Chờ duyệt', 'Chờ thanh toán', 'Đã duyệt']) && $canCancel;
+                                        // Nếu có hóa đơn và đã thanh toán thì không cho hủy
+                                        if (isset($thanhToan) && $thanhToan && ($thanhToan->TrangThai ?? '') == 'DaThanhToan') {
+                                            $allowCancelCtxh = false;
+                                        }
+                                    @endphp
+                                    @if($allowCancelCtxh)
+                                        {{-- SỬA LỖI: Sửa tên route cho CTXH --}}
+                                        <form action="{{ route('sinhvien.quanly_dangky.huy_ctxh', $registration->MaDangKy) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này? (Hóa đơn nếu có cũng sẽ bị hủy)');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-cancel">
+                                                <i class="fas fa-times-circle me-1"></i> Hủy ĐK
+                                            </button>
+                                        </form>
+                                    @elseif(!$canCancel)
+                                        <button class="btn-cancel" disabled>
+                                            <i class="fas fa-lock me-1"></i> Đã qua hạn hủy
+                                        </button>
+                                    @endif
+                                    
+                                    {{-- THÊM MỚI: Nút Thanh toán (Logic cốt lõi) --}}
+                                    @if($registration->TrangThaiDangKy == 'Chờ thanh toán' && $thanhToan)
+                                        <a href="{{ route('sinhvien.thanhtoan.show', $thanhToan->id) }}" class="btn-payment">
+                                            <i class="fas fa-credit-card"></i>
+                                            <span>Thanh toán</span>
+                                        </a>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="activity-footer">
-                        <span class="status-badge {{ $statusClass }}">
-                            {{ $registration->TrangThaiDangKy }}
-                        </span>
-                        
-                        @if($canCancel)
-                            <form action="{{ route('sinhvien.quanly_dangky.huy_ctxh', $registration->MaDangKy) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-cancel">
-                                    <i class="fas fa-times-circle me-1"></i> Hủy Đăng Ký
-                                </button>
-                            </form>
-                        @else
-                            <button class="btn-cancel" disabled>
-                                <i class="fas fa-lock me-1"></i> Đã qua hạn hủy
-                            </button>
-                        @endif
+                @empty
+                    <div class="col-12">
+                         <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h5>Bạn chưa đăng ký hoạt động CTXH nào</h5>
+                        </div>
                     </div>
-                </div>
-            @empty
-                 <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <h5>Bạn chưa đăng ký hoạt động CTXH nào</h5>
-                </div>
-            @endforelse
+                @endforelse
+            </div>
         </div>
         
     </div>

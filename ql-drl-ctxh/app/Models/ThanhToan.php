@@ -9,30 +9,48 @@ class ThanhToan extends Model
 {
     use HasFactory;
 
-    protected $table = 'thanhtoans';
+    /**
+     * Tên bảng trong CSDL
+     */
+    protected $table = 'thanh_toan';
 
     /**
-     * SỬA 1: Cập nhật fillable theo CSDL
-     * Bỏ MSSV, MaHoatDong
-     * Thêm MaDangKy
+     * Các trường được phép gán hàng loạt (Mass Assignable)
      */
     protected $fillable = [
-        'MaDangKy', // <-- Thêm
-        'SoTien',
+        'MSSV',
+        'TongTien',
         'TrangThai',
-        'MaGiaoDich',
         'PhuongThuc',
+        'MaGiaoDich',
+        'NgayThanhToan',
     ];
 
     /**
-     * SỬA 2: Đổi sang 'belongsTo'
-     * Một hóa đơn "thuộc về" một đơn đăng ký.
+     * Ép kiểu dữ liệu (Casting)
+     * Giúp cột 'NgayThanhToan' luôn là đối tượng Carbon (ngày tháng)
+     * và 'TongTien' là số nguyên (vì ta set decimal = 0)
+     */
+    protected $casts = [
+        'NgayThanhToan' => 'datetime',
+        'TongTien' => 'decimal:0',
+    ];
+
+    /**
+     * Mối quan hệ: Một hóa đơn thuộc về MỘT sinh viên.
+     */
+    public function sinhVien()
+    {
+        // 'MSSV' ở bảng 'thanh_toan' liên kết với 'MSSV' ở bảng 'sinhvien'
+        return $this->belongsTo(SinhVien::class, 'MSSV', 'MSSV');
+    }
+
+    /**
+     * Mối quan hệ: Một hóa đơn có thể có NHIỀU đơn đăng ký.
+     * (Mô hình 1 Hóa đơn - Nhiều Đơn đăng ký)
      */
     public function dangKyHoatDong()
     {
-        // 'MaDangKy' là khóa ngoại trong bảng 'thanhtoans'
-        // 'MaDangKy' là khóa chính trong bảng 'dangkyhoatdongctxh'
-        return $this->belongsTo(DangKyHoatDongCTXH::class, 'MaDangKy', 'MaDangKy');
+        return $this->hasOne(DangKyHoatDongCtxh::class, 'thanh_toan_id', 'id');
     }
-
 }

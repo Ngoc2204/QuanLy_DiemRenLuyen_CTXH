@@ -17,6 +17,9 @@ use App\Http\Controllers\SinhVien\ActivityNotificationController;
 use App\Http\Controllers\SinhVien\WeeklyActivityController;
 use App\Http\Controllers\SinhVien\SinhVienController;
 use App\Http\Controllers\SinhVien\ThongBaoController;
+use App\Http\Controllers\SinhVien\ThanhToanController as SinhVienThanhToanController;
+use App\Http\Controllers\NhanVien\QuanLyThanhToanController as NhanVienThanhToanController;
+use App\Http\Controllers\SinhVien\RecommendedActivitiesController;
 
 
 Route::get('/', function () {
@@ -125,20 +128,49 @@ Route::middleware(['auth'])->prefix('nhanvien')->as('nhanvien.')->group(function
 
     // Quản lý Hoạt Động CTXH
     Route::resource('hoatdong_ctxh', NhanVienHoatDongCTXHController::class);
-    // Bổ sung route điểm danh cho CTXH
-    Route::post('hoatdong_ctxh/{hoatdong_ctxh}/generate-qr', [NhanVienHoatDongCTXHController::class, 'generateQrTokens'])
-        ->name('hoatdong_ctxh.generate_qr');
+    
+    // Routes điểm danh - TÁCH RIÊNG CHECK-IN VÀ CHECK-OUT
+    Route::get('hoatdong_ctxh/{hoatdong_ctxh}/create-checkin-qr', [NhanVienHoatDongCTXHController::class, 'createCheckInQr'])
+        ->name('hoatdong_ctxh.create_checkin_qr');
+    Route::post('hoatdong_ctxh/{hoatdong_ctxh}/generate-checkin-qr', [NhanVienHoatDongCTXHController::class, 'generateCheckInQr'])
+        ->name('hoatdong_ctxh.generate_checkin_qr');
+    
+    Route::get('hoatdong_ctxh/{hoatdong_ctxh}/create-checkout-qr', [NhanVienHoatDongCTXHController::class, 'createCheckOutQr'])
+        ->name('hoatdong_ctxh.create_checkout_qr');
+    Route::post('hoatdong_ctxh/{hoatdong_ctxh}/generate-checkout-qr', [NhanVienHoatDongCTXHController::class, 'generateCheckOutQr'])
+        ->name('hoatdong_ctxh.generate_checkout_qr');
+    
+    // Tổng kết điểm danh
     Route::post('hoatdong_ctxh/{hoatdong_ctxh}/finalize', [NhanVienHoatDongCTXHController::class, 'finalizeAttendance'])
         ->name('hoatdong_ctxh.finalize');
 
+     Route::get('/create-batch-diachido', [NhanVienHoatDongCTXHController::class, 'createBatchDiaChiDo'])->name('create_batch');
+     Route::post('/store-batch-diachido', [NhanVienHoatDongCTXHController::class, 'storeBatchDiaChiDo'])->name('store_batch');
+
+     Route::get('hoatdong_ctxh/{hoatdong_ctxh}/ghi-nhan-ket-qua', [NhanVienHoatDongCTXHController::class, 'ghiNhanKetQua'])
+        ->name('hoatdong_ctxh.ghi_nhan_ket_qua');
+    Route::post('hoatdong_ctxh/{hoatdong_ctxh}/update-ket-qua', [NhanVienHoatDongCTXHController::class, 'updateKetQua'])
+        ->name('hoatdong_ctxh.update_ket_qua');
 
     // Quản lý Hoạt Động DRL
     Route::resource('hoatdong_drl', NhanVienHoatDongDRLController::class);
-    // Bổ sung route điểm danh cho DRL
-    Route::post('hoatdong_drl/{hoatdong_drl}/generate-qr', [NhanVienHoatDongDRLController::class, 'generateQrTokens'])
-        ->name('hoatdong_drl.generate_qr');
+    // Bổ sung route điểm danh cho DRL - Check-In
+    Route::get('hoatdong_drl/{hoatdong_drl}/create-checkin-qr', [NhanVienHoatDongDRLController::class, 'createCheckInQr'])
+        ->name('hoatdong_drl.create_checkin_qr');
+    Route::post('hoatdong_drl/{hoatdong_drl}/generate-checkin-qr', [NhanVienHoatDongDRLController::class, 'generateCheckInQr'])
+        ->name('hoatdong_drl.generate_checkin_qr');
+    // Bổ sung route điểm danh cho DRL - Check-Out
+    Route::get('hoatdong_drl/{hoatdong_drl}/create-checkout-qr', [NhanVienHoatDongDRLController::class, 'createCheckOutQr'])
+        ->name('hoatdong_drl.create_checkout_qr');
+    Route::post('hoatdong_drl/{hoatdong_drl}/generate-checkout-qr', [NhanVienHoatDongDRLController::class, 'generateCheckOutQr'])
+        ->name('hoatdong_drl.generate_checkout_qr');
     Route::post('hoatdong_drl/{hoatdong_drl}/finalize', [NhanVienHoatDongDRLController::class, 'finalizeAttendance'])
         ->name('hoatdong_drl.finalize');
+
+     Route::get('hoatdong_drl/{hoatdong_drl}/ghi-nhan-ket-qua', [NhanVienHoatDongDRLController::class, 'ghiNhanKetQua'])
+        ->name('hoatdong_drl.ghi_nhan_ket_qua');
+    Route::post('hoatdong_drl/{hoatdong_drl}/update-ket-qua', [NhanVienHoatDongDRLController::class, 'updateKetQua'])
+        ->name('hoatdong_drl.update_ket_qua');
 
     // 1. Route để hiển thị trang danh sách (hàm index)
     Route::get('duyet-dang-ky', [App\Http\Controllers\NhanVien\DuyetDangKyController::class, 'index'])
@@ -156,6 +188,22 @@ Route::middleware(['auth'])->prefix('nhanvien')->as('nhanvien.')->group(function
     Route::get('thong-ke', [App\Http\Controllers\NhanVien\ThongKeController::class, 'index'])
          ->name('thongke.index');
 
+    // Thông tin cá nhân (Nhân viên)
+    Route::get('thong-tin-ca-nhan', [App\Http\Controllers\NhanVien\ProfileController::class, 'edit'])
+        ->name('profile.edit');
+    Route::put('thong-tin-ca-nhan', [App\Http\Controllers\NhanVien\ProfileController::class, 'update'])
+        ->name('profile.update');
+    Route::post('thong-tin-ca-nhan/doi-mat-khau', [App\Http\Controllers\NhanVien\ProfileController::class, 'updatePassword'])
+        ->name('profile.update_password');
+
+     // Quản lý thanh toán
+     Route::prefix('quan-ly-thanh-toan')->name('thanhtoan.')->group(function () {
+        Route::get('/', [NhanVienThanhToanController::class, 'index'])->name('index');
+        Route::put('/xac-nhan/{id}', [NhanVienThanhToanController::class, 'xacNhanThanhToan'])->name('xacnhan');
+    });
+     
+     // Điều chỉnh điểm rèn luyện
+     Route::resource('dieuchinh_drl', App\Http\Controllers\NhanVien\DieuChinhDRLController::class);
 });
 
 
@@ -164,9 +212,14 @@ Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function
     Route::get('/', [SinhVienDashboardController::class, 'dashboard'])->name('home');
     // ...
     // Route để xử lý quét QR
-    Route::get('/scan/{token}', [SinhVienDiemDanhController::class, 'handleScan'])
-        ->name('scan'); // Tên là 'scan', kết hợp với prefix 'sinhvien.' thành 'sinhvien.scan' 
-    // ...
+    Route::get('scan/{token}', [SinhVienDiemDanhController::class, 'handleScan'])
+        ->where('token', '.*') // Cho phép token có ký tự đặc biệt (vd: base64)
+        ->name('scan');
+
+    // Route trang quét QR bằng camera (sinh viên mở camera để quét QR do nhân viên tạo)
+    Route::get('scan-camera', function () {
+        return view('sinhvien.scan.camera');
+    })->name('scan.camera');
 
     // Route thông báo hoạt động
     Route::get('/thong-bao-hoat-dong', [ActivityNotificationController::class, 'index'])
@@ -198,7 +251,15 @@ Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function
     Route::post('/tot-nghiep', [SinhVienController::class, 'updateGraduation'])->name('graduation.update');
 
     // Thông báo
-    Route::get('/tin-tuc', [ThongBaoController::class, 'index'])->name('news.index');
+    Route::get('/tin-tuc', [ThongBaoController::class, 'index'])->name('tintuc.index');
+
+    // Hoạt động được đề xuất (Recommendation)
+    Route::get('/de-xuat-hoat-dong', [RecommendedActivitiesController::class, 'index'])
+         ->name('recommended_activities.index');
+    Route::get('/de-xuat-hoat-dong/{id}', [RecommendedActivitiesController::class, 'show'])
+         ->name('recommended_activities.show');
+    Route::get('/api/activity/{id}/{type}', [RecommendedActivitiesController::class, 'getActivity'])
+         ->name('api.get_activity');
 
     // Đổi mật khẩu
     Route::get('/doi-mat-khau', [App\Http\Controllers\SinhVien\PasswordController::class, 'showChangePasswordForm'])
@@ -227,6 +288,13 @@ Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function
          ->name('lienhe.create');
     Route::post('/lien-he', [App\Http\Controllers\SinhVien\LienHeController::class, 'store'])
          ->name('lienhe.store');
+
+     // Quản lý thanh toán
+     Route::prefix('thanh-toan')->name('thanhtoan.')->group(function () {
+        Route::get('/{id}', [SinhVienThanhToanController::class, 'show'])->name('show');
+        Route::post('/{id}/chon-phuong-thuc', [SinhVienThanhToanController::class, 'chonPhuongThuc'])->name('chon_phuong_thuc');
+          Route::get('/{id}/qr', [SinhVienThanhToanController::class, 'showQr'])->name('qr');
+     });
 });
 
 
@@ -262,4 +330,12 @@ Route::middleware(['auth'])->prefix('giangvien')->as('giangvien.')->group(functi
          
     Route::post('/hoatdong/phan-bo/{hoatdong_drl}', [App\Http\Controllers\GiangVien\PhanBoController::class, 'update'])
          ->name('hoatdong.phanbo.update');
+
+    // Thông tin cá nhân (Giảng viên)
+    Route::get('thong-tin-ca-nhan', [App\Http\Controllers\GiangVien\ProfileController::class, 'edit'])
+        ->name('profile.edit');
+    Route::put('thong-tin-ca-nhan', [App\Http\Controllers\GiangVien\ProfileController::class, 'update'])
+        ->name('profile.update');
+    Route::post('thong-tin-ca-nhan/doi-mat-khau', [App\Http\Controllers\GiangVien\ProfileController::class, 'updatePassword'])
+        ->name('profile.update_password');
 });

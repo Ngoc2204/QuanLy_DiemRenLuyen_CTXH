@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SinhVien;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use App\Models\SinhVien; 
 use App\Models\BangDiemHocKy; 
 use App\Models\DiemRenLuyen; 
@@ -66,9 +67,30 @@ class SinhVienController extends Controller
             'Email' => 'required|email|max:100',
             'SDT' => 'nullable|string|max:15',
             'SoThich' => 'nullable|string|max:255',
+            'avatar' => 'nullable|image|max:2048',
         ]);
 
         $student->update($validatedData);
+
+        // Handle avatar upload and save to taikhoan.Avatar
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $ext = $file->getClientOriginalExtension();
+            $filename = Auth::user()->TenDangNhap . '.' . $ext;
+
+            // remove any previous avatar for this user stored in public/avatars
+            $existing = Storage::disk('public')->files('avatars');
+            foreach ($existing as $f) {
+                if (preg_match('/^avatars\\/' . preg_quote(Auth::user()->TenDangNhap, '/') . '\\./', $f)) {
+                    Storage::disk('public')->delete($f);
+                }
+            }
+
+            $file->storeAs('avatars', $filename, 'public');
+            $user = Auth::user();
+            $user->Avatar = 'avatars/' . $filename;
+            $user->save();
+        }
 
         return redirect()->route('sinhvien.profile.show')->with('success', 'Cập nhật thông tin thành công!');
     }

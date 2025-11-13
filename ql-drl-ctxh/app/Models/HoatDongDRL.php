@@ -12,15 +12,36 @@ class HoatDongDRL extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'MaHoatDong', 'TenHoatDong', 'MaGV', 'MoTa', 
-        'ThoiGianBatDau', 'ThoiGianKetThuc', 'ThoiHanHuy', 'DiaDiem', 'SoLuong', 'LoaiHoatDong','MaHocKy', 'MaQuyDinhDiem'
+        'MaHoatDong',
+        'TenHoatDong',
+        'MaGV',
+        'MoTa',
+        'ThoiGianBatDau',
+        'ThoiGianKetThuc',
+        'ThoiHanHuy',
+        'DiaDiem',
+        'SoLuong',
+        'LoaiHoatDong',
+        'MaHocKy',
+        'MaQuyDinhDiem',
+        'CheckInToken',
+        'CheckInOpenAt',
+        'CheckInExpiresAt',
+        'CheckOutToken',
+        'CheckOutOpenAt',
+        'CheckOutExpiresAt',
     ];
 
     protected $casts = [
-        'ThoiGianBatDau' => 'datetime',
-        'ThoiGianKetThuc' => 'datetime',
-        'ThoiHanHuy' => 'datetime',
+        'ThoiGianBatDau'    => 'datetime',
+        'ThoiGianKetThuc'   => 'datetime',
+        'ThoiHanHuy'        => 'datetime',
+        'CheckInOpenAt'     => 'datetime',
+        'CheckInExpiresAt'  => 'datetime',
+        'CheckOutOpenAt'    => 'datetime',
+        'CheckOutExpiresAt' => 'datetime',
     ];
+
 
     public function quydinh()
     {
@@ -40,8 +61,9 @@ class HoatDongDRL extends Model
     public function sinhVienDangKy()
     {
         return $this->belongsToMany(SinhVien::class, 'dangkyhoatdongdrl', 'MaHoatDong', 'MSSV')
-                    ->withPivot('NgayDangKy', 'TrangThaiDangKy');
+            ->withPivot('MaDangKy', 'NgayDangKy', 'TrangThaiDangKy', 'CheckInAt', 'CheckOutAt', 'TrangThaiThamGia');
     }
+
 
     public function giangVienPhuTrach()
     {

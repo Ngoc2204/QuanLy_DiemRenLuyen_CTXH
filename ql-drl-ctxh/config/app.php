@@ -65,7 +65,8 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Đặt timezone mặc định cho ứng dụng sang múi giờ VN để đồng nhất thời gian hiển thị/so sánh
+    'timezone' => 'Asia/Ho_Chi_Minh',
 
     /*
     |--------------------------------------------------------------------------

@@ -72,7 +72,7 @@ class HoatDongDRLController extends Controller
         $quyDinhDiems = QuyDinhDiemRl::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
         // Lấy danh sách Học Kỳ
         $hocKys = HocKy::orderBy('NgayBatDau', 'desc')->pluck('TenHocKy', 'MaHocKy');
-        
+
         // <--- THÊM: Lấy danh sách Giảng viên
         $giangViens = GiangVien::orderBy('TenGV', 'asc')->pluck('TenGV', 'MaGV');
 
@@ -88,7 +88,7 @@ class HoatDongDRLController extends Controller
     {
         $validatedData = $request->validate([
             'TenHoatDong' => 'required|string|max:255',
-            'MoTa' => 'nullable|string',
+            'MoTa' => 'required|string',
             'ThoiGianBatDau' => 'required|date|after_or_equal:now',
             'ThoiGianKetThuc' => 'required|date|after:ThoiGianBatDau',
             'ThoiHanHuy' => 'required|date|before:ThoiGianBatDau',
@@ -142,7 +142,7 @@ class HoatDongDRLController extends Controller
     {
         $quyDinhDiems = QuyDinhDiemRl::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
         $hocKys = HocKy::orderBy('NgayBatDau', 'desc')->pluck('TenHocKy', 'MaHocKy');
-        
+
         // <--- THÊM: Lấy danh sách Giảng viên
         $giangViens = GiangVien::orderBy('TenGV', 'asc')->pluck('TenGV', 'MaGV');
 
@@ -217,27 +217,77 @@ class HoatDongDRLController extends Controller
     }
 
     /**
-     * Generate QR tokens for a DRL activity.
-     * Tạo token QR cho hoạt động DRL.
+     * Hiển thị form tạo Check-In QR
      */
-    // Sửa lại hàm: Laravel sẽ tự động tìm HoatDongDrl dựa trên {hoatdong_drl} trong route
-    public function generateQrTokens(Request $request, HoatDongDRL $hoatdong_drl)
+    public function createCheckInQr(HoatDongDRL $hoatdong_drl)
+    {
+        return view('nhanvien.hoatdong_drl.create_checkin_qr', compact('hoatdong_drl'));
+    }
+
+    /**
+     * Generate Check-In QR token for a DRL activity
+     */
+    public function generateCheckInQr(Request $request, HoatDongDRL $hoatdong_drl)
     {
         try {
-            // $hoatdong_drl đã được nạp tự động, không cần findOrFail
-            $hoatdong_drl->CheckInToken = Str::random(40);
-            $hoatdong_drl->CheckOutToken = Str::random(40);
+            // Kiểm tra nếu hoạt động đã kết thúc
+            if ($hoatdong_drl->ThoiGianKetThuc->isPast()) {
+                return back()->with('error', 'Hoạt động này đã kết thúc, không thể tạo mã QR.');
+            }
 
-            // Set thời gian hết hạn (ví dụ: 2 tiếng sau khi hoạt động kết thúc)
-            $hoatdong_drl->TokenExpiresAt = $hoatdong_drl->ThoiGianKetThuc->addHours(2);
+            $validatedData = $request->validate([
+                'CheckInOpenAt' => 'required|date',
+                'CheckInExpiresAt' => 'required|date|after:CheckInOpenAt',
+            ]);
+
+            $hoatdong_drl->CheckInToken = Str::random(40);
+            $hoatdong_drl->CheckInOpenAt = $validatedData['CheckInOpenAt'];
+            $hoatdong_drl->CheckInExpiresAt = $validatedData['CheckInExpiresAt'];
             $hoatdong_drl->save();
 
-            return redirect()->back()->with('success', 'Đã tạo mã QR điểm danh thành công!');
-        } catch (\Exception $e) {
-            Log::error('Lỗi tạo QR DRL: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Không thể tạo mã QR. Vui lòng thử lại.');
+            return back()->with('success', 'Đã tạo mã QR Check-In thành công.');
+        } catch (\Throwable $e) {
+            Log::error('Lỗi tạo QR Check-In DRL: ' . $e->getMessage());
+            return back()->with('error', 'Không thể tạo mã QR. Vui lòng thử lại.');
         }
     }
+
+    /**
+     * Hiển thị form tạo Check-Out QR
+     */
+    public function createCheckOutQr(HoatDongDRL $hoatdong_drl)
+    {
+        return view('nhanvien.hoatdong_drl.create_checkout_qr', compact('hoatdong_drl'));
+    }
+
+    /**
+     * Generate Check-Out QR token for a DRL activity
+     */
+    public function generateCheckOutQr(Request $request, HoatDongDRL $hoatdong_drl)
+    {
+        try {
+            // Kiểm tra nếu hoạt động đã kết thúc
+            if ($hoatdong_drl->ThoiGianKetThuc->isPast()) {
+                return back()->with('error', 'Hoạt động này đã kết thúc, không thể tạo mã QR.');
+            }
+
+            $validatedData = $request->validate([
+                'CheckOutOpenAt' => 'required|date',
+                'CheckOutExpiresAt' => 'required|date|after:CheckOutOpenAt',
+            ]);
+
+            $hoatdong_drl->CheckOutToken = Str::random(40);
+            $hoatdong_drl->CheckOutOpenAt = $validatedData['CheckOutOpenAt'];
+            $hoatdong_drl->CheckOutExpiresAt = $validatedData['CheckOutExpiresAt'];
+            $hoatdong_drl->save();
+
+            return back()->with('success', 'Đã tạo mã QR Check-Out thành công.');
+        } catch (\Throwable $e) {
+            Log::error('Lỗi tạo QR Check-Out DRL: ' . $e->getMessage());
+            return back()->with('error', 'Không thể tạo mã QR. Vui lòng thử lại.');
+        }
+    }
+
 
     /**
      * Finalize attendance for a DRL activity.
@@ -254,10 +304,10 @@ class HoatDongDRLController extends Controller
                 ->where('TrangThaiDangKy', 'Đã duyệt')
                 ->where(function ($query) {
                     $query->whereNull('CheckInAt')
-                          ->orWhereNull('CheckOutAt');
+                        ->orWhereNull('CheckOutAt');
                 })
                 ->update(['TrangThaiThamGia' => 'Vắng']);
-                
+
             // Cập nhật "Đã tham gia" cho SV đã duyệt VÀ checkin VÀ checkout
             DangKyHoatDongDrl::where('MaHoatDong', $maHoatDong)
                 ->where('TrangThaiDangKy', 'Đã duyệt')
@@ -266,10 +316,46 @@ class HoatDongDRLController extends Controller
                 ->update(['TrangThaiThamGia' => 'Đã tham gia']);
 
             return redirect()->back()->with('success', 'Đã tổng kết điểm danh thành công!');
-
         } catch (\Exception $e) {
             Log::error('Lỗi tổng kết điểm danh DRL: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Có lỗi xảy ra khi tổng kết. Vui lòng thử lại.');
+        }
+    }
+
+    public function ghiNhanKetQua(HoatDongDRL $hoatdong_drl)
+    {
+        // Tải sinh viên đã đăng ký kèm theo pivot data (thông tin check-in, trạng thái)
+        $sinhViens = $hoatdong_drl->sinhVienDangKy()
+            ->withPivot(['CheckInAt', 'CheckOutAt', 'TrangThaiDangKy', 'TrangThaiThamGia', 'MaDangKy'])
+            ->get();
+            
+        return view('nhanvien.hoatdong_drl.ghi_nhan_ket_qua', compact('hoatdong_drl', 'sinhViens'));
+    }
+
+    /**
+     * THÊM MỚI: Xử lý POST request để cập nhật kết quả thủ công.
+     */
+    public function updateKetQua(Request $request, HoatDongDRL $hoatdong_drl)
+    {
+        // Dữ liệu sẽ chứa mảng các sinh viên cần cập nhật trạng thái tham gia
+        $data = $request->validate([
+            'results.*.MaDangKy' => 'required|exists:dangkyhoatdongdrl,MaDangKy', // CHÚ Ý: ĐỔI BẢNG
+            'results.*.TrangThaiThamGia' => 'required|in:Đã tham gia,Vắng,Chưa tổng kết',
+        ]);
+        
+        try {
+            foreach ($data['results'] as $result) {
+                // CHÚ Ý: ĐỔI MODEL
+                DangKyHoatDongDrl::where('MaDangKy', $result['MaDangKy'])->update([ 
+                    'TrangThaiThamGia' => $result['TrangThaiThamGia'],
+                ]);
+            }
+
+            return redirect()->route('nhanvien.hoatdong_drl.show', $hoatdong_drl)
+                             ->with('success', 'Cập nhật kết quả sinh viên thành công.');
+        } catch (\Exception $e) {
+            Log::error('Lỗi cập nhật kết quả DRL thủ công: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Cập nhật kết quả thất bại. Vui lòng thử lại.');
         }
     }
 }

@@ -28,7 +28,18 @@
                         <div class="profile-header-content">
                             <div class="avatar-wrapper">
                                 <div class="avatar-large">
-                                    <span>{{ strtoupper(substr($student->HoTen, 0, 2)) }}</span>
+                                    @php
+                                        $avatarUrl = null;
+                                        if (!empty(Auth::user()->Avatar) && file_exists(storage_path('app/public/' . Auth::user()->Avatar))) {
+                                            $avatarUrl = asset('storage/' . Auth::user()->Avatar);
+                                        }
+                                    @endphp
+
+                                    @if($avatarUrl)
+                                        <img src="{{ $avatarUrl }}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                                    @else
+                                        <span>{{ strtoupper(substr($student->HoTen, 0, 2)) }}</span>
+                                    @endif
                                     <div class="avatar-status"></div>
                                 </div>
                             </div>

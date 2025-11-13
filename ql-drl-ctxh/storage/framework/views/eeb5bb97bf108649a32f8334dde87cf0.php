@@ -138,17 +138,34 @@ $breadcrumbs = [
                     </div>
                     <div class="card-body">
                         <p class="text-muted small mb-3">Top 10 hoạt động có nhiều sinh viên tham gia nhất.</p>
-                        <div class="chart-placeholder">
+                        <div class="chart-placeholder p-3">
                             <div class="chart-icon">
                                 <i class="fa-solid fa-chart-column"></i>
                             </div>
-                            <p class="chart-text">Biểu đồ cột đang được xây dựng</p>
-                            <div class="chart-bars">
-                                <div class="bar-item" style="height: 85%"></div>
-                                <div class="bar-item" style="height: 70%"></div>
-                                <div class="bar-item" style="height: 95%"></div>
-                                <div class="bar-item" style="height: 60%"></div>
-                                <div class="bar-item" style="height: 80%"></div>
+                            <p class="chart-text">Top 10 hoạt động theo số lượt tham gia</p>
+                            <?php
+                                $maxJoin = $topActivities->max('thamgia_count') ?? 1;
+                            ?>
+                            <div class="list-group w-100">
+                                <?php $__empty_1 = true; $__currentLoopData = $topActivities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <?php
+                                        $width = $maxJoin > 0 ? round(($a->thamgia_count / $maxJoin) * 100) : 0;
+                                    ?>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div style="width:36px;" class="text-center fw-bold"><?php echo e($i+1); ?></div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <div class="fw-semibold"><?php echo e(Str::limit($a->TenHoatDong ?? $a['TenHoatDong'] ?? 'N/A', 60)); ?></div>
+                                                <div class="text-muted"><?php echo e($a->thamgia_count ?? $a['thamgia_count'] ?? 0); ?> SV</div>
+                                            </div>
+                                            <div class="progress mt-1" style="height:8px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo e($width); ?>%;" aria-valuenow="<?php echo e($width); ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                    <div class="text-muted">Không có hoạt động để hiển thị.</div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -166,15 +183,24 @@ $breadcrumbs = [
                             <small class="d-block mt-1 opacity-75">(Tất cả các Khoa)</small>
                         <?php endif; ?>
                     </div>
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                        <div class="chart-placeholder">
-                            <div class="chart-icon">
-                                <i class="fa-solid fa-chart-pie"></i>
-                            </div>
-                            <p class="chart-text">Biểu đồ tròn đang được xây dựng</p>
-                            <div class="pie-preview">
-                                <div class="pie-segment" style="--percentage: 75; --color: #10b981;"></div>
-                            </div>
+                    <div class="card-body">
+                        <p class="text-muted small">Tỷ lệ hoàn thành CTXH theo Khoa (mục tiêu: 50đ)</p>
+                        <div class="list-group">
+                            <?php if(isset($ctxhByKhoa) && $ctxhByKhoa->isNotEmpty()): ?>
+                                <?php $__currentLoopData = $ctxhByKhoa; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $k): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <div class="fw-semibold"><?php echo e($k['TenKhoa']); ?></div>
+                                            <div class="text-muted"><?php echo e($k['completed']); ?>/<?php echo e($k['total']); ?> (<?php echo e($k['percent']); ?>%)</div>
+                                        </div>
+                                        <div class="progress" style="height:10px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: <?php echo e($k['percent']); ?>%;" aria-valuenow="<?php echo e($k['percent']); ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php else: ?>
+                                <div class="text-muted">Không có dữ liệu CTXH theo Khoa.</div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -293,7 +319,7 @@ $breadcrumbs = [
             </div>
             <?php if($thongKeHoatDong->hasPages()): ?>
             <div class="pagination-wrapper">
-                <?php echo e($thongKeHoatDong->appends(request()->query())->links(null, 'page_hd')); ?>
+                <?php echo e($thongKeHoatDong->appends(request()->query())->links(null, ['pageName' => 'page_hd'])); ?>
 
             </div>
             <?php endif; ?>
@@ -364,7 +390,7 @@ $breadcrumbs = [
             </div>
             <?php if($thongKeLop->hasPages()): ?>
             <div class="pagination-wrapper">
-                <?php echo e($thongKeLop->appends(request()->query())->links(null, 'page_lop')); ?>
+                <?php echo e($thongKeLop->appends(request()->query())->links(null, ['pageName' => 'page_lop'])); ?>
 
             </div>
             <?php endif; ?>
@@ -796,17 +822,56 @@ $breadcrumbs = [
         border-top: 1px solid #e5e7eb;
     }
 
-    .pagination {
+    /* pagination default container (ul.pagination) and fallback anchors */
+    .pagination, .pagination-wrapper .pagination-inline {
+        display: inline-flex;
         gap: 0.5rem;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        align-items: center;
     }
 
-    .page-link {
+    /* Generic page item styling covers both <li><a> and plain <a> outputs */
+    .pagination li, .pagination a, .pagination span, .pagination-wrapper a.page-link, .pagination-wrapper .page-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+        padding: 0 0.9rem;
         border: 2px solid #e5e7eb;
         border-radius: 8px;
         color: #374151;
         font-weight: 600;
-        padding: 0.5rem 0.875rem;
-        transition: all 0.2s ease;
+        text-decoration: none;
+        background: #fff;
+        transition: all 0.12s ease;
+        box-sizing: border-box;
+    }
+
+    .pagination a:hover, .pagination span:hover, .pagination li:hover a {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(102,126,234,0.12);
+        border-color: rgba(102,126,234,0.2);
+    }
+
+    /* Active page */
+    .pagination .active > a,
+    .pagination li.active,
+    .pagination .active {
+        background: var(--primary-gradient);
+        color: #fff !important;
+        border-color: transparent;
+        box-shadow: 0 8px 24px rgba(102,126,234,0.18);
+    }
+
+    /* Disabled previous/next */
+    .pagination .disabled, .pagination li.disabled, .pagination span.disabled {
+        opacity: 0.45;
+        pointer-events: none;
+        background: #fafafa;
+        border-color: #f3f4f6;
     }
 
     .page-link:hover {
@@ -820,6 +885,14 @@ $breadcrumbs = [
         background: var(--primary-gradient);
         border-color: transparent;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Small helper for the 'Showing' text above pagination */
+    .pagination-info {
+        text-align: center;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
     }
 
     /* Responsive */

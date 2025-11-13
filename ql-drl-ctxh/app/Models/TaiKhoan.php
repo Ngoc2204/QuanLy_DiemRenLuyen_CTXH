@@ -12,7 +12,8 @@ class TaiKhoan extends Authenticatable
     protected $keyType = 'string';
     public $timestamps = false;
 
-    protected $fillable = ['TenDangNhap', 'MatKhau', 'VaiTro'];
+    // Các trường có thể gán hàng loạt (mass assignable)
+    protected $fillable = ['TenDangNhap', 'MatKhau', 'VaiTro', 'Avatar'];
 
     protected $hidden = ['MatKhau'];
 

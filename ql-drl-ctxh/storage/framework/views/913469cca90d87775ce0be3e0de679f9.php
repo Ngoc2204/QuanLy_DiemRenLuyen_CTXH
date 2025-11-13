@@ -269,14 +269,15 @@ $breadcrumbs = [
                         <div class="form-group">
                             <label for="DiaDiem" class="form-label">
                                 <i class="fa-solid fa-location-dot me-1 text-muted"></i>
-                                Địa điểm
+                                Địa điểm <span class="text-danger">*</span>
                             </label>
                             <input type="text"
                                 class="form-control"
                                 id="DiaDiem"
                                 name="DiaDiem"
                                 value="<?php echo e(old('DiaDiem', $hoatdong_drl->DiaDiem)); ?>" 
-                                placeholder="Nhập địa điểm tổ chức">
+                                placeholder="Nhập địa điểm tổ chức"
+                                required>
                         </div>
                     </div>
                     <div class="col-md-12">
@@ -366,18 +367,16 @@ $breadcrumbs = [
                         <div class="form-group">
                             <label for="ThoiHanHuy" class="form-label">
                                 <i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i>
-                                Thời hạn Hủy đăng ký
+                                Thời hạn Hủy đăng ký <span class="text-danger">*</span>
                             </label>
                             <input type="datetime-local"
                                 class="form-control"
                                 id="ThoiHanHuy"
                                 name="ThoiHanHuy"
                                 
-                                value="<?php echo e(old('ThoiHanHuy', $hoatdong_drl->ThoiHanHuy ? $hoatdong_drl->ThoiHanHuy->format('Y-m-d\TH:i') : '')); ?>">
-                            <small class="form-text text-muted">
-                                <i class="fa-solid fa-info-circle me-1"></i>
-                                Để trống nếu không cho phép sinh viên hủy đăng ký.
-                            </small>
+                                value="<?php echo e(old('ThoiHanHuy', $hoatdong_drl->ThoiHanHuy ? $hoatdong_drl->ThoiHanHuy->format('Y-m-d\TH:i') : '')); ?>"
+                                required>
+                            
                         </div>
                     </div>
                 </div>

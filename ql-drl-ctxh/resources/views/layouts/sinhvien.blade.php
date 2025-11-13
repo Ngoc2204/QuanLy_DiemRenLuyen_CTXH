@@ -549,7 +549,7 @@
                     <i class="fa-solid fa-house"></i> Trang chủ
                 </a>
 
-                <a href="{{ route('sinhvien.news.index') }}" class="nav-link notification">
+                <a href="{{ route('sinhvien.tintuc.index') }}" class="nav-link notification">
                     <i class="fa fa-bell"></i>
                     @if(isset($unreadCount) && $unreadCount > 0)
                     <span class="notif-badge">{{ $unreadCount }}</span>
@@ -562,7 +562,18 @@
                     <div class="user-toggle" id="user-toggle">
 
                         <!-- SỬA 1: AVATAR ĐỘNG -->
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->sinhvien->HoTen ?? Auth::user()->TenDangNhap) }}&background=667eea&color=fff" alt="User">
+                        @php
+                            $svAvatar = Auth::user()->Avatar ?? null;
+                            $svAvatarUrl = null;
+                            if ($svAvatar && file_exists(storage_path('app/public/' . $svAvatar))) {
+                                $svAvatarUrl = asset('storage/' . $svAvatar);
+                            }
+                        @endphp
+                        @if($svAvatarUrl)
+                            <img src="{{ $svAvatarUrl }}" alt="User">
+                        @else
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->sinhvien->HoTen ?? Auth::user()->TenDangNhap) }}&background=667eea&color=fff" alt="User">
+                        @endif
 
                         <!-- SỬA 2: TÊN ĐỘNG -->
                         <span class="user-name">{{ Auth::user()->sinhvien->HoTen ?? Auth::user()->TenDangNhap }}</span>
@@ -641,6 +652,20 @@
 
 
             <li class="menu-item">
+                <a href="{{ route('sinhvien.thongbao_hoatdong') }}" class="menu-link">
+                    <i class="fa-solid fa-bell"></i>
+                    <span>Thông báo hoạt động</span>
+                </a>
+            </li>
+
+            <li class="menu-item">
+                <a href="{{ route('sinhvien.recommended_activities.index') }}" class="menu-link">
+                    <i class="fa-solid fa-magic"></i>
+                    <span>Hoạt động đề xuất</span>
+                </a>
+            </li>
+
+            <li class="menu-item">
                 <a href="{{ route('sinhvien.lienhe.create') }}" class="menu-link">
                     <i class="fa-solid fa-circle-question"></i>
                     <span>Liên hệ</span>
@@ -686,6 +711,8 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         const menuToggle = document.getElementById('menu-toggle');
         const leftMenu = document.getElementById('left-menu');

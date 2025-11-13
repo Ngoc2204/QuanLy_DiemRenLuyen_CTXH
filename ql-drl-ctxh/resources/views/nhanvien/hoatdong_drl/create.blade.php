@@ -272,13 +272,13 @@ $breadcrumbs = [
                         <div class="form-group">
                             <label for="MoTa" class="form-label">
                                 <i class="fa-solid fa-align-left me-1 text-muted"></i>
-                                Mô tả
+                                Mô tả <span class="text-danger">*</span>
                             </label>
                             <textarea class="form-control"
                                 id="MoTa"
                                 name="MoTa"
                                 rows="4"
-                                placeholder="Nhập mô tả chi tiết về hoạt động...">{{ old('MoTa') }}</textarea>
+                                placeholder="Nhập mô tả chi tiết về hoạt động..." required>{{ old('MoTa') }}</textarea>
                         </div>
                     </div>
                 </div>

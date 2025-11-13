@@ -19,7 +19,6 @@
 
   .stat-card.orange::before {
     background: #fd7e14;
-    /* Màu cam */
   }
 
   .stat-card.orange .stat-value {
@@ -30,18 +29,14 @@
 
   .stat-card.orange .stat-badge {
     background: rgba(253, 126, 20, 0.1);
-    /* Nền cam nhạt */
     color: #fd7e14;
-    /* Chữ cam đậm */
   }
-
-
 
   .profile-header {
     background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     border-radius: 20px;
     padding: 2rem;
-    color: white;
+    color: #fff;
     margin-bottom: 2rem;
     box-shadow: var(--card-shadow);
     position: relative;
@@ -109,7 +104,7 @@
   }
 
   .stat-card {
-    background: white;
+    background: #fff;
     border-radius: 16px;
     padding: 1.8rem;
     box-shadow: var(--card-shadow);
@@ -118,7 +113,6 @@
     position: relative;
     overflow: hidden;
     height: 100%;
-    /* chiếm toàn bộ chiều cao cột */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -201,7 +195,6 @@
   .stat-card-link {
     text-decoration: none;
     color: inherit;
-    /* Kế thừa màu chữ từ cha */
   }
 
   .stat-card-link:hover {
@@ -234,7 +227,7 @@
   }
 
   .action-btn {
-    background: white;
+    background: #fff;
     border: 2px solid #e2e8f0;
     border-radius: 14px;
     padding: 1.3rem 0.8rem;
@@ -269,7 +262,7 @@
   }
 
   .table-section {
-    background: white;
+    background: #fff;
     border-radius: 16px;
     overflow: hidden;
     box-shadow: var(--card-shadow);
@@ -366,7 +359,7 @@
     align-items: center;
     justify-content: center;
     border: 2px solid #e2e8f0;
-    background: white;
+    background: #fff;
     color: var(--primary);
     cursor: pointer;
     transition: var(--transition);
@@ -374,7 +367,7 @@
 
   .btn-action:hover {
     background: var(--primary);
-    color: white;
+    color: #fff;
     border-color: var(--primary);
   }
 
@@ -395,7 +388,7 @@
   }
 
   .chart-card {
-    background: white;
+    background: #fff;
     border-radius: 16px;
     padding: 1.5rem;
     box-shadow: var(--card-shadow);
@@ -439,24 +432,18 @@
     .stat-grid {
       grid-template-columns: 1fr;
     }
-
-    .action-grid {
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    }
-
-    .action-grid {
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    }
   }
 </style>
 
 <div class="container-fluid" style="max-width: 1400px; margin: 0 auto; padding: 2rem 1rem;">
 
-  <!-- Profile Header -->
+  
   <div class="profile-header">
     <div class="profile-content">
-      <img src="https://ui-avatars.com/api/?name=<?php echo e(urlencode($student->HoTen)); ?>&background=667eea&color=fff&size=150"
-        alt="Avatar" class="profile-avatar">
+      <img
+        src="https://ui-avatars.com/api/?name=<?php echo e(urlencode($student->HoTen)); ?>&background=667eea&color=fff&size=150"
+        alt="Avatar"
+        class="profile-avatar">
       <div class="profile-info flex-grow-1">
         <h2><?php echo e($student->HoTen); ?></h2>
         <div class="profile-meta">
@@ -470,7 +457,10 @@
           </div>
           <div class="profile-meta-item">
             <i class="fas fa-calendar"></i>
-            <span><strong>Sinh:</strong> <?php echo e($student->NgaySinh ? date('d/m/Y', strtotime($student->NgaySinh)) : 'N/A'); ?></span>
+            <span><strong>Sinh:</strong>
+              <?php echo e($student->NgaySinh ? date('d/m/Y', strtotime($student->NgaySinh)) : 'N/A'); ?>
+
+            </span>
           </div>
           <div class="profile-meta-item">
             <i class="fas fa-graduation-cap"></i>
@@ -485,39 +475,54 @@
     </div>
   </div>
 
-  <!-- Stats Grid -->
+  
   <div class="stat-grid">
     <a href="<?php echo e(route('sinhvien.thongbao_hoatdong')); ?>" class="stat-card-link">
       <div class="stat-card">
-        <div class="stat-label"><i class="fas fa-bell me-1"></i> Thông báo hoạt động</div>
+        <div class="stat-label">
+          <i class="fas fa-bell me-1"></i> Thông báo hoạt động
+        </div>
         <div class="stat-value"><?php echo e($notifications_count); ?></div>
         <div class="stat-badge">Chưa đọc</div>
       </div>
     </a>
+
     <a href="<?php echo e(route('sinhvien.lich_tuan')); ?>" class="stat-card-link">
       <div class="stat-card orange">
-        <div class="stat-label"><i class="fas fa-calendar me-1"></i> Hoạt động tuần này</div>
+        <div class="stat-label">
+          <i class="fas fa-calendar me-1"></i> Hoạt động tuần này
+        </div>
         <div class="stat-value"><?php echo e($weekly_activities); ?></div>
         <div class="stat-badge">Sắp diễn ra</div>
       </div>
     </a>
+
     <a href="<?php echo e(route('sinhvien.diem_ren_luyen')); ?>" class="stat-card-link">
       <div class="stat-card success">
-        <div class="stat-label"><i class="fas fa-star me-1"></i> Điểm rèn luyện <?php echo e($currentHocKy->TenHocKy ?? ''); ?></div>
+        <div class="stat-label">
+          <i class="fas fa-star me-1"></i> Điểm rèn luyện <?php echo e($currentHocKy->TenHocKy ?? ''); ?>
+
+        </div>
         <div class="stat-value"><?php echo e($training_score); ?></div>
         <div class="stat-badge"><?php echo e($training_rank); ?></div>
       </div>
     </a>
+
     <a href="<?php echo e(route('sinhvien.diem_cong_tac_xa_hoi')); ?>" class="stat-card-link">
       <div class="stat-card secondary">
-        <div class="stat-label"><i class="fas fa-heart me-1"></i> Điểm công tác xã hội</div>
+        <div class="stat-label">
+          <i class="fas fa-heart me-1"></i> Điểm công tác xã hội
+        </div>
         <div class="stat-value"><?php echo e($social_score); ?></div>
-        <div class="stat-badge"><?php echo e($has_red_activity ? 'Đã có Địa chỉ đỏ' : 'Chưa có Địa chỉ đỏ'); ?></div>
+        <div class="stat-badge">
+          <?php echo e($has_red_activity ? 'Đã có Địa chỉ đỏ' : 'Chưa có Địa chỉ đỏ'); ?>
+
+        </div>
       </div>
     </a>
   </div>
 
-  <!-- Quick Actions -->
+  
   <div class="quick-actions">
     <div class="section-title">
       <i class="fas fa-lightning-bolt"></i> Chức năng nhanh
@@ -539,18 +544,15 @@
         <i class="fas fa-heart"></i>
         <span>Công tác xã hội</span>
       </a>
-      <a href="#" class="action-btn">
-        <i class="fas fa-credit-card"></i>
-        <span>Thanh toán</span>
-      </a>
-
     </div>
   </div>
 
-  <!-- Training Activities Table -->
+  
   <div class="table-section">
     <div class="table-header">
-      <h5><i class="fas fa-list me-2"></i>Hoạt động điểm rèn luyện</h5>
+      <h5>
+        <i class="fas fa-list me-2"></i>Hoạt động điểm rèn luyện
+      </h5>
       <select class="form-select form-select-sm">
         <option><?php echo e($currentHocKy->TenHocKy ?? 'Học kỳ hiện tại'); ?></option>
       </select>
@@ -569,52 +571,63 @@
         </thead>
         <tbody>
           <?php $__empty_1 = true; $__currentLoopData = $activities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $activity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-          <tr>
-            <td class="fw-bold"><?php echo e($index + 1); ?></td>
-            <td><?php echo e($activity->hoatdong->TenHoatDong ?? 'N/A'); ?></td>
-            <td><?php echo e($activity->hoatdong->ThoiGianBatDau ? date('d/m/Y', strtotime($activity->hoatdong->ThoiGianBatDau)) : 'N/A'); ?></td>
-            <td class="text-center"><span class="points-highlight">+<?php echo e($activity->hoatdong->quydinhdiem->DiemNhan ?? 0); ?></span></td>
-            <td class="text-center">
-              <?php if($activity->TrangThaiDangKy == 'Đã duyệt' || $activity->TrangThaiThamGia == 'Đã tham gia'): ?>
-              <span class="badge badge-success">
-                <i class="fas fa-check-circle me-1"></i> <?php echo e($activity->TrangThaiDangKy); ?>
+            <tr>
+              <td class="fw-bold"><?php echo e($index + 1); ?></td>
+              <td><?php echo e($activity->hoatdong->TenHoatDong ?? 'N/A'); ?></td>
+              <td>
+                <?php echo e($activity->hoatdong->ThoiGianBatDau
+                    ? date('d/m/Y', strtotime($activity->hoatdong->ThoiGianBatDau))
+                    : 'N/A'); ?>
 
-              </span>
-              <?php else: ?>
-              <span class="badge badge-warning">
-                <i class="fas fa-clock me-1"></i> <?php echo e($activity->TrangThaiDangKy ?? $activity->TrangThaiThamGia); ?>
+              </td>
+              <td class="text-center">
+                <span class="points-highlight">
+                  +<?php echo e($activity->hoatdong->quydinh->DiemNhan ?? 0); ?>
 
-              </span>
-              <?php endif; ?>
-            </td>
-            <td class="text-center">
-              <a href="#" class="btn-action" title="Xem chi tiết">
-                <i class="fas fa-eye"></i>
-              </a>
-            </td>
-          </tr>
+                </span>
+              </td>
+              <td class="text-center">
+                <?php if($activity->TrangThaiDangKy == 'Đã duyệt' || $activity->TrangThaiThamGia == 'Đã tham gia'): ?>
+                  <span class="badge badge-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    <?php echo e($activity->TrangThaiThamGia == 'Đã tham gia' ? 'Đã tham gia' : $activity->TrangThaiDangKy); ?>
+
+                  </span>
+                <?php else: ?>
+                  <span class="badge badge-warning">
+                    <i class="fas fa-clock me-1"></i>
+                    <?php echo e($activity->TrangThaiDangKy ?? $activity->TrangThaiThamGia); ?>
+
+                  </span>
+                <?php endif; ?>
+              </td>
+              <td class="text-center">
+                <a href="#" class="btn-action" title="Xem chi tiết">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-          <tr>
-            <td colspan="6" class="text-center p-4 text-muted">Chưa tham gia hoạt động rèn luyện nào trong học kỳ này.</td>
-          </tr>
+            <tr>
+              <td colspan="6" class="text-center p-4 text-muted">
+                Chưa tham gia hoạt động rèn luyện nào trong học kỳ này.
+              </td>
+            </tr>
           <?php endif; ?>
         </tbody>
-        <tfoot>
-          <tr class="table-footer">
-            <td colspan="3">Tổng cộng:</td>
-            <td class="text-center">+<?php echo e($activities->sum(fn($a) => $a->hoatdong->quydinhdiem->DiemNhan ?? 0)); ?> điểm</td>
-            <td colspan="2"></td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   </div>
 
-  <!-- Social Activities Table -->
+  
   <div class="table-section">
     <div class="table-header">
-      <h5><i class="fas fa-heart me-2" style="color: #dc3545;"></i>Hoạt động công tác xã hội</h5>
-      <span class="badge bg-success text-white">Tổng: <?php echo e($social_activities->count()); ?> hoạt động</span>
+      <h5>
+        <i class="fas fa-heart me-2" style="color: #dc3545;"></i>Hoạt động công tác xã hội
+      </h5>
+      <span class="badge bg-success text-white">
+        Tổng: <?php echo e($social_activities->count()); ?> hoạt động
+      </span>
     </div>
     <div class="table-responsive">
       <table class="table">
@@ -631,66 +644,72 @@
         </thead>
         <tbody>
           <?php $__empty_1 = true; $__currentLoopData = $social_activities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $activity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-          <tr>
-            <td class="fw-bold"><?php echo e($index + 1); ?></td>
-            <td><?php echo e($activity->hoatdong->TenHoatDong ?? 'N/A'); ?></td>
-            <td>
-              <?php if($activity->hoatdong->LoaiHoatDong == 'Địa chỉ đỏ'): ?>
-              <span class="badge badge-danger"><?php echo e($activity->hoatdong->LoaiHoatDong); ?></span>
-              <?php elseif($activity->hoatdong->LoaiHoatDong == 'Môi trường'): ?>
-              <span class="badge badge-info"><?php echo e($activity->hoatdong->LoaiHoatDong); ?></span>
-              <?php else: ?>
-              <span class="badge" style="background: rgba(108,117,125,0.15); color: #6c757d;"><?php echo e($activity->hoatdong->LoaiHoatDong ?? 'Khác'); ?></span>
-              <?php endif; ?>
-            </td>
-            <td><?php echo e($activity->hoatdong->ThoiGianBatDau ? date('d/m/Y', strtotime($activity->hoatdong->ThoiGianBatDau)) : 'N/A'); ?></td>
-            <td class="text-center"><span class="points-highlight">+<?php echo e($activity->hoatdong->quydinhdiem->DiemNhan ?? 0); ?></span></td>
-            <td class="text-center">
-              <?php if($activity->TrangThaiDangKy == 'Đã duyệt'): ?>
-              <span class="badge badge-success">
-                <i class="fas fa-check-circle me-1"></i> <?php echo e($activity->TrangThaiDangKy); ?>
+            <tr>
+              <td class="fw-bold"><?php echo e($index + 1); ?></td>
+              <td><?php echo e($activity->hoatdong->TenHoatDong ?? 'N/A'); ?></td>
+              <td>
+                <?php if($activity->hoatdong->LoaiHoatDong == 'Địa chỉ đỏ'): ?>
+                  <span class="badge badge-danger"><?php echo e($activity->hoatdong->LoaiHoatDong); ?></span>
+                <?php elseif($activity->hoatdong->LoaiHoatDong == 'Môi trường'): ?>
+                  <span class="badge badge-info"><?php echo e($activity->hoatdong->LoaiHoatDong); ?></span>
+                <?php else: ?>
+                  <span class="badge" style="background: rgba(108,117,125,0.15); color: #6c757d;">
+                    <?php echo e($activity->hoatdong->LoaiHoatDong ?? 'Khác'); ?>
 
-              </span>
-              <?php else: ?>
-              <span class="badge badge-warning">
-                <i class="fas fa-clock me-1"></i> <?php echo e($activity->TrangThaiDangKy ?? $activity->TrangThaiThamGia); ?>
+                  </span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <?php echo e($activity->hoatdong->ThoiGianBatDau
+                    ? date('d/m/Y', strtotime($activity->hoatdong->ThoiGianBatDau))
+                    : 'N/A'); ?>
 
-              </span>
-              <?php endif; ?>
-            </td>
-            <td class="text-center">
-              <a href="#" class="btn-action" title="Xem chi tiết">
-                <i class="fas fa-eye"></i>
-              </a>
-            </td>
-          </tr>
+              </td>
+              <td class="text-center">
+                <span class="points-highlight">
+                  +<?php echo e($activity->hoatdong->quydinh->DiemNhan ?? 0); ?>
+
+                </span>
+              </td>
+              <td class="text-center">
+                <?php if($activity->TrangThaiDangKy == 'Đã duyệt'): ?>
+                  <span class="badge badge-success">
+                    <i class="fas fa-check-circle me-1"></i> <?php echo e($activity->TrangThaiDangKy); ?>
+
+                  </span>
+                <?php else: ?>
+                  <span class="badge badge-warning">
+                    <i class="fas fa-clock me-1"></i>
+                    <?php echo e($activity->TrangThaiDangKy ?? $activity->TrangThaiThamGia); ?>
+
+                  </span>
+                <?php endif; ?>
+              </td>
+              <td class="text-center">
+                <a href="#" class="btn-action" title="Xem chi tiết">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-          <tr>
-            <td colspan="7" class="text-center p-4 text-muted">Chưa tham gia hoạt động công tác xã hội nào.</td>
-          </tr>
+            <tr>
+              <td colspan="7" class="text-center p-4 text-muted">
+                Chưa tham gia hoạt động công tác xã hội nào.
+              </td>
+            </tr>
           <?php endif; ?>
         </tbody>
-        <tfoot>
-          <tr class="table-footer">
-            <td colspan="4">Tổng cộng:</td>
-            <td class="text-center">+<?php echo e($social_activities->sum(fn($a) => $a->hoatdong->quydinhdiem->DiemNhan ?? 0)); ?> điểm
-              <?php if($social_score < 170): ?>
-                (Còn thiếu <?php echo e(170 - $social_score); ?> điểm)
-                <?php endif; ?>
-                </td>
-            <td colspan="2"></td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   </div>
 
-  <!-- Statistics Section -->
+  
   <div id="statisticsSection" style="display: none; margin-bottom: 2rem;">
     <div class="charts-grid">
       <div class="chart-card">
         <h4 class="chart-title">
-          <i class="fas fa-chart-bar me-2" style="color: var(--primary);"></i> Thống kê điểm rèn luyện
+          <i class="fas fa-chart-bar me-2" style="color: var(--primary);"></i>
+          Thống kê điểm rèn luyện
         </h4>
         <div style="height: 350px;">
           <canvas id="trainingChart"></canvas>
@@ -699,7 +718,8 @@
 
       <div class="chart-card">
         <h4 class="chart-title">
-          <i class="fas fa-chart-pie me-2" style="color: var(--success);"></i> Thống kê điểm công tác xã hội
+          <i class="fas fa-chart-pie me-2" style="color: var(--success);"></i>
+          Thống kê điểm công tác xã hội
         </h4>
         <div style="height: 350px;">
           <canvas id="socialChart"></canvas>
@@ -714,36 +734,42 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
   const trainingChartData = <?php echo json_encode($training_chart_js ?? [], 15, 512) ?>;
-  const socialChartData = <?php echo json_encode($social_chart_js ?? [], 15, 512) ?>;
+  const socialChartData   = <?php echo json_encode($social_chart_js ?? [], 15, 512) ?>;
 
   const toggleButton = document.getElementById('toggleStatistics');
-  const section = document.getElementById('statisticsSection');
-  let chartLoaded = false;
+  const section      = document.getElementById('statisticsSection');
+  let chartLoaded    = false;
 
-  toggleButton.addEventListener('click', () => {
-    if (section.style.display === 'none') {
-      section.style.display = 'block';
-      if (!chartLoaded) {
-        renderCharts();
-        chartLoaded = true;
+  if (toggleButton && section) {
+    toggleButton.addEventListener('click', () => {
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+
+        if (!chartLoaded) {
+          renderCharts();
+          chartLoaded = true;
+        }
+
+        window.scrollTo({
+          top: section.offsetTop - 50,
+          behavior: 'smooth'
+        });
+      } else {
+        section.style.display = 'none';
       }
-      window.scrollTo({
-        top: section.offsetTop - 50,
-        behavior: 'smooth'
-      });
-    } else {
-      section.style.display = 'none';
-    }
-  });
+    });
+  }
 
   function renderCharts() {
-    const ctx = document.getElementById('trainingChart');
-    if (ctx && trainingChartData.labels) {
-      new Chart(ctx, {
+    const trainingCtx = document.getElementById('trainingChart');
+
+    if (trainingCtx && trainingChartData && trainingChartData.labels) {
+      new Chart(trainingCtx, {
         type: 'bar',
         data: {
           labels: trainingChartData.labels,
-          datasets: [{
+          datasets: [
+            {
               label: 'Học kỳ 1',
               data: trainingChartData.hk1_data,
               backgroundColor: 'rgba(102, 126, 234, 0.8)',
@@ -790,17 +816,20 @@
     }
 
     const socialCtx = document.getElementById('socialChart');
-    if (socialCtx && socialChartData.dat) {
+
+    if (socialCtx && socialChartData && socialChartData.dat !== undefined) {
       new Chart(socialCtx, {
         type: 'doughnut',
         data: {
           labels: ['Đã đạt', 'Còn thiếu'],
-          datasets: [{
-            data: [socialChartData.dat, socialChartData.thieu],
-            backgroundColor: ['#4caf50', '#f9c74f'],
-            borderColor: '#fff',
-            borderWidth: 2
-          }]
+          datasets: [
+            {
+              data: [socialChartData.dat, socialChartData.thieu],
+              backgroundColor: ['#4caf50', '#f9c74f'],
+              borderColor: '#fff',
+              borderWidth: 2
+            }
+          ]
         },
         options: {
           responsive: true,
@@ -824,4 +853,5 @@
 <?php $__env->stopPush(); ?>
 
 <?php $__env->stopSection(); ?>
+
 <?php echo $__env->make('layouts.sinhvien', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\HT_QuanLy_DRL_CTXH\ql-drl-ctxh\resources\views/sinhvien/dashboard.blade.php ENDPATH**/ ?>

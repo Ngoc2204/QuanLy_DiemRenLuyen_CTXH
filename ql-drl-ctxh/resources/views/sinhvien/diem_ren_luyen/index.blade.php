@@ -3,30 +3,54 @@
 
 @push('styles')
 <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
     :root {
         --primary: #667eea;
+        --primary-light: #7c8ff5;
+        --primary-dark: #5568d3;
         --secondary: #764ba2;
         --success: #10b981;
+        --success-light: #6ee7b7;
         --warning: #f59e0b;
         --info: #3b82f6;
         --danger: #ef4444;
+        --dark: #1a202c;
+        --light: #f7fafc;
+        --border: #e2e8f0;
     }
 
     .page-wrapper {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+        background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
         min-height: 100vh;
-        padding: 2rem 0;
+        padding: 2.5rem 0;
     }
 
     /* Header Card */
     .header-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 20px;
-        padding: 2.5rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+        border-radius: 24px;
+        padding: 3rem 2.5rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 15px 50px rgba(102, 126, 234, 0.25);
         position: relative;
         overflow: hidden;
+        animation: slideDown 0.6s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .header-card::before {
@@ -34,9 +58,26 @@
         position: absolute;
         top: -50%;
         right: -10%;
-        width: 300px;
-        height: 300px;
-        background: rgba(255, 255, 255, 0.1);
+        width: 400px;
+        height: 400px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(30px); }
+    }
+
+    .header-card::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -5%;
+        width: 250px;
+        height: 250px;
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 50%;
     }
 
@@ -44,69 +85,121 @@
         color: white;
         font-weight: 700;
         margin: 0;
-        font-size: 1.8rem;
+        font-size: 2rem;
         position: relative;
         z-index: 1;
+        letter-spacing: -0.5px;
     }
 
     .header-card .subtitle {
-        color: rgba(255, 255, 255, 0.95);
+        color: rgba(255, 255, 255, 0.9);
         font-size: 1rem;
-        margin-top: 0.5rem;
+        margin-top: 0.75rem;
         position: relative;
         z-index: 1;
+        font-weight: 400;
     }
 
     /* Filter Card */
     .filter-card {
         background: white;
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        border: none;
+        border-radius: 18px;
+        padding: 1.75rem 2rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        animation: slideUp 0.6s ease-out 0.1s both;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .filter-card form {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .filter-card .form-label {
+        color: var(--dark);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0;
     }
 
     .filter-card select {
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
-        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        padding: 0.85rem 1.25rem;
         transition: all 0.3s ease;
+        font-size: 1rem;
+        color: var(--dark);
+        background-color: white;
+        cursor: pointer;
+        max-width: 350px;
+    }
+
+    .filter-card select:hover {
+        border-color: var(--primary);
+        background-color: #f9f9ff;
     }
 
     .filter-card select:focus {
         border-color: var(--primary);
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        outline: none;
     }
 
     .filter-card .btn-primary {
         background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 10px;
-        font-weight: 500;
+        padding: 0.85rem 1.75rem;
+        border-radius: 12px;
+        font-weight: 600;
         transition: all 0.3s ease;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .filter-card .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.35);
     }
 
-    /* Stat Cards */
+    .filter-card .btn-primary:active {
+        transform: translateY(-1px);
+    }
+
+    /* Stat Card */
     .stats-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2.5rem;
+        animation: slideUp 0.6s ease-out 0.2s both;
     }
 
     .stat-card {
         background: white;
-        border-radius: 16px;
-        padding: 1.75rem;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
-        transition: all 0.3s ease;
+        border-radius: 18px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border: 2px solid transparent;
         position: relative;
         overflow: hidden;
@@ -117,93 +210,90 @@
         position: absolute;
         top: 0;
         right: 0;
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
-        border-radius: 0 16px 0 100%;
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, transparent 100%);
+        border-radius: 0 18px 0 100%;
     }
 
     .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        transform: translateY(-8px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
         border-color: var(--primary);
     }
 
     .stat-card .icon-wrapper {
-        width: 56px;
-        height: 56px;
-        border-radius: 12px;
+        width: 70px;
+        height: 70px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1rem;
-        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.75rem;
         color: white;
+        position: relative;
+        z-index: 1;
     }
 
-    .stat-card .icon-wrapper.bg-info { 
-        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); 
-    }
-    .stat-card .icon-wrapper.bg-success { 
-        background: linear-gradient(135deg, #10b981 0%, #34d399 100%); 
-    }
-    .stat-card .icon-wrapper.bg-danger { 
-        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); 
-    }
-    .stat-card .icon-wrapper.bg-warning { 
-        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); 
+    .stat-card .icon-wrapper.bg-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
     }
 
     .stat-card .stat-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #6c757d;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
+        letter-spacing: 1px;
+        margin-bottom: 0.75rem;
     }
 
     .stat-card .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #212529;
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--dark);
         line-height: 1;
+        margin-bottom: 1rem;
     }
 
-    .stat-card .stat-value.text-danger {
-        color: var(--danger);
-    }
-
-    .stat-card .stat-rank {
+    .stat-rank {
         display: inline-block;
-        margin-top: 0.75rem;
-        padding: 0.35rem 0.75rem;
+        padding: 0.5rem 1.25rem;
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         color: #92400e;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.9rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
     }
 
     /* Table Card */
     .table-card {
         background: white;
-        border-radius: 16px;
+        border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
         border: none;
+        animation: slideUp 0.6s ease-out 0.3s both;
     }
 
     .table-card .card-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-bottom: 2px solid #e9ecef;
-        padding: 1.25rem 1.5rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #e8f0f8 100%);
+        border-bottom: 2px solid var(--border);
+        padding: 1.5rem 2rem;
     }
 
     .table-card h5 {
-        color: #212529;
-        font-weight: 600;
+        color: var(--dark);
+        font-weight: 700;
         margin: 0;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     }
 
     .table-custom {
@@ -211,20 +301,21 @@
     }
 
     .table-custom thead th {
-        background: #f8f9fa;
-        border-bottom: 2px solid #e9ecef;
-        font-weight: 600;
+        background: #f8fafc;
+        border-bottom: 2px solid var(--border);
+        font-weight: 700;
         text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 0.5px;
-        color: #495057;
-        padding: 1rem;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        color: #6c757d;
+        padding: 1.25rem 1rem;
     }
 
     .table-custom tbody td {
-        padding: 1.25rem 1rem;
+        padding: 1.5rem 1rem;
         vertical-align: middle;
         border-bottom: 1px solid #f1f3f5;
+        color: var(--dark);
     }
 
     .table-custom tbody tr {
@@ -232,61 +323,108 @@
     }
 
     .table-custom tbody tr:hover {
-        background: #f8f9ff;
-        transform: scale(1.01);
+        background: linear-gradient(135deg, #f9faff 0%, #f0f4f8 100%);
+        box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.1);
     }
 
     .table-custom tbody tr:last-child td {
         border-bottom: none;
     }
 
-    .activity-name {
+    .table-info {
+        background: linear-gradient(135deg, #e0f2fe 0%, #f0f7ff 100%);
         font-weight: 600;
-        color: #212529;
-        margin-bottom: 0.25rem;
+    }
+
+    .activity-name {
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.35rem;
     }
 
     .activity-code {
         color: #6c757d;
         font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .badge {
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        display: inline-block;
+    }
+
+    .badge.bg-success-soft {
+        background-color: #d1fae5;
+        color: #065f46;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+    }
+
+    .badge.bg-warning-soft {
+        background-color: #fef3c7;
+        color: #92400e;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+    }
+
+    .badge.bg-primary-soft {
+        background-color: #e0f2fe;
+        color: #075985;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+    }
+
+    .badge.bg-secondary-soft {
+        background-color: #e5e7eb;
+        color: #4b5563;
+        box-shadow: 0 2px 8px rgba(107, 114, 128, 0.15);
     }
 
     .badge-points {
         display: inline-block;
-        padding: 0.5rem 1rem;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.95rem;
+        padding: 0.6rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all 0.2s ease;
     }
 
     .badge-points.positive {
         background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         color: #065f46;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
 
     .badge-points.negative {
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         color: #991b1b;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+
+    .badge-points {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        color: #6c757d;
     }
 
     /* Empty State */
     .empty-state {
         background: white;
-        border-radius: 16px;
-        padding: 4rem 2rem;
+        border-radius: 18px;
+        padding: 4.5rem 2rem;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     }
 
     .empty-state i {
         color: #cbd5e1;
         margin-bottom: 1.5rem;
+        opacity: 0.6;
     }
 
     .empty-state h5 {
         color: #64748b;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
     }
 
     .empty-state p {
@@ -299,13 +437,29 @@
         .stats-container {
             grid-template-columns: 1fr;
         }
-        
+
         .header-card {
-            padding: 1.5rem;
+            padding: 2rem 1.5rem;
         }
 
         .header-card h3 {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
+        }
+
+        .filter-card form {
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .filter-card select {
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .table-custom thead th,
+        .table-custom tbody td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.85rem;
         }
     }
 </style>
@@ -323,134 +477,115 @@
 
         <!-- Filter -->
         <div class="filter-card">
-            <form action="{{ route('sinhvien.diem_ren_luyen') }}" method="GET" class="d-flex flex-wrap align-items-center gap-3 justify-content-center">
-                <label for="hocky" class="form-label mb-0 fw-semibold">
-                    <i class="fas fa-calendar-alt me-2 text-primary"></i>Chọn học kỳ:
+            <form action="{{ route('sinhvien.diem_ren_luyen') }}" method="GET">
+                <label for="hocky" class="form-label">
+                    <i class="fas fa-calendar-alt"></i>Chọn học kỳ:
                 </label>
-                <select name="hocky" id="hocky" class="form-select" style="max-width: 350px;">
+                <select name="hocky" id="hocky" class="form-select">
                     @if($allHocKys->isEmpty())
-                        <option value="">Chưa có dữ liệu học kỳ</option>
+                    <option value="">Chưa có dữ liệu học kỳ</option>
                     @else
-                        @foreach($allHocKys as $hk)
-                            <option value="{{ $hk->MaHocKy }}" 
-                                {{ ($currentHocKy && $currentHocKy->MaHocKy == $hk->MaHocKy) ? 'selected' : '' }}>
-                                {{ $hk->TenHocKy }}
-                            </option>
-                        @endforeach
+                    @foreach($allHocKys as $hk)
+                    <option value="{{ $hk->MaHocKy }}"
+                        {{ ($currentHocKy && $currentHocKy->MaHocKy == $hk->MaHocKy) ? 'selected' : '' }}>
+                        {{ $hk->TenHocKy }}
+                    </option>
+                    @endforeach
                     @endif
                 </select>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-filter me-2"></i>Xem kết quả
+                    <i class="fas fa-filter"></i>Xem kết quả
                 </button>
             </form>
         </div>
 
         @if(!$currentHocKy)
-            <!-- Empty State -->
-            <div class="empty-state">
-                <i class="fas fa-inbox fa-4x"></i>
-                <h5>Chưa có dữ liệu</h5>
-                <p>Không tìm thấy thông tin học kỳ. Vui lòng chọn học kỳ khác để xem chi tiết.</p>
-            </div>
+        <div class="empty-state">
+            <i class="fas fa-inbox fa-4x"></i>
+            <h5>Chưa có dữ liệu</h5>
+            <p>Không tìm thấy thông tin học kỳ. Vui lòng chọn học kỳ khác để xem chi tiết.</p>
+        </div>
         @else
-            <!-- Stats Cards -->
-            <div class="stats-container">
-                <div class="stat-card">
-                    <div class="icon-wrapper bg-info">
-                        <i class="fas fa-flag"></i>
-                    </div>
-                    <div class="stat-label">Điểm Khởi Tạo</div>
-                    <div class="stat-value">{{ number_format($diemGoc, 0) }}</div>
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="icon-wrapper bg-warning">
+                    <i class="fas fa-star"></i>
                 </div>
+                <div class="stat-label">TỔNG ĐIỂM RÈN LUYỆN</div>
+                <div class="stat-value">{{ number_format($tongDiemMoi, 0) }}</div>
+                <span class="stat-rank">{{ $xepLoaiMoi }}</span>
+            </div>
+        </div>
 
-                <div class="stat-card">
-                    <div class="icon-wrapper bg-success">
-                        <i class="fas fa-plus-circle"></i>
-                    </div>
-                    <div class="stat-label">Điểm Cộng Thêm</div>
-                    <div class="stat-value">+{{ number_format($diemCongThem, 0) }}</div>
-                </div>
+        <div class="table-card">
+            <div class="card-header">
+                <h5>
+                    <i class="fas fa-list-check"></i>
+                    Chi tiết các mục ảnh hưởng đến điểm - {{ $currentHocKy->TenHocKy }}
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">STT</th>
+                                <th>Mục ghi nhận / Tên hoạt động</th>
+                                <th class="text-center" style="width: 150px;">Ngày ghi nhận</th>
+                                <th class="text-center" style="width: 150px;">Trạng thái</th>
+                                <th class="text-center" style="width: 150px;">Điểm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($cacMucAnhHuongDenDiem as $index => $muc)
+                            @php
+                            $diem = $muc->diem;
+                            $isBaseOrAdjust = in_array($muc->loai, ['goc', 'dieu_chinh']);
+                            $isPositive = $diem >= 0;
 
-                <div class="stat-card">
-                    <div class="icon-wrapper bg-danger">
-                        <i class="fas fa-minus-circle"></i>
-                    </div>
-                    <div class="stat-label">Điểm Trừ Đi</div>
-                    <div class="stat-value text-danger">{{ number_format($diemTruDi, 0) }}</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="icon-wrapper bg-warning">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <div class="stat-label">Tổng Điểm</div>
-                    <div class="stat-value">{{ number_format($tongDiemMoi, 0) }}</div>
-                    <span class="stat-rank">{{ $xepLoaiMoi }}</span>
+                            $statusClass = '';
+                            if ($muc->trang_thai === 'Đã tham gia' || $muc->loai === 'goc') $statusClass = 'badge bg-success-soft';
+                            elseif ($muc->trang_thai === 'Chưa tham gia') $statusClass = 'badge bg-warning-soft';
+                            elseif ($muc->trang_thai === 'Điều chỉnh') $statusClass = 'badge bg-primary-soft';
+                            else $statusClass = 'badge bg-secondary-soft';
+                            @endphp
+                            <tr class="{{ $muc->loai == 'goc' ? 'table-info' : '' }}">
+                                <td class="text-center fw-bold">{{ $index + 1 }}</td>
+                                <td>
+                                    <div class="activity-name">{{ $muc->ten }}</div>
+                                    <div class="activity-code">{{ $muc->ma }}</div>
+                                </td>
+                                <td class="text-center">{{ $muc->ngay }}</td>
+                                <td class="text-center">
+                                    <span class="{{ $statusClass }}">{{ $muc->trang_thai }}</span>
+                                </td>
+                                <td class="text-center">
+                                    @if($isBaseOrAdjust)
+                                    <span class="badge-points {{ $isPositive ? 'positive' : 'negative' }}">
+                                        {{ $isPositive ? '+' : '' }}{{ number_format($diem, 0) }}
+                                    </span>
+                                    @elseif($diem != 0 && $muc->trang_thai == 'Đã tham gia')
+                                    <span class="badge-points {{ $isPositive ? 'positive' : 'negative' }}">
+                                        {{ $isPositive ? '+' : '' }}{{ number_format($diem, 0) }}
+                                    </span>
+                                    @else
+                                    <span class="badge-points">0</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                                    <p class="text-muted mb-0">Chưa có dữ liệu nào được ghi nhận trong học kỳ này</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <!-- Activities Table -->
-            <div class="table-card">
-                <div class="card-header">
-                    <h5>
-                        <i class="fas fa-list-check me-2 text-primary"></i>
-                        Chi tiết hoạt động - {{ $currentHocKy->TenHocKy }}
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-custom mb-0">
-                            <thead>
-                                <tr>
-                                    <th style="width: 60px;">STT</th>
-                                    <th>Tên hoạt động</th>
-                                    <th class="text-center" style="width: 150px;">Ngày ghi nhận</th>
-                                    <th class="text-center" style="width: 150px;">Điểm</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($cacHoatDongDaThamGia as $index => $dangKy)
-                                    @php 
-                                        $diem = $dangKy->hoatdong && $dangKy->hoatdong->quydinh ? $dangKy->hoatdong->quydinh->DiemNhan : 0; 
-                                    @endphp
-                                    <tr>
-                                        <td class="text-center fw-bold">{{ $index + 1 }}</td>
-                                        <td>
-                                            <div class="activity-name">{{ $dangKy->hoatdong->TenHoatDong ?? 'Không rõ tên' }}</div>
-                                            <div class="activity-code">{{ $dangKy->hoatdong->MaHoatDong ?? 'N/A' }}</div>
-                                        </td>
-                                        <td class="text-center">
-                                            @if($dangKy->CheckOutAt)
-                                                {{ \Carbon\Carbon::parse($dangKy->CheckOutAt)->format('d/m/Y') }}
-                                            @else
-                                                {{ \Carbon\Carbon::parse($dangKy->NgayDangKy)->format('d/m/Y') }}
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            @if($diem >= 0)
-                                                <span class="badge-points positive">
-                                                    <i class="fas fa-plus me-1"></i>{{ $diem }}
-                                                </span>
-                                            @else
-                                                <span class="badge-points negative">
-                                                    <i class="fas fa-minus me-1"></i>{{ abs($diem) }}
-                                                </span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5">
-                                            <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
-                                            <p class="text-muted mb-0">Chưa có hoạt động nào trong học kỳ này</p>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+        </div>
         @endif
 
     </div>

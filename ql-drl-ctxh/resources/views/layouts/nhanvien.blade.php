@@ -451,22 +451,32 @@
                 <span>Duyệt đăng ký SV</span>
             </a>
 
-            <a href="" class="{{ request()->routeIs('nhanvien.ghinhan*') ? 'active' : '' }}">
-                <i class="fa-solid fa-marker"></i>
-                <span>Ghi nhận kết quả</span>
+            <a href="{{ route('nhanvien.dieuchinh_drl.index') }}" class="{{ request()->routeIs('nhanvien.dieuchinh*') ? 'active' : '' }}">
+                <i class="fa-solid fa-file-pen"></i>
+                <span>Điều chỉnh điểm rèn luyện</span>
+            </a>
+
+            <div class="nav-section-title">Quản lý thanh toán</div>
+
+            <a href="{{ route('nhanvien.thanhtoan.index') }}"
+                class="{{ request()->routeIs('nhanvien.thanhtoan.index*') ? 'active' : '' }}">
+
+                <i class="fa-solid fa-file-invoice-dollar"></i> {{-- <-- Đổi icon --}}
+
+                <span>Quản lý thanh toán CTXH</span> {{-- (Tên này chính xác hơn) --}}
             </a>
 
             <div class="nav-section-title">Báo cáo & thống kê</div>
 
             <a href="{{ route('nhanvien.thongke.index') }}" class="{{ request()->routeIs('nhanvien.thongke.index*') ? 'active' : '' }}">
-                <i class="fa-solid fa-chart-area"></i> 
+                <i class="fa-solid fa-chart-area"></i>
                 <span>Báo cáo & Thống kê</span>
             </a>
 
 
             <div class="nav-section-title">Tài khoản</div>
 
-            <a href="" class="{{ request()->routeIs('nhanvien.profile*') ? 'active' : '' }}">
+            <a href="{{ route('nhanvien.profile.edit') }}" class="{{ request()->routeIs('nhanvien.profile*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-gear"></i>
                 <span>Thông tin cá nhân</span>
             </a>
@@ -484,8 +494,19 @@
         <h5>@yield('page_title', 'Trang nghiệp vụ')</h5>
         <div class="navbar-right">
             <div class="user-info">
+                @php
+                    $avatar = optional(Auth::user())->Avatar ?? null;
+                    $avatarUrl = null;
+                    if ($avatar && file_exists(storage_path('app/public/' . $avatar))) {
+                        $avatarUrl = asset('storage/' . $avatar);
+                    }
+                @endphp
                 <div class="user-avatar">
-                    {{ strtoupper(substr(Auth::user()->TenDangNhap ?? 'N', 0, 1)) }}
+                    @if($avatarUrl)
+                        <img src="{{ $avatarUrl }}" alt="avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+                    @else
+                        {{ strtoupper(substr(Auth::user()->TenDangNhap ?? 'N', 0, 1)) }}
+                    @endif
                 </div>
                 <div class="user-details">
                     <div class="user-name">{{ Auth::user()->TenDangNhap ?? 'Nhân viên' }}</div>

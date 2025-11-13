@@ -8,15 +8,23 @@ class DangKyHoatDongCTXH extends Model
 {
     protected $table = 'dangkyhoatdongctxh';
     protected $primaryKey = 'MaDangKy';
-    public $incrementing = false;
+    public $incrementing = true;
+    protected $keyType = 'int';
     public $timestamps = false;
     protected $casts = [
         'NgayDangKy' => 'datetime',
     ];
 
-    protected $fillable = ['MaDangKy', 'MSSV', 'MaHoatDong', 'NgayDangKy', 'TrangThaiDangKy','NgayThamGia','CheckInAt', 
-    'CheckOutAt', 
-    'TrangThaiThamGia', 'thanh_toan_id',];
+    protected $fillable = [
+        'MSSV',
+        'MaHoatDong',
+        'NgayDangKy',
+        'TrangThaiDangKy',
+        'CheckInAt',
+        'CheckOutAt',
+        'TrangThaiThamGia',
+        'thanh_toan_id',
+    ];
 
     public function sinhvien()
     {

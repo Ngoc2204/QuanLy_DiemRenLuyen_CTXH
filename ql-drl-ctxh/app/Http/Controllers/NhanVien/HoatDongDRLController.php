@@ -4,14 +4,15 @@ namespace App\Http\Controllers\NhanVien;
 
 use App\Http\Controllers\Controller;
 use App\Models\HoatDongDRL;
-use App\Models\HoatDongCTXH; // <--- THÊM DÒNG NÀY
+use App\Models\HoatDongCTXH;
 use App\Models\QuyDinhDiemRL;
 use App\Models\GiangVien;
 use App\Models\HocKy;
-use App\Models\DangKyHoatDongDrl; // <--- THÊM DÒNG NÀY
+use App\Models\DangKyHoatDongDrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class HoatDongDRLController extends Controller
 {
@@ -72,13 +73,12 @@ class HoatDongDRLController extends Controller
         $quyDinhDiems = QuyDinhDiemRl::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
         // Lấy danh sách Học Kỳ
         $hocKys = HocKy::orderBy('NgayBatDau', 'desc')->pluck('TenHocKy', 'MaHocKy');
-
-        // <--- THÊM: Lấy danh sách Giảng viên
+        // Lấy danh sách Giảng viên
         $giangViens = GiangVien::orderBy('TenGV', 'asc')->pluck('TenGV', 'MaGV');
+        // Lấy danh sách Sở thích (Interests)
+        $interests = DB::table('interests')->orderBy('InterestName', 'asc')->get(['InterestID', 'InterestName']);
 
-        // Đổi tên view
-        // <--- THÊM: 'giangViens' vào compact
-        return view('nhanvien.hoatdong_drl.create', compact('quyDinhDiems', 'hocKys', 'giangViens'));
+        return view('nhanvien.hoatdong_drl.create', compact('quyDinhDiems', 'hocKys', 'giangViens', 'interests'));
     }
 
     /**
@@ -94,11 +94,15 @@ class HoatDongDRLController extends Controller
             'ThoiHanHuy' => 'required|date|before:ThoiGianBatDau',
             'DiaDiem' => 'required|string|max:255',
             'SoLuong' => 'required|integer|min:1',
-            'LoaiHoatDong' => 'required|string|max:100',
+            'category_tags' => 'required|array|min:1',
+            'category_tags.*' => 'required|integer|exists:interests,InterestID',
             'MaHocKy' => 'required|exists:hocky,MaHocKy',
             'MaQuyDinhDiem' => 'required|exists:quydinhdiemrl,MaDiem',
             'MaGV' => 'nullable|string|exists:giangvien,MaGV',
         ]);
+        
+        // Convert category_tags array to comma-separated string
+        $validatedData['category_tags'] = implode(',', $validatedData['category_tags']);
 
         // Tạo Mã Hoạt động duy nhất (ví dụ: DRL-YYYYMMDD-XXXX)
         $maHoatDong = 'DRL-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
@@ -142,13 +146,13 @@ class HoatDongDRLController extends Controller
     {
         $quyDinhDiems = QuyDinhDiemRl::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
         $hocKys = HocKy::orderBy('NgayBatDau', 'desc')->pluck('TenHocKy', 'MaHocKy');
-
-        // <--- THÊM: Lấy danh sách Giảng viên
         $giangViens = GiangVien::orderBy('TenGV', 'asc')->pluck('TenGV', 'MaGV');
+        // Lấy danh sách Sở thích (Interests)
+        $interests = DB::table('interests')->orderBy('InterestName', 'asc')->get(['InterestID', 'InterestName']);
+        // Parse category_tags để hiển thị selected checkboxes
+        $selectedTags = $hoatdong_drl->category_tags ? array_map('intval', explode(',', $hoatdong_drl->category_tags)) : [];
 
-        // Đổi tên view
-        // <--- THÊM: 'giangViens' vào compact
-        return view('nhanvien.hoatdong_drl.edit', compact('hoatdong_drl', 'quyDinhDiems', 'hocKys', 'giangViens'));
+        return view('nhanvien.hoatdong_drl.edit', compact('hoatdong_drl', 'quyDinhDiems', 'hocKys', 'giangViens', 'interests', 'selectedTags'));
     }
 
     /**
@@ -165,11 +169,15 @@ class HoatDongDRLController extends Controller
             'ThoiHanHuy' => 'required|date|before:ThoiGianBatDau',
             'DiaDiem' => 'required|string|max:255',
             'SoLuong' => 'required|integer|min:1',
-            'LoaiHoatDong' => 'required|string|max:100',
+            'category_tags' => 'required|array|min:1',
+            'category_tags.*' => 'required|integer|exists:interests,InterestID',
             'MaHocKy' => 'required|exists:hocky,MaHocKy',
             'MaQuyDinhDiem' => 'required|exists:quydinhdiemrl,MaDiem',
             'MaGV' => 'nullable|string|exists:giangvien,MaGV',
         ]);
+        
+        // Convert category_tags array to comma-separated string
+        $validatedData['category_tags'] = implode(',', $validatedData['category_tags']);
 
         try {
             $hoatdong_drl->update($validatedData); // Đổi biến

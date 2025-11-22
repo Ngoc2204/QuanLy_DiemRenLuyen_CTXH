@@ -13,6 +13,8 @@ class DangKyHoatDongCTXH extends Model
     public $timestamps = false;
     protected $casts = [
         'NgayDangKy' => 'datetime',
+        'CheckInAt' => 'datetime',
+        'CheckOutAt' => 'datetime',
     ];
 
     protected $fillable = [

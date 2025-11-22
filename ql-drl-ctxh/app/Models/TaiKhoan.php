@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class TaiKhoan extends Authenticatable
 {
+    use HasApiTokens;
+    
     protected $table = 'taikhoan';
     protected $primaryKey = 'TenDangNhap';
     public $incrementing = false;

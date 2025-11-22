@@ -441,7 +441,7 @@
   <div class="profile-header">
     <div class="profile-content">
       <img
-        src="https://ui-avatars.com/api/?name=<?php echo e(urlencode($student->HoTen)); ?>&background=667eea&color=fff&size=150"
+        src="<?php echo e($student->taikhoan->Avatar ? asset('storage/' . $student->taikhoan->Avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($student->HoTen) . '&background=667eea&color=fff&size=150'); ?>"
         alt="Avatar"
         class="profile-avatar">
       <div class="profile-info flex-grow-1">
@@ -464,7 +464,7 @@
           </div>
           <div class="profile-meta-item">
             <i class="fas fa-graduation-cap"></i>
-            <span><strong>Lớp:</strong> <?php echo e($student->lop->TenLop ?? 'N/A'); ?></span>
+            <span><strong>Lớp:</strong> <?php echo e($student->lop->MaLop ?? 'N/A'); ?></span>
           </div>
           <div class="profile-meta-item">
             <i class="fas fa-book"></i>
@@ -528,13 +528,13 @@
       <i class="fas fa-lightning-bolt"></i> Chức năng nhanh
     </div>
     <div class="action-grid">
+      <a href="<?php echo e(route('sinhvien.activities_recommended.index')); ?>" class="action-btn" title="Xem hoạt động được đề xuất dựa trên K-Means">
+        <i class="fas fa-magic"></i>
+        <span>Hoạt động gợi ý</span>
+      </a>
       <a href="<?php echo e(route('sinhvien.quanly_dangky.index')); ?>" class="action-btn">
         <i class="fas fa-clipboard-list"></i>
         <span>Quản lý đăng ký</span>
-      </a>
-      <a href="#" class="action-btn">
-        <i class="fas fa-history"></i>
-        <span>Lịch sử hoạt động</span>
       </a>
       <a href="<?php echo e(route('sinhvien.diem_ren_luyen')); ?>" class="action-btn">
         <i class="fas fa-star"></i>
@@ -546,6 +546,88 @@
       </a>
     </div>
   </div>
+
+  
+  <?php if(isset($recommended_activities) && $recommended_activities->count() > 0): ?>
+  <div class="table-section" style="margin-bottom: 2rem;">
+    <div class="table-header">
+      <h5>
+        <i class="fas fa-magic me-2" style="color: #667eea;"></i>Hoạt Động Được Đề Xuất (K-Means)
+      </h5>
+      <a href="<?php echo e(route('sinhvien.activities_recommended.index')); ?>" class="btn btn-sm btn-outline-primary">
+        <i class="fas fa-arrow-right me-1"></i>Xem tất cả
+      </a>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tên Hoạt Động</th>
+            <th>Loại</th>
+            <th>Match Score</th>
+            <th>Ngày Bắt Đầu</th>
+            <th>Địa Điểm</th>
+            <th class="text-center">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php $__empty_1 = true; $__currentLoopData = $recommended_activities->take(5); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $rec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <?php
+              $activity = $rec->activity_type === 'drl' ? $rec->hoatDongDRL : $rec->hoatDongCTXH;
+            ?>
+            <?php if($activity): ?>
+            <tr>
+              <td>
+                <strong><?php echo e($activity->TenHoatDong); ?></strong>
+              </td>
+              <td>
+                <?php if($rec->activity_type === 'drl'): ?>
+                  <span class="badge bg-primary">Rèn Luyện</span>
+                <?php else: ?>
+                  <span class="badge bg-danger">CTXH</span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <span class="points-highlight"><?php echo e(round($rec->recommendation_score)); ?>/100</span>
+              </td>
+              <td>
+                <?php echo e($activity->ThoiGianBatDau ? date('d/m/Y', strtotime($activity->ThoiGianBatDau)) : 'N/A'); ?>
+
+              </td>
+              <td>
+                <small><?php echo e(substr($activity->DiaDiem, 0, 30)); ?><?php echo e(strlen($activity->DiaDiem) > 30 ? '...' : ''); ?></small>
+              </td>
+              <td class="text-center">
+                <?php if($rec->activity_type === 'drl'): ?>
+                  <form action="<?php echo e(route('sinhvien.dangky.drl', $activity->MaHoatDong)); ?>" method="POST" style="display: inline;">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </form>
+                <?php else: ?>
+                  <form action="<?php echo e(route('sinhvien.dangky.ctxh', $activity->MaHoatDong)); ?>" method="POST" style="display: inline;">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </form>
+                <?php endif; ?>
+              </td>
+            </tr>
+            <?php endif; ?>
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+            <tr>
+              <td colspan="6" class="text-center p-4 text-muted">
+                <i class="fas fa-info-circle me-2"></i>Chưa có hoạt động được đề xuất. Hãy chạy K-Means clustering!
+              </td>
+            </tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <?php endif; ?>
 
   
   <div class="table-section">

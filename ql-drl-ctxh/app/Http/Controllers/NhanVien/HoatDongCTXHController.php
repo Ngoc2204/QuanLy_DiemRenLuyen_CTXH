@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
@@ -42,8 +43,8 @@ class HoatDongCTXHController extends Controller
     public function create()
     {
         $quyDinhDiems = QuyDinhDiemCtxh::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
-        // Không cần load $dots hay $diadiems nữa
-        return view('nhanvien.hoatdong_ctxh.create', compact('quyDinhDiems'));
+        $interests = DB::table('interests')->orderBy('InterestName', 'asc')->get(['InterestID', 'InterestName']);
+        return view('nhanvien.hoatdong_ctxh.create', compact('quyDinhDiems', 'interests'));
     }
 
     /**
@@ -54,18 +55,22 @@ class HoatDongCTXHController extends Controller
     {
         $validatedData = $request->validate([
             'TenHoatDong' => 'required|string|max:255',
-            'LoaiHoatDong' => 'required|string|max:100|not_in:Địa chỉ đỏ', // Cấm tạo ĐCĐ ở đây
+            'category_tags' => 'required|array|min:1',
+            'category_tags.*' => 'required|integer|exists:interests,InterestID',
             'MaQuyDinhDiem' => 'required|exists:quydinhdiemctxh,MaDiem',
             'MoTa' => 'required|string',
             'ThoiGianBatDau' => 'required|date|after_or_equal:now',
             'ThoiGianKetThuc' => 'required|date|after:ThoiGianBatDau',
             'ThoiHanHuy' => 'required|date|before:ThoiGianBatDau',
-            'DiaDiem' => 'required|string|max:255', // Ghi chú cụ thể
+            'DiaDiem' => 'required|string|max:255',
             'SoLuong' => 'required|integer|min:1',
         ], [
             'MaQuyDinhDiem.required' => 'Bạn phải chọn một quy định điểm.',
-            'LoaiHoatDong.not_in' => 'Vui lòng dùng chức năng "Tạo Hàng Loạt" để thêm hoạt động Địa chỉ đỏ.'
+            'category_tags.required' => 'Bạn phải chọn ít nhất một sở thích.'
         ]);
+
+        // Convert category_tags array to comma-separated string
+        $validatedData['category_tags'] = implode(',', $validatedData['category_tags']);
 
         // HĐ thường sẽ không có 2 trường này
         $validatedData['dot_id'] = null;
@@ -192,8 +197,9 @@ class HoatDongCTXHController extends Controller
     public function edit(HoatDongCTXH $hoatdong_ctxh)
     {
         $quyDinhDiems = QuyDinhDiemCtxh::orderBy('TenCongViec')->pluck('TenCongViec', 'MaDiem');
-        // Không cần load $dots, $diadiems vì chúng ta không cho sửa
-        return view('nhanvien.hoatdong_ctxh.edit', compact('hoatdong_ctxh', 'quyDinhDiems'));
+        $interests = DB::table('interests')->orderBy('InterestName', 'asc')->get(['InterestID', 'InterestName']);
+        $selectedTags = $hoatdong_ctxh->category_tags ? array_map('intval', explode(',', $hoatdong_ctxh->category_tags)) : [];
+        return view('nhanvien.hoatdong_ctxh.edit', compact('hoatdong_ctxh', 'quyDinhDiems', 'interests', 'selectedTags'));
     }
 
     /**
@@ -203,7 +209,8 @@ class HoatDongCTXHController extends Controller
     {
         $validatedData = $request->validate([
             'TenHoatDong' => 'required|string|max:255',
-            // 'LoaiHoatDong' => '...', // Không cho phép sửa Loại Hoạt Động
+            'category_tags' => 'required|array|min:1',
+            'category_tags.*' => 'required|integer|exists:interests,InterestID',
             'MaQuyDinhDiem' => 'required|exists:quydinhdiemctxh,MaDiem',
             'MoTa' => 'nullable|string',
             'ThoiGianBatDau' => 'required|date',
@@ -212,6 +219,9 @@ class HoatDongCTXHController extends Controller
             'DiaDiem' => 'required|string|max:255',
             'SoLuong' => 'required|integer|min:1',
         ]);
+
+        // Convert category_tags array to comma-separated string
+        $validatedData['category_tags'] = implode(',', $validatedData['category_tags']);
 
         // Nếu là "Địa chỉ đỏ", kiểm tra lại ngày có khớp với Đợt không
         if ($hoatdong_ctxh->LoaiHoatDong == 'Địa chỉ đỏ') {

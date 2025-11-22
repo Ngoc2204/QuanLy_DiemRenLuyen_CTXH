@@ -17,7 +17,7 @@ class DangKyHoatDongDRL extends Model
         'CheckOutAt'   => 'datetime',
     ];
 
-    protected $fillable = ['MSSV', 'MaHoatDong', 'NgayDangKy', 'TrangThaiDangKy'];
+    protected $fillable = ['MSSV', 'MaHoatDong', 'NgayDangKy', 'TrangThaiDangKy', 'CheckInAt', 'CheckOutAt', 'TrangThaiThamGia'];
 
     public function sinhvien()
     {

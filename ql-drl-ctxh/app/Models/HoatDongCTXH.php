@@ -23,6 +23,7 @@ class HoatDongCTXH extends Model
         'SoLuong',
         'LoaiHoatDong',
         'MaQuyDinhDiem',
+        'category_tags',
         'CheckInToken',
         'CheckOutToken',
         'CheckInOpenAt',

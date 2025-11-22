@@ -659,7 +659,7 @@
             </li>
 
             <li class="menu-item">
-                <a href="{{ route('sinhvien.recommended_activities.index') }}" class="menu-link">
+                <a href="{{ route('sinhvien.activities_recommended.index') }}" class="menu-link">
                     <i class="fa-solid fa-magic"></i>
                     <span>Hoạt động đề xuất</span>
                 </a>

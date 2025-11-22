@@ -73,6 +73,9 @@
 
         <form action="{{ route('nhanvien.hoatdong_ctxh.store') }}" method="POST" id="createForm" novalidate>
             @csrf
+            
+            <!-- Hidden field để đảm bảo category_tags luôn được submit -->
+            <input type="hidden" name="category_tags_submitted" value="1">
 
             {{-- Thông tin cơ bản --}}
             <div class="form-section mb-4">
@@ -104,23 +107,29 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="form-group">
-                            <label for="LoaiHoatDong" class="form-label">
-                                <i class="fa-solid fa-tag me-1 text-muted"></i>
-                                Phân loại
-                                <span class="text-danger">*</span>
+                            <label class="form-label">
+                                <i class="fa-solid fa-heart me-1 text-muted"></i>
+                                Sở thích liên quan <span class="text-danger">*</span>
                             </label>
-                            {{-- ĐÃ LOẠI BỎ "Địa chỉ đỏ" --}}
-                            <select class="form-select" id="LoaiHoatDong" name="LoaiHoatDong" required>
-                                <option value="Tình nguyện" {{ old('LoaiHoatDong') == 'Tình nguyện' ? 'selected' : '' }}>Tình nguyện</option>
-                                <option value="Hội thảo" {{ old('LoaiHoatDong') == 'Hội thảo' ? 'selected' : '' }}>Hội thảo</option>
-                                <option value="Tập huấn" {{ old('LoaiHoatDong') == 'Tập huấn' ? 'selected' : '' }}>Tập huấn</option>
-                                <option value="Học thuật" {{ old('LoaiHoatDong') == 'Học thuật' ? 'selected' : '' }}>Học thuật</option>
-                                <option value="Văn hóa - Văn nghệ" {{ old('LoaiHoatDong') == 'Văn hóa - Văn nghệ' ? 'selected' : '' }}>Văn hóa - Văn nghệ</option>
-                                <option value="Thể dục - Thể thao" {{ old('LoaiHoatDong') == 'Thể dục - Thể thao' ? 'selected' : '' }}>Thể dục - Thể thao</option>
-                                <option value="Khác" {{ old('LoaiHoatDong') == 'Khác' ? 'selected' : '' }}>Khác</option>
-                            </select>
+                            <div class="interest-tags-container border rounded p-3" style="background-color: #f8f9fa; min-height: 120px;">
+                                @forelse($interests ?? [] as $interest)
+                                <div class="form-check form-check-inline" style="margin: 0.5rem 0;">
+                                    <input class="form-check-input" type="checkbox" id="interest_{{ $interest->InterestID }}" 
+                                           name="category_tags[]" value="{{ $interest->InterestID }}"
+                                           {{ in_array($interest->InterestID, old('category_tags', [])) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="interest_{{ $interest->InterestID }}">
+                                        {{ $interest->InterestName }}
+                                    </label>
+                                </div>
+                                @empty
+                                <p class="text-muted mb-0">Không có sở thích nào</p>
+                                @endforelse
+                            </div>
+                            @error('category_tags')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
 
@@ -354,9 +363,28 @@ document.addEventListener('DOMContentLoaded', function () {
     // Init
     validateDates();
 
+    // Validate category_tags - at least one checkbox must be selected
+    function validateCategoryTags() {
+        const checkboxes = document.querySelectorAll('input[name="category_tags[]"]');
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        
+        if (checkedCount === 0) {
+            alert('Vui lòng chọn ít nhất một sở thích liên quan!');
+            return false;
+        }
+        return true;
+    }
+
     // Bootstrap-like validation
     form.addEventListener('submit', function (event) {
         validateDates();
+        
+        if (!validateCategoryTags()) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+        
         if (!form.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();

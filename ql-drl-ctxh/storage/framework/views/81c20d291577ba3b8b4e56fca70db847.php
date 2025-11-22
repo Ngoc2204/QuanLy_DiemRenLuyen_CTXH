@@ -223,7 +223,7 @@
                                 
                                 
                                 
-                                <?php if(in_array($registration->TrangThaiDangKy, ['Chờ duyệt']) && $canCancel): ?>
+                                <?php if(in_array($registration->TrangThaiDangKy, ['Chờ duyệt', 'Đã duyệt']) && $canCancel): ?>
                                     <form action="<?php echo e(route('sinhvien.quanly_dangky.huy_drl', $registration->MaDangKy)); ?>" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này?');">
                                         <?php echo csrf_field(); ?>
                                         <?php echo method_field('DELETE'); ?>
@@ -322,7 +322,14 @@
                                 <div class="d-flex align-items-center" style="gap: 0.75rem;">
                                     
                                     
-                                    <?php if(in_array($registration->TrangThaiDangKy, ['Chờ duyệt', 'Chờ thanh toán']) && $canCancel): ?>
+                                    <?php
+                                        $allowCancelCtxh = in_array($registration->TrangThaiDangKy, ['Chờ duyệt', 'Chờ thanh toán', 'Đã duyệt']) && $canCancel;
+                                        // Nếu có hóa đơn và đã thanh toán thì không cho hủy
+                                        if (isset($thanhToan) && $thanhToan && ($thanhToan->TrangThai ?? '') == 'DaThanhToan') {
+                                            $allowCancelCtxh = false;
+                                        }
+                                    ?>
+                                    <?php if($allowCancelCtxh): ?>
                                         
                                         <form action="<?php echo e(route('sinhvien.quanly_dangky.huy_ctxh', $registration->MaDangKy)); ?>" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đăng ký hoạt động này? (Hóa đơn nếu có cũng sẽ bị hủy)');">
                                             <?php echo csrf_field(); ?>

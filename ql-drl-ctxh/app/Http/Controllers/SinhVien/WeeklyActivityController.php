@@ -29,16 +29,18 @@ class WeeklyActivityController extends Controller
         $endOfWeek = $targetDate->copy()->endOfWeek(Carbon::SUNDAY);
 
         // 4. Lấy dữ liệu đăng ký
-        // Lấy các HĐRL đã đăng ký VÀ hoạt động đó diễn ra trong tuần
+        // Lấy các HĐRL đã duyệt VÀ hoạt động đó diễn ra trong tuần
         $drlRegistrations = DangKyHoatDongDrl::where('MSSV', $mssv)
+            ->where('TrangThaiDangKy', 'Đã duyệt') // Chỉ lấy các đăng ký đã được duyệt
             ->whereHas('hoatdong', function ($query) use ($startOfWeek, $endOfWeek) {
                 $query->whereBetween('ThoiGianBatDau', [$startOfWeek, $endOfWeek]);
             })
             ->with('hoatdong') // Tải sẵn thông tin hoạt động
             ->get();
 
-        // Lấy các HĐCTXH đã đăng ký VÀ hoạt động đó diễn ra trong tuần
+        // Lấy các HĐCTXH đã duyệt VÀ hoạt động đó diễn ra trong tuần
         $ctxhRegistrations = DangKyHoatDongCtxh::where('MSSV', $mssv)
+            ->where('TrangThaiDangKy', 'Đã duyệt') // Chỉ lấy các đăng ký đã được duyệt
             ->whereHas('hoatdong', function ($query) use ($startOfWeek, $endOfWeek) {
                 $query->whereBetween('ThoiGianBatDau', [$startOfWeek, $endOfWeek]);
             })

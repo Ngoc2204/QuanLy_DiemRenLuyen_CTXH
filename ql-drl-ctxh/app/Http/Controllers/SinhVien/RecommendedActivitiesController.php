@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SinhVien;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ActivityRecommendation;
+use App\Models\StudentCluster;
 use App\Models\HoatDongDRL;
 use App\Models\HoatDongCTXH;
 use Illuminate\Support\Facades\Auth;
@@ -13,37 +14,42 @@ class RecommendedActivitiesController extends Controller
 {
     /**
      * Hiển thị danh sách hoạt động được đề xuất cho sinh viên
+     * Dựa trên K-Means clustering
      */
     public function index()
     {
         $mssv = Auth::user()->TenDangNhap;
 
-        // Lấy tất cả recommendations, sắp xếp theo priority (cao nhất trước) và score
+        // Lấy cluster của sinh viên
+        $studentCluster = StudentCluster::where('MSSV', $mssv)->first();
+
+        if (!$studentCluster) {
+            return view('sinhvien.activities_recommended.index', [
+                'recommendations' => collect(),
+                'studentCluster' => null,
+                'clusterName' => 'Chưa phân cụm',
+                'clusterInfo' => []
+            ]);
+        }
+
+        // Lấy recommendation từ K-Means
         $recommendations = ActivityRecommendation::where('MSSV', $mssv)
-            ->orderBy('priority', 'desc')
             ->orderBy('recommendation_score', 'desc')
             ->with(['hoatDongDRL', 'hoatDongCTXH'])
             ->paginate(10);
 
-        // Đếm các loại đề xuất
-        $countLowRL = ActivityRecommendation::where('MSSV', $mssv)
-            ->where('recommendation_reason', 'like', '%low_rl_score%')
-            ->count();
-
-        $countIncompleteCTXH = ActivityRecommendation::where('MSSV', $mssv)
-            ->where('recommendation_reason', 'like', '%incomplete_ctxh%')
-            ->count();
-
-        $countGraduatingSoon = ActivityRecommendation::where('MSSV', $mssv)
-            ->where('recommendation_reason', 'like', '%graduating_soon%')
-            ->count();
-
-        return view('sinhvien.activities_recommended.index', compact(
-            'recommendations',
-            'countLowRL',
-            'countIncompleteCTXH',
-            'countGraduatingSoon'
-        ));
+        return view('sinhvien.activities_recommended.index', [
+            'recommendations' => $recommendations,
+            'studentCluster' => $studentCluster,
+            'clusterName' => $studentCluster->cluster_name,
+            'clusterInfo' => [
+                'interest_match' => 0.3,
+                'popularity' => 0.25,
+                'success_rate' => 0.2,
+                'recency' => 0.15,
+                'novelty' => 0.1
+            ]
+        ]);
     }
 
     /**

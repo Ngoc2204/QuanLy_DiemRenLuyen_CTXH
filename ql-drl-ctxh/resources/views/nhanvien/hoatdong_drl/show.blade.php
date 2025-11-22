@@ -1,7 +1,7 @@
 @extends('layouts.nhanvien')
 
 @section('title', 'Chi tiết Hoạt động DRL')
-@section('page_title', 'Chi tiết Hoạt động DRL') {{-- Đổi tên biến $hoatdong_drl->TenHoatDong --}}
+@section('page_title', 'Chi tiết Hoạt động DRL')
 
 @php
 // Breadcrumbs
@@ -11,730 +11,801 @@ $breadcrumbs = [
 ['url' => '#', 'title' => 'Chi tiết'],
 ];
 
-// Thêm logic tính toán trạng thái
+// Logic tính toán trạng thái
 $now = now();
 $dangDienRa = $hoatdong_drl->ThoiGianBatDau <= $now && $hoatdong_drl->ThoiGianKetThuc >= $now;
-    $daKetThuc = $hoatdong_drl->ThoiGianKetThuc < $now;
-        $chuaBatDau=$hoatdong_drl->ThoiGianBatDau > $now;
-        $tyLeDangKy = $hoatdong_drl->SoLuong > 0 ? round(($hoatdong_drl->sinhVienDangKy->count() / $hoatdong_drl->SoLuong) * 100) : 0;
-        @endphp
+$daKetThuc = $hoatdong_drl->ThoiGianKetThuc < $now;
+$chuaBatDau = $hoatdong_drl->ThoiGianBatDau > $now;
+$tyLeDangKy = $hoatdong_drl->SoLuong > 0 ? round(($hoatdong_drl->sinhVienDangKy->count() / $hoatdong_drl->SoLuong) * 100) : 0;
+@endphp
 
-        @section('content')
-        {{-- Header Card  --}}
+@section('content')
+{{-- Header Card --}}
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1 text-white">
+                    <i class="fa-solid fa-star me-2"></i>
+                    {{ $hoatdong_drl->TenHoatDong }}
+                </h5>
+                <small class="text-white-50">Mã: {{ $hoatdong_drl->MaHoatDong }}</small>
+            </div>
+            <div>
+                @if($dangDienRa)
+                <span class="badge bg-success px-3 py-2"><i class="fa-solid fa-circle-play me-1"></i>Đang diễn ra</span>
+                @elseif($daKetThuc)
+                <span class="badge bg-secondary px-3 py-2"><i class="fa-solid fa-circle-check me-1"></i>Đã kết thúc</span>
+                @else
+                <span class="badge bg-info px-3 py-2"><i class="fa-solid fa-clock me-1"></i>Sắp diễn ra</span>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Layout 2 Cột --}}
+<div class="row g-4">
+    {{-- Left Column - Thông tin chi tiết --}}
+    <div class="col-lg-8">
+        {{-- Card Thông tin chi tiết --}}
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1 ">
-                            <i class="fa-solid fa-star me-2"></i> {{-- Đổi icon --}}
-                            {{ $hoatdong_drl->TenHoatDong }}
-                        </h5>
-                        <small class="">Mã: {{ $hoatdong_drl->MaHoatDong }}</small>
+            <div class="card-header bg-light">
+                <h6 class="mb-0 text-dark"><i class="fa-solid fa-circle-info me-2 text-primary"></i>Thông tin chi tiết</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-tag me-2 text-muted"></i>Loại Hoạt động</label>
+                            <p class="info-value">
+                                <span class="badge bg-primary-subtle text-primary px-3 py-2">{{ $hoatdong_drl->LoaiHoatDong }}</span>
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        @if($dangDienRa)
-                        <span class="badge bg-success px-3 py-2">
-                            <i class="fa-solid fa-circle-play me-1"></i>Đang diễn ra
-                        </span>
-                        @elseif($daKetThuc)
-                        <span class="badge bg-secondary px-3 py-2">
-                            <i class="fa-solid fa-circle-check me-1"></i>Đã kết thúc
-                        </span>
-                        @else
-                        <span class="badge bg-info px-3 py-2">
-                            <i class="fa-solid fa-clock me-1"></i>Sắp diễn ra
-                        </span>
-                        @endif
+
+                    <div class="col-md-12">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-align-left me-2 text-muted"></i>Mô tả</label>
+                            <p class="info-value text-muted">{{ $hoatdong_drl->MoTa ?: 'Không có mô tả.' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-calendar-plus me-2 text-success"></i>Thời gian Bắt đầu</label>
+                            <p class="info-value">{{ $hoatdong_drl->ThoiGianBatDau->format('d/m/Y H:i') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-calendar-xmark me-2 text-danger"></i>Thời gian Kết thúc</label>
+                            <p class="info-value">{{ $hoatdong_drl->ThoiGianKetThuc->format('d/m/Y H:i') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-clock-rotate-left me-2 text-warning"></i>Thời hạn Hủy đăng ký</label>
+                            <p class="info-value">{{ $hoatdong_drl->ThoiHanHuy ? $hoatdong_drl->ThoiHanHuy->format('d/m/Y H:i') : 'Không cho phép' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-location-dot me-2 text-danger"></i>Địa điểm</label>
+                            <p class="info-value">{{ $hoatdong_drl->DiaDiem ?: 'Không xác định' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-user-tie me-2 text-muted"></i>Giảng viên phụ trách</label>
+                            <p class="info-value">{{ $hoatdong_drl->giangVienPhuTrach->TenGV ?? 'Chưa gán' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-school me-2 text-muted"></i>Học kỳ</label>
+                            <p class="info-value">{{ $hoatdong_drl->hocKy->TenHocKy ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="info-item">
+                            <label class="info-label"><i class="fa-solid fa-clipboard-list me-2 text-info"></i>Quy định điểm</label>
+                            <p class="info-value">
+                                @if($hoatdong_drl->quydinh)
+                                <span class="badge bg-info-subtle text-info px-3 py-2">
+                                    {{ $hoatdong_drl->quydinh->MaDiem }} - {{ $hoatdong_drl->quydinh->TenCongViec }} ({{ $hoatdong_drl->quydinh->DiemNhan ?? 'N/A' }} điểm)
+                                </span>
+                                @else
+                                <span class="badge bg-secondary-subtle text-secondary px-3 py-2">Không rõ</span>
+                                @endif
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Layout 2 Cột (Mới) --}}
-        <div class="row g-4">
-            {{-- Left Column - Thông tin chi tiết --}}
-            <div class="col-lg-8">
-                {{-- Card Thông tin chi tiết --}}
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-dark">
-                            <i class="fa-solid fa-circle-info me-2 text-primary"></i>
-                            Thông tin chi tiết
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        {{-- Dùng info-item style mới --}}
-                        <div class="row g-3">
-                            <div class="col-md-12">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-tag me-2 text-muted"></i>
-                                        Loại Hoạt động
-                                    </label>
-                                    <p class="info-value">
-                                        <span class="badge bg-primary-subtle text-primary px-3 py-2">
-                                            {{ $hoatdong_drl->LoaiHoatDong }}
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-align-left me-2 text-muted"></i>
-                                        Mô tả
-                                    </label>
-                                    <p class="info-value text-muted">
-                                        {{ $hoatdong_drl->MoTa ?: 'Không có mô tả.' }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-calendar-plus me-2 text-success"></i>
-                                        Thời gian Bắt đầu
-                                    </label>
-                                    <p class="info-value">
-                                        {{ $hoatdong_drl->ThoiGianBatDau->format('d/m/Y H:i') }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-calendar-xmark me-2 text-danger"></i>
-                                        Thời gian Kết thúc
-                                    </label>
-                                    <p class="info-value">
-                                        {{ $hoatdong_drl->ThoiGianKetThuc->format('d/m/Y H:i') }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-clock-rotate-left me-2 text-warning"></i>
-                                        Thời hạn Hủy đăng ký
-                                    </label>
-                                    <p class="info-value">
-                                        {{ $hoatdong_drl->ThoiHanHuy ? $hoatdong_drl->ThoiHanHuy->format('d/m/Y H:i') : 'Không cho phép' }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-location-dot me-2 text-danger"></i>
-                                        Địa điểm
-                                    </label>
-                                    <p class="info-value">
-                                        {{ $hoatdong_drl->DiaDiem ?: 'Không xác định' }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-user-tie me-2 text-muted"></i>
-                                        Giảng viên phụ trách
-                                    </label>
-                                    <p class="info-value">
-                                        {{ $hoatdong_drl->giangVienPhuTrach->TenGV ?? 'Chưa gán' }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {{-- Sửa: Học kỳ & Quy định --}}
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-school me-2 text-muted"></i>
-                                        Học kỳ
-                                    </label>
-                                    <p class="info-value">
-                                        {{ $hoatdong_drl->hocKy->TenHocKy ?? 'N/A' }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <label class="info-label">
-                                        <i class="fa-solid fa-clipboard-list me-2 text-info"></i>
-                                        Quy định điểm
-                                    </label>
-                                    <p class="info-value">
-                                        @if($hoatdong_drl->quydinh)
-                                        <span class="badge bg-info-subtle text-info px-3 py-2">
-                                            {{ $hoatdong_drl->quydinh->MaDiem }} -
-                                            {{ $hoatdong_drl->quydinh->TenCongViec }}
-                                            ({{ $hoatdong_drl->quydinh->DiemNhan ?? 'N/A' }} điểm) {{-- Giả sử tên cột là Diem --}}
-                                        </span>
-                                        @else
-                                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2">
-                                            Không rõ
-                                        </span>
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Danh sách sinh viên đăng ký (Cập nhật bảng) --}}
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-dark">
-                            <i class="fa-solid fa-users me-2 text-primary"></i>
-                            Danh sách Sinh viên Đăng ký
-                            <span class="badge bg-primary ms-2">{{ $hoatdong_drl->sinhVienDangKy->count() }}</span>
-                        </h6>
-                    </div>
-                    <div class="card-body p-0">
-                        @if($hoatdong_drl->sinhVienDangKy->count() > 0)
-                        <div class="table-responsive" style="max-height: 400px;">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light sticky-top">
-                                    <tr>
-                                        <th class="text-center" style="width: 5%;">#</th>
-                                        <th>Sinh viên</th>
-                                        <th class="text-center">Trạng thái ĐK</th>
-                                        {{-- THÊM MỚI --}}
-                                        <th class="text-center">Check-in</th>
-                                        <th class="text-center">Check-out</th>
-                                        <th class="text-center">Kết quả</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($hoatdong_drl->sinhVienDangKy as $index => $sv)
-                                    @php $pivot = $sv->pivot; @endphp
-                                    <tr>
-                                        <td class="text-center">{{ $index + 1 }}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-circle-small">
-                                                    <span>{{ strtoupper(substr($sv->HoTen, 0, 1)) }}</span>
-                                                </div>
-                                                <div class="ms-3">
-                                                    <div class="student-name">{{ $sv->HoTen }}</div>
-                                                    <div class="student-code">{{ $sv->MSSV }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            @if($pivot->TrangThaiDangKy == 'Chờ duyệt')
-                                            <span class="badge-status badge-warning">
-                                                <i class="fa-solid fa-hourglass-half me-1"></i>{{ $pivot->TrangThaiDangKy }}
-                                            </span>
-                                            @elseif($pivot->TrangThaiDangKy == 'Đã duyệt')
-                                            <span class="badge-status badge-success">
-                                                <i class="fa-solid fa-check-circle me-1"></i>{{ $pivot->TrangThaiDangKy }}
-                                            </span>
-                                            @elseif($pivot->TrangThaiDangKy == 'Đã hủy')
-                                            <span class="badge-status badge-secondary">
-                                                <i class="fa-solid fa-ban me-1"></i>{{ $pivot->TrangThaiDangKy }}
-                                            </span>
-                                            @else
-                                            <span class="badge-status badge-danger">
-                                                <i class="fa-solid fa-exclamation-circle me-1"></i>{{ $pivot->TrangThaiDangKy ?: 'Không rõ' }}
-                                            </span>
-                                            @endif
-                                        </td>
-                                        {{-- THÊM MỚI 3 CỘT --}}
-                                        <td class="text-center">
-                                            @if($pivot->CheckInAt)
-                                            <span class="badge-check check-in">
-                                                <i class="fa-solid fa-check me-1"></i>
-                                                {{ \Carbon\Carbon::parse($pivot->CheckInAt)->format('H:i:s') }}
-                                            </span>
-                                            @else
-                                            <span class="badge-check check-null">Chưa có</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            @if($pivot->CheckOutAt)
-                                            <span class="badge-check check-out">
-                                                <i class="fa-solid fa-check me-1"></i>
-                                                {{ \Carbon\Carbon::parse($pivot->CheckOutAt)->format('H:i:s') }}
-                                            </span>
-                                            @else
-                                            <span class="badge-check check-null">Chưa có</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            @if($pivot->TrangThaiThamGia == 'Đã tham gia')
-                                            <span class="badge-status badge-success">Đã tham gia</span>
-                                            @elseif($pivot->TrangThaiThamGia == 'Vắng')
-                                            <span class="badge-status badge-danger">Vắng</span>
-                                            @else
-                                            <span class="badge-status badge-secondary">Chưa tổng kết</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                        @else
-                        <div class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-user-slash fa-3x mb-3 d-block opacity-25"></i>
-                            <p class="mb-0">Chưa có sinh viên nào đăng ký hoạt động này.</p>
-                        </div>
-                        @endif
-                    </div>
-                </div>
+        {{-- Danh sách sinh viên đăng ký --}}
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 text-dark"><i class="fa-solid fa-users me-2 text-primary"></i>Danh sách Sinh viên Đăng ký <span class="badge bg-primary ms-2">{{ $hoatdong_drl->sinhVienDangKy->count() }}</span></h6>
             </div>
-
-            {{-- Right Column - Thống kê & Tác vụ --}}
-            <div class="col-lg-4">
-
-                {{-- THÊM MỚI: CARD ĐIỂM DANH QR --}}
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-dark">
-                            <i class="fa-solid fa-qrcode me-2 text-primary"></i>
-                            Điểm danh QR Code
-                        </h6>
-                    </div>
-                    <div class="card-body text-center">
-                        @if($hoatdong_drl->CheckInToken || $hoatdong_drl->CheckOutToken)
-                        <div class="row g-3">
-                            @if($hoatdong_drl->CheckInToken)
-                            <div class="col-6">
-                                <h6 class="fw-bold small text-uppercase mb-2">Check-In</h6>
-                                <div class="qr-code-wrapper-small">
-                                    {!! QrCode::size(100)->generate(route('sinhvien.scan', ['token' => $hoatdong_drl->CheckInToken])) !!}
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary mt-2 w-100"
-                                    onclick="showQRModal('checkin', '{{ route('sinhvien.scan', ['token' => $hoatdong_drl->CheckInToken]) }}')">
-                                    <i class="fa-solid fa-expand me-1"></i>Phóng to
-                                </button>
-                                <small class="text-muted d-block mt-1">Quét khi bắt đầu</small>
-                            </div>
-                            @endif
-                            
-                            @if($hoatdong_drl->CheckOutToken)
-                            <div class="col-6">
-                                <h6 class="fw-bold small text-uppercase mb-2">Check-Out</h6>
-                                <div class="qr-code-wrapper-small">
-                                    {!! QrCode::size(100)->generate(route('sinhvien.scan', ['token' => $hoatdong_drl->CheckOutToken])) !!}
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary mt-2 w-100"
-                                    onclick="showQRModal('checkout', '{{ route('sinhvien.scan', ['token' => $hoatdong_drl->CheckOutToken]) }}')">
-                                    <i class="fa-solid fa-expand me-1"></i>Phóng to
-                                </button>
-                                <small class="text-muted d-block mt-1">Quét khi kết thúc</small>
-                            </div>
-                            @endif
-                        </div>
-                        @else
-                        <div class="text-center py-3 text-muted">
-                            <i class="fa-solid fa-camera fa-3x mb-3 d-block opacity-25"></i>
-                            <p class="mb-0">Chưa tạo mã QR.</p>
-                            <small>Nhấn nút "Phát Mã QR Check-In" hoặc "Phát Mã QR Check-Out" ở bên dưới.</small>
-                        </div>
-                        @endif
-                    </div>
+            <div class="card-body p-0">
+                @if($hoatdong_drl->sinhVienDangKy->count() > 0)
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="text-center" style="width: 5%;">#</th>
+                                <th>Sinh viên</th>
+                                <th class="text-center">Trạng thái ĐK</th>
+                                <th class="text-center">Check-in</th>
+                                <th class="text-center">Check-out</th>
+                                <th class="text-center">Kết quả</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($hoatdong_drl->sinhVienDangKy as $index => $sv)
+                            @php $pivot = $sv->pivot; @endphp
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle-small">
+                                            <span>{{ strtoupper(substr($sv->HoTen ?? 'N/A', 0, 1)) }}</span>
+                                        </div>
+                                        <div class="ms-3">
+                                            <div class="student-name">{{ $sv->HoTen ?? 'Không rõ' }}</div>
+                                            <div class="student-code">{{ $sv->MSSV }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    @if($pivot->TrangThaiDangKy == 'Chờ duyệt')
+                                    <span class="badge-status badge-warning"><i class="fa-solid fa-hourglass-half me-1"></i>{{ $pivot->TrangThaiDangKy }}</span>
+                                    @elseif($pivot->TrangThaiDangKy == 'Đã duyệt')
+                                    <span class="badge-status badge-success"><i class="fa-solid fa-check-circle me-1"></i>{{ $pivot->TrangThaiDangKy }}</span>
+                                    @elseif($pivot->TrangThaiDangKy == 'Đã hủy')
+                                    <span class="badge-status badge-secondary"><i class="fa-solid fa-ban me-1"></i>{{ $pivot->TrangThaiDangKy }}</span>
+                                    @else
+                                    <span class="badge-status badge-danger"><i class="fa-solid fa-exclamation-circle me-1"></i>{{ $pivot->TrangThaiDangKy ?: 'Không rõ' }}</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($pivot->CheckInAt)
+                                    <span class="badge-check check-in"><i class="fa-solid fa-check me-1"></i>{{ \Carbon\Carbon::parse($pivot->CheckInAt)->format('H:i:s') }}</span>
+                                    @else
+                                    <span class="badge-check check-null">Chưa có</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($pivot->CheckOutAt)
+                                    <span class="badge-check check-out"><i class="fa-solid fa-check me-1"></i>{{ \Carbon\Carbon::parse($pivot->CheckOutAt)->format('H:i:s') }}</span>
+                                    @else
+                                    <span class="badge-check check-null">Chưa có</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($pivot->TrangThaiThamGia == 'Đã tham gia')
+                                    <span class="badge-status badge-success">Đã tham gia</span>
+                                    @elseif($pivot->TrangThaiThamGia == 'Vắng')
+                                    <span class="badge-status badge-danger">Vắng</span>
+                                    @else
+                                    <span class="badge-status badge-secondary">Chưa tổng kết</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
-
-                {{-- QR Modal --}}
-                <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header border-0">
-                                <h5 class="modal-title" id="qrModalTitle">QR Code</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body text-center py-5">
-                                <div id="qrModalContent" class="qr-modal-wrapper"></div>
-                                <p class="text-muted mt-3 mb-0" id="qrModalDescription"></p>
-                            </div>
-                        </div>
-                    </div>
+                @else
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-user-slash fa-3x mb-3 d-block opacity-25"></i>
+                    <p class="mb-0">Chưa có sinh viên nào đăng ký hoạt động này.</p>
                 </div>
+                @endif
+            </div>
+        </div>
+    </div>
 
-                {{-- Statistics Cards (Cập nhật DRL) --}}
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-dark">
-                            <i class="fa-solid fa-chart-pie me-2 text-primary"></i>
-                            Thống kê
-                        </h6>
+    {{-- Right Column - Thống kê & Tác vụ --}}
+    <div class="col-lg-4">
+        {{-- CARD ĐIỂM DANH QR --}}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 text-dark"><i class="fa-solid fa-qrcode me-2 text-primary"></i>Điểm danh QR Code</h6>
+            </div>
+            <div class="card-body text-center">
+                @if($hoatdong_drl->CheckInToken || $hoatdong_drl->CheckOutToken)
+                <div class="row g-3">
+                    @if($hoatdong_drl->CheckInToken)
+                    <div class="col-6">
+                        <h6 class="fw-bold small text-uppercase mb-2">Check-In</h6>
+                        <div class="qr-code-wrapper-small">
+                            {!! QrCode::size(100)->generate(route('sinhvien.scan', ['token' => $hoatdong_drl->CheckInToken])) !!}
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showQRModal('checkin', '{{ route('sinhvien.scan', ['token' => $hoatdong_drl->CheckInToken]) }}', '{{ $hoatdong_drl->TenHoatDong }}')">
+                            <i class="fa-solid fa-expand me-1"></i>Phóng to
+                        </button>
+                        <small class="text-muted d-block mt-1">Quét khi bắt đầu</small>
                     </div>
-                    <div class="card-body">
-                        <div class="stat-item mb-4">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                                    <i class="fa-solid fa-star"></i>
-                                </div>
-                                <div class="ms-3 flex-grow-1">
-                                    <small class="text-muted d-block">Điểm Rèn Luyện</small>
-                                    <h4 class="mb-0 text-warning">{{ $hoatdong_drl->quydinh->DiemNhan ?? 'N/A' }} <small>điểm</small></h4>
-                                </div>
-                            </div>
+                    @endif
+                    
+                    @if($hoatdong_drl->CheckOutToken)
+                    <div class="col-6">
+                        <h6 class="fw-bold small text-uppercase mb-2">Check-Out</h6>
+                        <div class="qr-code-wrapper-small">
+                            {!! QrCode::size(100)->generate(route('sinhvien.scan', ['token' => $hoatdong_drl->CheckOutToken])) !!}
                         </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showQRModal('checkout', '{{ route('sinhvien.scan', ['token' => $hoatdong_drl->CheckOutToken]) }}', '{{ $hoatdong_drl->TenHoatDong }}')">
+                            <i class="fa-solid fa-expand me-1"></i>Phóng to
+                        </button>
+                        <small class="text-muted d-block mt-1">Quét khi kết thúc</small>
+                    </div>
+                    @endif
+                </div>
+                @else
+                <div class="text-center py-3 text-muted">
+                    <i class="fa-solid fa-camera fa-3x mb-3 d-block opacity-25"></i>
+                    <p class="mb-0">Chưa tạo mã QR.</p>
+                    <small>Nhấn nút "Phát Mã QR Check-In" hoặc "Phát Mã QR Check-Out" ở bên dưới.</small>
+                </div>
+                @endif
+            </div>
+        </div>
 
-                        <div class="stat-item mb-4">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                                    <i class="fa-solid fa-users"></i>
-                                </div>
-                                <div class="ms-3 flex-grow-1">
-                                    <small class="text-muted d-block">Số lượng</small>
-                                    <h4 class="mb-0 text-primary">
-                                        {{ $hoatdong_drl->sinhVienDangKy->count() }}/{{ $hoatdong_drl->SoLuong }}
-                                    </h4>
-                                </div>
-                            </div>
-                            <div class="progress" style="height: 12px;">
-                                <div class="progress-bar {{ $tyLeDangKy >= 80 ? 'bg-danger' : ($tyLeDangKy >= 50 ? 'bg-warning' : 'bg-success') }}"
-                                    role="progressbar"
-                                    style="width: {{ $tyLeDangKy }}%;"
-                                    aria-valuenow="{{ $tyLeDangKy }}"
-                                    aria-valuemin="0"
-                                    aria-valuemax="100">
-                                </div>
-                            </div>
-                            <small class="text-muted mt-1 d-block">Đã lấp đầy {{ $tyLeDangKy }}%</small>
-                        </div>
-
-                        <div class="stat-item mb-3">
-                            <div class="d-flex align-items-center">
-                                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                                    <i class="fa-solid fa-check-circle"></i>
-                                </div>
-                                <div class="ms-3">
-                                    <small class="text-muted d-block">Đã duyệt</small>
-                                    <h5 class="mb-0 text-success">
-                                        {{ $hoatdong_drl->sinhVienDangKy->where('pivot.TrangThaiDangKy', 'Đã duyệt')->count() }}
-                                    </h5>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="stat-item mb-3">
-                            <div class="d-flex align-items-center">
-                                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                                    <i class="fa-solid fa-hourglass-half"></i>
-                                </div>
-                                <div class="ms-3">
-                                    <small class="text-muted d-block">Chờ duyệt</small>
-                                    <h5 class="mb-0 text-warning">
-                                        {{ $hoatdong_drl->sinhVienDangKy->where('pivot.TrangThaiDangKy', 'Chờ duyệt')->count() }}
-                                    </h5>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="stat-item">
-                            <div class="d-flex align-items-center">
-                                <div class="stat-icon bg-secondary bg-opacity-10 text-secondary">
-                                    <i class="fa-solid fa-ban"></i>
-                                </div>
-                                <div class="ms-3">
-                                    <small class="text-muted d-block">Đã hủy</small>
-                                    <h5 class="mb-0 text-secondary">
-                                        {{ $hoatdong_drl->sinhVienDangKy->where('pivot.TrangThaiDangKy', 'Đã hủy')->count() }}
-                                    </h5>
-                                </div>
-                            </div>
+        {{-- Statistics Cards --}}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 text-dark"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Thống kê</h6>
+            </div>
+            <div class="card-body">
+                <div class="stat-item mb-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-star"></i></div>
+                        <div class="ms-3 flex-grow-1">
+                            <small class="text-muted d-block">Điểm Rèn Luyện</small>
+                            <h4 class="mb-0 text-warning">{{ $hoatdong_drl->quydinh->DiemNhan ?? 'N/A' }} <small>điểm</small></h4>
                         </div>
                     </div>
                 </div>
 
-                {{-- THÊM MỚI: CARD TÁC VỤ --}}
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-dark">
-                            <i class="fa-solid fa-cogs me-2 text-primary"></i>
-                            Quản lý & Tác vụ
-                        </h6>
+                <div class="stat-item mb-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="fa-solid fa-users"></i></div>
+                        <div class="ms-3 flex-grow-1">
+                            <small class="text-muted d-block">Số lượng</small>
+                            <h4 class="mb-0 text-primary">{{ $hoatdong_drl->sinhVienDangKy->count() }}/{{ $hoatdong_drl->SoLuong }}</h4>
+                        </div>
                     </div>
-                    <div class="card-body d-grid gap-2">
-                        <a href="{{ route('nhanvien.hoatdong_drl.ghi_nhan_ket_qua', $hoatdong_drl) }}"
-                            class="btn btn-info w-100 mb-2">
-                            <i class="fa-solid fa-marker me-2"></i> Ghi nhận/Điều chỉnh Kết quả
-                        </a>
+                    <div class="progress" style="height: 12px;">
+                        <div class="progress-bar {{ $tyLeDangKy >= 80 ? 'bg-danger' : ($tyLeDangKy >= 50 ? 'bg-warning' : 'bg-success') }}" role="progressbar" style="width: {{ $tyLeDangKy }}%;" aria-valuenow="{{ $tyLeDangKy }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Đã lấp đầy {{ $tyLeDangKy }}%</small>
+                </div>
 
-                        {{-- Nút tạo Check-In QR --}}
-                        <a href="{{ route('nhanvien.hoatdong_drl.create_checkin_qr', $hoatdong_drl) }}" class="btn btn-success w-100">
-                            <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Phát Mã QR Check-In
-                        </a>
+                <div class="stat-item mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="fa-solid fa-check-circle"></i></div>
+                        <div class="ms-3">
+                            <small class="text-muted d-block">Đã duyệt</small>
+                            <h5 class="mb-0 text-success">{{ $hoatdong_drl->sinhVienDangKy->where('pivot.TrangThaiDangKy', 'Đã duyệt')->count() }}</h5>
+                        </div>
+                    </div>
+                </div>
 
-                        {{-- Nút tạo Check-Out QR --}}
-                        <a href="{{ route('nhanvien.hoatdong_drl.create_checkout_qr', $hoatdong_drl) }}" class="btn btn-warning text-white w-100">
-                            <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Phát Mã QR Check-Out
-                        </a>
+                <div class="stat-item mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="ms-3">
+                            <small class="text-muted d-block">Chờ duyệt</small>
+                            <h5 class="mb-0 text-warning">{{ $hoatdong_drl->sinhVienDangKy->where('pivot.TrangThaiDangKy', 'Chờ duyệt')->count() }}</h5>
+                        </div>
+                    </div>
+                </div>
 
-                        <form action="{{ route('nhanvien.hoatdong_drl.finalize', $hoatdong_drl) }}" method="POST"
-                            onsubmit="return confirm('Bạn có chắc muốn tổng kết điểm danh? Hành động này sẽ ghi nhận trạng thái (Đã tham gia/Vắng) cho tất cả sinh viên đã được duyệt.')">
-                            @csrf
-                            <button type="submit" class="btn btn-primary w-100" {{ $daKetThuc ? '' : 'disabled' }}
-                                title="{{ $daKetThuc ? 'Tổng kết điểm danh' : 'Chỉ có thể tổng kết sau khi hoạt động đã kết thúc' }}">
-                                <i class="fa-solid fa-clipboard-check me-2"></i> Tổng kết Điểm danh
-                            </button>
-                        </form>
-
-                        <hr class="my-2">
-
-                        <a href="{{ route('nhanvien.hoatdong_drl.edit', $hoatdong_drl->MaHoatDong) }}"
-                            class="btn btn-outline-warning">
-                            <i class="fa-solid fa-pen-to-square me-2"></i>Chỉnh sửa
-                        </a>
-                        <a href="{{ route('nhanvien.hoatdong_drl.index') }}"
-                            class="btn btn-outline-secondary">
-                            <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
-                        </a>
+                <div class="stat-item">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-secondary bg-opacity-10 text-secondary"><i class="fa-solid fa-ban"></i></div>
+                        <div class="ms-3">
+                            <small class="text-muted d-block">Đã hủy</small>
+                            <h5 class="mb-0 text-secondary">{{ $hoatdong_drl->sinhVienDangKy->where('pivot.TrangThaiDangKy', 'Đã hủy')->count() }}</h5>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Thêm Style (Copy từ file CTXH) --}}
-        <style>
-            /* Info List */
-            .info-item {
-                padding: 1rem 0;
-                border-bottom: 1px solid #f0f0f0;
-            }
+        {{-- CARD TÁC VỤ --}}
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 text-dark"><i class="fa-solid fa-cogs me-2 text-primary"></i>Quản lý & Tác vụ</h6>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a href="{{ route('nhanvien.hoatdong_drl.ghi_nhan_ket_qua', $hoatdong_drl) }}" class="btn btn-info w-100 mb-2">
+                    <i class="fa-solid fa-marker me-2"></i> Ghi nhận/Điều chỉnh Kết quả
+                </a>
 
-            .info-item:last-child {
-                border-bottom: none;
-            }
+                <a href="{{ route('nhanvien.hoatdong_drl.create_checkin_qr', $hoatdong_drl) }}" class="btn btn-success w-100">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Phát Mã QR Check-In
+                </a>
 
-            .info-label {
-                font-weight: 600;
-                color: #6c757d;
-                font-size: 0.875rem;
-                margin-bottom: 0.5rem;
-                display: block;
-            }
+                <a href="{{ route('nhanvien.hoatdong_drl.create_checkout_qr', $hoatdong_drl) }}" class="btn btn-warning text-white w-100">
+                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Phát Mã QR Check-Out
+                </a>
 
-            .info-value {
-                margin: 0;
-                color: #212529;
-                font-size: 0.95rem;
-            }
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#confirmFinalizeModal" {{ $daKetThuc ? '' : 'disabled' }} title="{{ $daKetThuc ? 'Tổng kết điểm danh' : 'Chỉ có thể tổng kết sau khi hoạt động đã kết thúc' }}">
+                    <i class="fa-solid fa-clipboard-check me-2"></i> Tổng kết Điểm danh
+                </button>
 
-            /* Stat Card */
-            .stat-icon {
-                width: 48px;
-                height: 48px;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 1.25rem;
-            }
+                <form id="finalizeForm" action="{{ route('nhanvien.hoatdong_drl.finalize', $hoatdong_drl) }}" method="POST" class="d-none">@csrf</form>
 
-            .stat-item {
-                padding-bottom: 1rem;
-                border-bottom: 1px solid #f0f0f0;
-            }
+                <hr class="my-2">
 
-            .stat-item:last-child {
-                border-bottom: none;
-                padding-bottom: 0;
-            }
+                <a href="{{ route('nhanvien.hoatdong_drl.edit', $hoatdong_drl->MaHoatDong) }}" class="btn btn-outline-warning">
+                    <i class="fa-solid fa-pen-to-square me-2"></i>Chỉnh sửa
+                </a>
+                <a href="{{ route('nhanvien.hoatdong_drl.index') }}" class="btn btn-outline-secondary">
+                    <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
-            .avatar-xs {
-                width: 32px;
-                height: 32px;
-            }
+{{-- QR Modal Fullscreen - Improved Version --}}
+<div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header border-0 bg-white">
+                <h5 class="modal-title fw-bold" id="qrModalTitle">
+                    <i class="fa-solid fa-qrcode me-2"></i>QR Code
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body d-flex flex-column align-items-center justify-content-center" style="min-height: 85vh; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);">
+                <div class="qr-display-container mb-4">
+                    <div id="qrModalContent" class="qr-content-wrapper"></div>
+                </div>
+                
+                <div class="text-center px-4">
+                    <h4 class="fw-bold mb-2" id="qrModalDescription">Quét mã QR để điểm danh</h4>
+                    <p class="text-muted mb-4" id="qrModalSubtext">Sử dụng camera điện thoại để quét mã</p>
+                    
+                    <div class="d-inline-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm mb-3">
+                        <i class="fa-solid fa-calendar-check text-primary"></i>
+                        <span class="fw-semibold" id="qrModalActivity">Hoạt động DRL</span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 d-flex gap-3 flex-wrap justify-content-center">
+                    <button type="button" class="btn btn-lg btn-outline-primary px-5" onclick="downloadQRCode()">
+                        <i class="fa-solid fa-download me-2"></i>Tải xuống
+                    </button>
+                    <button type="button" class="btn btn-lg btn-outline-secondary px-5" onclick="printQRCode()">
+                        <i class="fa-solid fa-print me-2"></i>In mã QR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-            .card {
-                border-radius: 12px;
-                overflow: hidden;
-            }
+{{-- Modal Xác nhận Tổng kết --}}
+<div class="modal fade" id="confirmFinalizeModal" tabindex="-1" aria-labelledby="finalizeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="finalizeModalLabel"><i class="fa-solid fa-clipboard-check me-2"></i>Xác nhận Tổng kết</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                Bạn có chắc muốn tổng kết điểm danh? <br><br>
+                Hành động này sẽ ghi nhận trạng thái (Đã tham gia/Vắng) cho tất cả sinh viên <strong>Đã duyệt</strong>.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" onclick="document.getElementById('finalizeForm').submit();">Xác nhận Tổng kết</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            .badge {
-                padding: 0.5em 0.75em;
-                font-weight: 500;
-                border-radius: 6px;
-            }
+{{-- Style --}}
+<style>
+    /* Info List */
+    .info-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
 
-            .progress {
-                height: 12px;
-                border-radius: 10px;
-                background-color: #e9ecef;
-            }
+    .info-item:last-child {
+        border-bottom: none;
+    }
 
-            .progress-bar {
-                border-radius: 10px;
-            }
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
 
-            .table> :not(caption)>*>* {
-                padding: 0.75rem;
-            }
+    .info-value {
+        margin: 0;
+        color: #212529;
+        font-size: 0.95rem;
+    }
 
-            .sticky-top {
-                position: sticky;
-                top: 0;
-                z-index: 10;
-            }
+    /* Stat Card */
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
 
-            .btn {
-                border-radius: 8px;
-                padding: 0.5rem 1rem;
-                font-weight: 500;
-                transition: all 0.3s ease;
-            }
+    .stat-item {
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
 
-            .btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
+    .stat-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
 
-            .shadow-sm {
-                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-            }
+    .avatar-xs {
+        width: 32px;
+        height: 32px;
+    }
 
-            .bg-gradient {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
 
-            /* === BỔ SUNG THÊM STYLE CHO TÍNH NĂNG MỚI === */
-            /* QR Code - Small Version */
-            .qr-code-wrapper-small {
-                border: 3px solid #f3f4f6;
-                border-radius: 10px;
-                padding: 8px;
-                display: inline-block;
-                background: #fff;
-                margin-bottom: 0.5rem;
-            }
+    .badge {
+        padding: 0.5em 0.75em;
+        font-weight: 500;
+        border-radius: 6px;
+    }
 
-            /* QR Code - Modal Full Size */
-            .qr-modal-wrapper {
-                display: inline-block;
-                padding: 20px;
-                background: #fff;
-                border: 5px solid #f3f4f6;
-                border-radius: 16px;
-            }
+    .progress {
+        height: 12px;
+        border-radius: 10px;
+        background-color: #e9ecef;
+    }
 
-            .qr-modal-wrapper svg {
-                display: block;
-            }
+    .progress-bar {
+        border-radius: 10px;
+    }
 
-            /* Avatar Circle Small (cho bảng) */
-            .avatar-circle-small {
-                width: 38px;
-                height: 38px;
-                border-radius: 10px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 700;
-                font-size: 1rem;
-                flex-shrink: 0;
-            }
+    .table> :not(caption)>*>* {
+        padding: 0.75rem;
+    }
 
-            .student-name {
-                font-weight: 600;
-                color: #1f2937;
-                font-size: 0.9375rem;
-            }
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
 
-            .student-code {
-                font-size: 0.8125rem;
-                color: #6b7280;
-            }
+    .btn {
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
 
-            /* Badge Status (trong bảng) */
-            .badge-status {
-                padding: 0.35rem 0.75rem;
-                border-radius: 20px;
-                font-weight: 600;
-                font-size: 0.8rem;
-                display: inline-flex;
-                align-items: center;
-            }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
 
-            .badge-success {
-                background-color: #e7f8f0;
-                color: #0d9255;
-            }
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+    }
 
-            .badge-warning {
-                background-color: #fff8e1;
-                color: #f59e0b;
-            }
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
 
-            .badge-danger {
-                background-color: #fef2f2;
-                color: #ef4444;
-            }
+    /* QR Code - Small */
+    .qr-code-wrapper-small {
+        border: 3px solid #f3f4f6;
+        border-radius: 10px;
+        padding: 8px;
+        display: inline-block;
+        background: #fff;
+        margin-bottom: 0.5rem;
+    }
 
-            .badge-secondary {
-                background-color: #f3f4f6;
-                color: #6b7280;
-            }
+    /* Avatar Circle Small */
+    .avatar-circle-small {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
 
-            /* Badge Check (trong bảng) */
-            .badge-check {
-                padding: 0.35rem 0.75rem;
-                border-radius: 8px;
-                font-size: 0.8125rem;
-                font-weight: 500;
-            }
+    .student-name {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.9375rem;
+    }
 
-            .badge-check.check-in,
-            .badge-check.check-out {
-                background-color: #e7f8f0;
-                color: #0d9255;
-            }
+    .student-code {
+        font-size: 0.8125rem;
+        color: #6b7280;
+    }
 
-            .badge-check.check-null {
-                background-color: #f3f4f6;
-                color: #9ca3af;
-            }
-        </style>
+    /* Badge Status */
+    .badge-status {
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+    }
 
-        <script>
-            // Hàm hiển thị QR Modal
-            function showQRModal(type, url) {
-                const modal = new bootstrap.Modal(document.getElementById('qrModal'));
-                const modalTitle = document.getElementById('qrModalTitle');
-                const modalContent = document.getElementById('qrModalContent');
-                const modalDescription = document.getElementById('qrModalDescription');
+    .badge-success {
+        background-color: #e7f8f0;
+        color: #0d9255;
+    }
 
-                // Set title
-                if (type === 'checkin') {
-                    modalTitle.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket me-2 text-success"></i>QR Code Check-In';
-                    modalDescription.textContent = 'Sinh viên quét mã này khi bắt đầu hoạt động';
-                } else {
-                    modalTitle.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger"></i>QR Code Check-Out';
-                    modalDescription.textContent = 'Sinh viên quét mã này khi kết thúc hoạt động';
-                }
+    .badge-warning {
+        background-color: #fff8e1;
+        color: #f59e0b;
+    }
 
-                // Generate large QR code using fetch to get the SVG
-                fetch(`/qr-generator?url=${encodeURIComponent(url)}&size=300`)
-                    .then(response => response.text())
-                    .then(svg => {
-                        modalContent.innerHTML = `<div style="display: inline-block;">${svg}</div>`;
-                    })
-                    .catch(error => {
-                        // Fallback: If fetch fails, try to generate with PHP
-                        modalContent.innerHTML = `
-                <div style="display: inline-block;">
-                    {!! QrCode::size(300)->generate('${url}') !!}
+    .badge-danger {
+        background-color: #fef2f2;
+        color: #ef4444;
+    }
+
+    .badge-secondary {
+        background-color: #f3f4f6;
+        color: #6b7280;
+    }
+
+    /* Badge Check */
+    .badge-check {
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
+    .badge-check.check-in,
+    .badge-check.check-out {
+        background-color: #e7f8f0;
+        color: #0d9255;
+    }
+
+    .badge-check.check-null {
+        background-color: #f3f4f6;
+        color: #9ca3af;
+    }
+
+    /* QR Modal Styles - Improved */
+    .qr-display-container {
+        position: relative;
+        animation: fadeInScale 0.4s ease-out;
+        margin-top: 100px;
+    }
+
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .qr-content-wrapper {
+        background: white;
+        padding: 30px;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        border: 8px solid #f8f9fa;
+        position: relative;
+    }
+
+    .qr-content-wrapper::before {
+        content: '';
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 28px;
+        z-index: -1;
+        opacity: 0.1;
+    }
+
+    #qrModalContent svg,
+    #qrModalContent canvas,
+    #qrModalContent img {
+        display: block;
+        width: 400px !important;
+        height: 400px !important;
+        border-radius: 12px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        #qrModalContent svg,
+        #qrModalContent canvas,
+        #qrModalContent img {
+            width: 300px !important;
+            height: 300px !important;
+        }
+        
+        .qr-content-wrapper {
+            padding: 20px;
+        }
+
+        .btn-lg {
+            padding: 0.6rem 1.5rem;
+            font-size: 0.95rem;
+        }
+    }
+
+    /* Modal Animations */
+    .modal.fade .modal-dialog {
+        transition: transform 0.3s ease-out;
+    }
+
+    .modal.show .modal-dialog {
+        transform: none;
+    }
+
+    /* Buttons */
+    .btn-lg {
+        padding: 0.75rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-lg:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Badge */
+    .rounded-pill {
+        border-radius: 50rem !important;
+    }
+
+    /* Print Styles */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        
+        .qr-display-container,
+        .qr-display-container * {
+            visibility: visible;
+        }
+        
+        .qr-display-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #qrModalContent svg,
+        #qrModalContent canvas,
+        #qrModalContent img {
+            width: 600px !important;
+            height: 600px !important;
+        }
+    }
+</style>
+@endsection
+
+@push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    function showQRModal(type, url, activityName) {
+        const modal = new bootstrap.Modal(document.getElementById('qrModal'));
+        const modalTitle = document.getElementById('qrModalTitle');
+        const modalContent = document.getElementById('qrModalContent');
+        const modalDescription = document.getElementById('qrModalDescription');
+        const modalSubtext = document.getElementById('qrModalSubtext');
+        const modalActivity = document.getElementById('qrModalActivity');
+
+        // Clear previous content
+        modalContent.innerHTML = '';
+
+        // Set activity name
+        modalActivity.textContent = activityName;
+
+        // Set content based on type
+        if (type === 'checkin') {
+            modalTitle.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket me-2 text-success"></i>QR Code Check-In';
+            modalDescription.innerHTML = '<i class="fa-solid fa-clock me-2 text-success"></i>Quét để điểm danh vào';
+            modalSubtext.textContent = 'Sinh viên quét mã này khi bắt đầu hoạt động';
+        } else {
+            modalTitle.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket me-2 text-warning"></i>QR Code Check-Out';
+            modalDescription.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2 text-warning"></i>Quét để điểm danh ra';
+            modalSubtext.textContent = 'Sinh viên quét mã này khi kết thúc hoạt động';
+        }
+
+        // Generate QR Code
+        try {
+            new QRCode(modalContent, {
+                text: url,
+                width: 400,
+                height: 400,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } catch (e) {
+            console.error('Lỗi tạo QR Code:', e);
+            modalContent.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                    Không thể tạo mã QR. Vui lòng thử lại.
                 </div>
             `;
-                    });
+        }
 
-                // Show modal
-                modal.show();
-            }
-        </script>
-        @endsection
+        modal.show();
+    }
+
+    function downloadQRCode() {
+        const canvas = document.querySelector('#qrModalContent canvas');
+        if (canvas) {
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 10);
+            link.download = `qr-code-drl-${timestamp}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } else {
+            alert('Không tìm thấy mã QR để tải xuống.');
+        }
+    }
+
+    function printQRCode() {
+        window.print();
+    }
+
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 5000);
+        });
+    });
+</script>
+@endpush

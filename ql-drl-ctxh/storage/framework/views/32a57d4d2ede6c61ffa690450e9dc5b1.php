@@ -659,7 +659,7 @@
             </li>
 
             <li class="menu-item">
-                <a href="<?php echo e(route('sinhvien.recommended_activities.index')); ?>" class="menu-link">
+                <a href="<?php echo e(route('sinhvien.activities_recommended.index')); ?>" class="menu-link">
                     <i class="fa-solid fa-magic"></i>
                     <span>Hoạt động đề xuất</span>
                 </a>

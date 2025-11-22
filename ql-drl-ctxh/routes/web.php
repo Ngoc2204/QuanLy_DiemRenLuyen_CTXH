@@ -231,6 +231,13 @@ Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function
     Route::post('/dang-ky-ctxh/{maHoatDong}', [ActivityNotificationController::class, 'registerCTXH'])
      ->name('dangky.ctxh');
 
+    // Additional routes for timeline view compatibility
+    Route::post('/drl/register/{maHoatDong}', [ActivityNotificationController::class, 'registerDRL'])
+     ->name('drl.register');
+     
+    Route::post('/ctxh/register/{maHoatDong}', [ActivityNotificationController::class, 'registerCTXH'])
+     ->name('ctxh.register');
+
     Route::get('/lich-hoat-dong', [WeeklyActivityController::class, 'index'])
          ->name('lich_tuan');  
 
@@ -255,9 +262,9 @@ Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function
 
     // Hoạt động được đề xuất (Recommendation)
     Route::get('/de-xuat-hoat-dong', [RecommendedActivitiesController::class, 'index'])
-         ->name('recommended_activities.index');
+         ->name('activities_recommended.index');
     Route::get('/de-xuat-hoat-dong/{id}', [RecommendedActivitiesController::class, 'show'])
-         ->name('recommended_activities.show');
+         ->name('activities_recommended.show');
     Route::get('/api/activity/{id}/{type}', [RecommendedActivitiesController::class, 'getActivity'])
          ->name('api.get_activity');
 
@@ -265,7 +272,7 @@ Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function
     Route::get('/doi-mat-khau', [App\Http\Controllers\SinhVien\PasswordController::class, 'showChangePasswordForm'])
          ->name('thongtin_sinhvien.password_edit');
     Route::post('/doi-mat-khau', [App\Http\Controllers\SinhVien\PasswordController::class, 'updatePassword'])
-         ->name('thongtin_sinhvien.password_edit');
+         ->name('thongtin_sinhvien.password_update');
 
     // Quản lý đăng ký hoạt động
     Route::get('/quan-ly-dang-ky', [App\Http\Controllers\SinhVien\DangKyController::class, 'index'])

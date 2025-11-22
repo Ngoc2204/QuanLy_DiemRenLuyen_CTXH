@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Import quy định điểm DRL
+        $this->call(QuyDinhDiemRLSeeder::class);
+
         // User::factory(10)->create();
 
         User::factory()->create([

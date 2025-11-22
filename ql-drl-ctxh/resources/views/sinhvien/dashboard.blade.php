@@ -441,7 +441,7 @@
   <div class="profile-header">
     <div class="profile-content">
       <img
-        src="https://ui-avatars.com/api/?name={{ urlencode($student->HoTen) }}&background=667eea&color=fff&size=150"
+        src="{{ $student->taikhoan->Avatar ? asset('storage/' . $student->taikhoan->Avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($student->HoTen) . '&background=667eea&color=fff&size=150' }}"
         alt="Avatar"
         class="profile-avatar">
       <div class="profile-info flex-grow-1">
@@ -463,7 +463,7 @@
           </div>
           <div class="profile-meta-item">
             <i class="fas fa-graduation-cap"></i>
-            <span><strong>Lớp:</strong> {{ $student->lop->TenLop ?? 'N/A' }}</span>
+            <span><strong>Lớp:</strong> {{ $student->lop->MaLop ?? 'N/A' }}</span>
           </div>
           <div class="profile-meta-item">
             <i class="fas fa-book"></i>
@@ -525,13 +525,13 @@
       <i class="fas fa-lightning-bolt"></i> Chức năng nhanh
     </div>
     <div class="action-grid">
+      <a href="{{ route('sinhvien.activities_recommended.index') }}" class="action-btn" title="Xem hoạt động được đề xuất dựa trên K-Means">
+        <i class="fas fa-magic"></i>
+        <span>Hoạt động gợi ý</span>
+      </a>
       <a href="{{ route('sinhvien.quanly_dangky.index') }}" class="action-btn">
         <i class="fas fa-clipboard-list"></i>
         <span>Quản lý đăng ký</span>
-      </a>
-      <a href="#" class="action-btn">
-        <i class="fas fa-history"></i>
-        <span>Lịch sử hoạt động</span>
       </a>
       <a href="{{ route('sinhvien.diem_ren_luyen') }}" class="action-btn">
         <i class="fas fa-star"></i>
@@ -543,6 +543,87 @@
       </a>
     </div>
   </div>
+
+  {{-- Hoạt động được đề xuất (K-Means) --}}
+  @if(isset($recommended_activities) && $recommended_activities->count() > 0)
+  <div class="table-section" style="margin-bottom: 2rem;">
+    <div class="table-header">
+      <h5>
+        <i class="fas fa-magic me-2" style="color: #667eea;"></i>Hoạt Động Được Đề Xuất (K-Means)
+      </h5>
+      <a href="{{ route('sinhvien.activities_recommended.index') }}" class="btn btn-sm btn-outline-primary">
+        <i class="fas fa-arrow-right me-1"></i>Xem tất cả
+      </a>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tên Hoạt Động</th>
+            <th>Loại</th>
+            <th>Match Score</th>
+            <th>Ngày Bắt Đầu</th>
+            <th>Địa Điểm</th>
+            <th class="text-center">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($recommended_activities->take(5) as $rec)
+            @php
+              $activity = $rec->activity_type === 'drl' ? $rec->hoatDongDRL : $rec->hoatDongCTXH;
+            @endphp
+            @if($activity)
+            <tr>
+              <td>
+                <strong>{{ $activity->TenHoatDong }}</strong>
+              </td>
+              <td>
+                @if($rec->activity_type === 'drl')
+                  <span class="badge bg-primary">Rèn Luyện</span>
+                @else
+                  <span class="badge bg-danger">CTXH</span>
+                @endif
+              </td>
+              <td>
+                <span class="points-highlight">{{ round($rec->recommendation_score) }}/100</span>
+              </td>
+              <td>
+                {{ $activity->ThoiGianBatDau ? date('d/m/Y', strtotime($activity->ThoiGianBatDau)) : 'N/A' }}
+              </td>
+              <td>
+                <small>{{ substr($activity->DiaDiem, 0, 30) }}{{ strlen($activity->DiaDiem) > 30 ? '...' : '' }}</small>
+              </td>
+              <td class="text-center">
+                @if($rec->activity_type === 'drl')
+                  <form action="{{ route('sinhvien.dangky.drl', $activity->MaHoatDong) }}" method="POST" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </form>
+                @else
+                  <form action="{{ route('sinhvien.dangky.ctxh', $activity->MaHoatDong) }}" method="POST" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </form>
+                @endif
+              </td>
+            </tr>
+            @endif
+          @empty
+            <tr>
+              <td colspan="6" class="text-center p-4 text-muted">
+                <i class="fas fa-info-circle me-2"></i>Chưa có hoạt động được đề xuất. Hãy chạy K-Means clustering!
+              </td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+  @endif
 
   {{-- Hoạt động điểm rèn luyện --}}
   <div class="table-section">

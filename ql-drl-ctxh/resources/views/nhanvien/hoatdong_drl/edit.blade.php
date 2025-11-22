@@ -185,6 +185,9 @@ $breadcrumbs = [
         <form action="{{ route('nhanvien.hoatdong_drl.update', $hoatdong_drl->MaHoatDong) }}" method="POST" id="editForm" novalidate>
             @csrf
             @method('PUT')
+            
+            <!-- Hidden field để đảm bảo category_tags luôn được submit -->
+            <input type="hidden" name="category_tags_submitted" value="1">
 
             {{-- Thông tin cơ bản --}}
             <div class="form-section mb-4">
@@ -210,29 +213,29 @@ $breadcrumbs = [
                                 disabled readonly>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="form-group">
-                            <label for="LoaiHoatDong" class="form-label">
-                                <i class="fa-solid fa-tag me-1 text-muted"></i>
-                                Loại Hoạt động <span class="text-danger">*</span>
+                            <label class="form-label">
+                                <i class="fa-solid fa-heart me-1 text-muted"></i>
+                                Sở thích liên quan <span class="text-danger">*</span>
                             </label>
-                            <input type="text"
-                                class="form-control"
-                                id="LoaiHoatDong"
-                                name="LoaiHoatDong"
-                                value="{{ old('LoaiHoatDong', $hoatdong_drl->LoaiHoatDong) }}" {{-- Đổi biến --}}
-                                required
-                                list="loaihd-list-drl" {{-- Đổi ID --}}
-                                placeholder="Chọn hoặc nhập loại hoạt động">
-                            <datalist id="loaihd-list-drl"> {{-- Đổi ID --}}
-                                <option value="Học tập">
-                                <option value="Nghiên cứu khoa học">
-                                <option value="Văn hóa - Văn nghệ">
-                                <option value="Thể dục - Thể thao">
-                                <option value="Kỹ năng">
-                                <option value="Cộng đồng">
-                                <option value="Khác">
-                            </datalist>
+                            <div class="interest-tags-container border rounded p-3" style="background-color: #f8f9fa; min-height: 120px;">
+                                @forelse($interests ?? [] as $interest)
+                                <div class="form-check form-check-inline" style="margin: 0.5rem 0;">
+                                    <input class="form-check-input" type="checkbox" id="interest_{{ $interest->InterestID }}" 
+                                           name="category_tags[]" value="{{ $interest->InterestID }}"
+                                           {{ in_array($interest->InterestID, $selectedTags ?? []) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="interest_{{ $interest->InterestID }}">
+                                        {{ $interest->InterestName }}
+                                    </label>
+                                </div>
+                                @empty
+                                <p class="text-muted mb-0">Không có sở thích nào</p>
+                                @endforelse
+                            </div>
+                            @error('category_tags')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                     <div class="col-md-12">
@@ -497,25 +500,16 @@ $breadcrumbs = [
 @endsection
 
 @push('scripts')
-{{-- Giữ nguyên JS validation, chỉ đổi biến nếu cần --}}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('editForm');
         const soLuongInput = document.getElementById('SoLuong');
-        // Đổi biến lấy số lượng đk
-        const currentRegistered = {
-            {
-                $hoatdong_drl - > sinhVienDangKy - > count()
-            }
-        };
+        const currentRegistered = @php echo $hoatdong_drl->sinhVienDangKy->count(); @endphp;
 
         soLuongInput.addEventListener('change', function() {
             const newValue = parseInt(this.value);
-            // Thay bằng thông báo không chặn (nếu muốn)
             if (newValue < currentRegistered) {
                 console.warn(`Số lượng mới (${newValue}) nhỏ hơn số lượng đã đăng ký (${currentRegistered}).`);
-                // Hoặc hiển thị một div thông báo nhỏ trên form
-                // Ví dụ: Hiển thị cảnh báo nếu bạn có một div#soLuongWarning
                 const warningDiv = document.getElementById('soLuongWarning');
                 if (warningDiv) {
                     warningDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i> Số lượng mới nhỏ hơn số đã đăng ký (${currentRegistered})!`;
@@ -526,9 +520,6 @@ $breadcrumbs = [
                 if (warningDiv) warningDiv.style.display = 'none';
             }
         });
-        // Thêm một div để hiển thị cảnh báo (nếu muốn) ngay dưới input số lượng
-        // <div id="soLuongWarning" class="text-danger small mt-1" style="display: none;"></div>
-
 
         const thoiGianBatDau = document.getElementById('ThoiGianBatDau');
         const thoiGianKetThuc = document.getElementById('ThoiGianKetThuc');
@@ -552,11 +543,27 @@ $breadcrumbs = [
             thoiHanHuy.reportValidity();
         }
 
+        function validateCategoryTags() {
+            const checkboxes = document.querySelectorAll('input[name="category_tags[]"]');
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            
+            if (checkedCount === 0) {
+                alert('Vui lòng chọn ít nhất một sở thích liên quan!');
+                return false;
+            }
+            return true;
+        }
+
         thoiGianBatDau.addEventListener('change', validateDates);
         thoiGianKetThuc.addEventListener('change', validateDates);
         thoiHanHuy.addEventListener('change', validateDates);
 
         form.addEventListener('submit', function(event) {
+            if (!validateCategoryTags()) {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -571,13 +578,11 @@ $breadcrumbs = [
                 form.classList.remove('was-validated');
                 thoiGianKetThuc.setCustomValidity('');
                 thoiHanHuy.setCustomValidity('');
-                // Reset cảnh báo số lượng
                 const warningDiv = document.getElementById('soLuongWarning');
                 if (warningDiv) warningDiv.style.display = 'none';
             });
         }
 
-        // Validate lần đầu khi tải trang
         validateDates();
     });
 </script>

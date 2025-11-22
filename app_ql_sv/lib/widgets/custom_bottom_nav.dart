@@ -21,8 +21,14 @@ class CustomBottomNav extends StatelessWidget {
       type: BottomNavigationBarType.fixed,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-        BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Lịch hoạt động'),
-        BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: 'Điểm danh'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.event),
+          label: 'Lịch hoạt động',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.contact_page),
+          label: 'Liên hệ',
+        ),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Cá nhân'),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class RegisterActivityScreen extends StatefulWidget {
   const RegisterActivityScreen({super.key});
@@ -8,69 +9,243 @@ class RegisterActivityScreen extends StatefulWidget {
 }
 
 class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
-  // Dữ liệu hoạt động sắp diễn ra
-  final List<Map<String, dynamic>> _upcomingActivities = [
-    {
-      'title': 'Cổ vũ văn nghệ',
-      'date': '20/10/2025',
-      'startTime': '13:00',
-      'endTime': '17:00',
-      'location': 'Hội trường C - 140 Lê Trọng Tấn',
-      'points': '5',
-      'category': 'Điểm rèn luyện',
-      'categoryColor': Color(0xFFFFB74D),
-      'participants': '120',
-      'maxParticipants': '200',
-      'cancelDeadline': '19/10/2025 23:59',
-      'description': 'Hoạt động cổ vũ văn nghệ chào mừng kỷ niệm 20/10. Sinh viên sẽ tham gia biểu diễn và cổ vũ các tiết mục văn nghệ.',
-      'isRegistered': false,
-    },
-    {
-      'title': 'Hiến máu nhân đạo',
-      'date': '22/10/2025',
-      'startTime': '08:00',
-      'endTime': '12:00',
-      'location': 'Sân trường DHCN',
-      'points': '10',
-      'category': 'Điểm CTXH',
-      'categoryColor': Color(0xFFE57373),
-      'participants': '150',
-      'maxParticipants': '200',
-      'cancelDeadline': '21/10/2025 23:59',
-      'description': 'Chương trình hiến máu tình nguyện nhằm cứu giúp những bệnh nhân đang cần máu. Mỗi đơn vị máu có thể cứu được 3 sinh mạng.',
-      'isRegistered': true,
-    },
-    {
-      'title': 'Marathon vì môi trường',
-      'date': '25/10/2025',
-      'startTime': '06:00',
-      'endTime': '09:00',
-      'location': 'Công viên Lê Văn Tám',
-      'points': '8',
-      'category': 'Điểm rèn luyện',
-      'categoryColor': Color(0xFFFFB74D),
-      'participants': '80',
-      'maxParticipants': '100',
-      'cancelDeadline': '24/10/2025 23:59',
-      'description': 'Cuộc thi chạy marathon 5km kết hợp nhặt rác dọc đường, nâng cao ý thức bảo vệ môi trường.',
-      'isRegistered': false,
-    },
-    {
-      'title': 'Tình nguyện dạy học miễn phí',
-      'date': '28/10/2025',
-      'startTime': '14:00',
-      'endTime': '17:00',
-      'location': 'Trường THCS Nguyễn Du',
-      'points': '12',
-      'category': 'Điểm CTXH',
-      'categoryColor': Color(0xFFE57373),
-      'participants': '30',
-      'maxParticipants': '50',
-      'cancelDeadline': '27/10/2025 23:59',
-      'description': 'Dạy học và hỗ trợ học tập cho các em học sinh có hoàn cảnh khó khăn.',
-      'isRegistered': false,
-    },
-  ];
+  List<Map<String, dynamic>> _availableActivities = [];
+  List<Map<String, dynamic>> _userRegistrations = [];
+  bool _isLoading = true;
+  String _selectedFilter = 'Tất cả'; // Tất cả, DRL, CTXH
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActivities();
+  }
+
+  Future<void> _loadActivities() async {
+    try {
+      if (!mounted) return;
+      setState(() => _isLoading = true);
+
+      // Check if user is logged in
+      final token = await ApiService.getToken();
+      print('User token: ${token != null ? 'Available' : 'Missing'}');
+
+      // Load all available activities (both DRL and CTXH)
+      final activitiesResponse = await ApiService.get(
+        '/activities',
+        needAuth: true,
+      );
+      // Load user registrations - Skip for now
+      // final registrationsResponse = await ApiService.get(
+      //   '/my-registrations',
+      //   needAuth: true,
+      // );
+
+      List<Map<String, dynamic>> allActivities = [];
+
+      print('Activities API Response: ${activitiesResponse.statusCode}');
+      print('Activities API Body: ${activitiesResponse.body}');
+
+      if (activitiesResponse.statusCode == 200) {
+        final activitiesData = ApiService.parseResponse(activitiesResponse);
+        print('Activities Data: $activitiesData');
+        if (activitiesData['success'] == true) {
+          final activities = activitiesData['data'] as List;
+          print('Found ${activities.length} activities');
+          allActivities =
+              activities.map((activity) {
+                return {
+                  'id': activity['id'],
+                  'title': activity['ten'],
+                  'description': activity['mo_ta'] ?? 'Không có mô tả',
+                  'date': _formatDate(activity['ngay_to_chuc']),
+                  'startTime': _formatTime(activity['ngay_to_chuc']),
+                  'endTime': _formatEndTime(activity['ngay_to_chuc']),
+                  'location': activity['dia_diem'] ?? 'Chưa xác định',
+                  'points':
+                      activity['type'] == 'DRL'
+                          ? activity['diem_rl'].toString()
+                          : activity['diem_ctxh'].toString(),
+                  'category':
+                      activity['type'] == 'DRL'
+                          ? 'Điểm rèn luyện'
+                          : 'Công tác xã hội',
+                  'categoryColor':
+                      activity['type'] == 'DRL'
+                          ? Color(0xFFFFB74D)
+                          : Color(0xFFE57373),
+                  'type': activity['type'],
+                  'maxParticipants':
+                      activity['so_luong_toi_da']?.toString() ?? '0',
+                  'participants': '0', // Will be calculated
+                  'cancelDeadline': _formatRegistrationDeadline(
+                    activity['thoi_han_huy'],
+                  ),
+                  'isRegistered':
+                      false, // Will be updated based on registrations
+                };
+              }).toList();
+        }
+      } else {
+        print(
+          'API Error: ${activitiesResponse.statusCode} - ${activitiesResponse.body}',
+        );
+      }
+
+      // Load user registrations to check which activities are already registered - Skip for now
+      Set<String> registeredActivityIds = {};
+      // if (registrationsResponse.statusCode == 200) {
+      //   final registrationsData = ApiService.parseResponse(
+      //     registrationsResponse,
+      //   );
+      //   if (registrationsData['success'] == true) {
+      //     final registrations = registrationsData['data'];
+      //
+      //     if (registrations['drl_registrations'] != null) {
+      //       for (var reg in registrations['drl_registrations']) {
+      //         registeredActivityIds.add(reg['ma_hoat_dong']);
+      //       }
+      //     }
+      //
+      //     if (registrations['ctxh_registrations'] != null) {
+      //       for (var reg in registrations['ctxh_registrations']) {
+      //         registeredActivityIds.add(reg['ma_hoat_dong']);
+      //       }
+      //     }
+      //   }
+      // }
+
+      // Update registration status - All false for now
+      for (var activity in allActivities) {
+        activity['isRegistered'] =
+            false; // registeredActivityIds.contains(activity['id']);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _availableActivities = allActivities;
+      });
+      print('Updated UI with ${allActivities.length} activities');
+    } catch (e) {
+      _showErrorMessage('Có lỗi xảy ra khi tải dữ liệu: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _formatDate(String? dateTime) {
+    if (dateTime == null) return 'Chưa xác định';
+    try {
+      final date = DateTime.parse(dateTime);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    } catch (e) {
+      return 'Chưa xác định';
+    }
+  }
+
+  String _formatTime(String? dateTime) {
+    if (dateTime == null) return '00:00';
+    try {
+      final date = DateTime.parse(dateTime);
+      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return '00:00';
+    }
+  }
+
+  String _formatEndTime(String? dateTime) {
+    if (dateTime == null) return '00:00';
+    try {
+      final date = DateTime.parse(dateTime);
+      final endTime = date.add(Duration(hours: 3)); // Assume 3 hours duration
+      return '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return '00:00';
+    }
+  }
+
+  String _formatRegistrationDeadline(String? dateTime) {
+    if (dateTime == null) return 'Không có hạn chót';
+    try {
+      final date = DateTime.parse(dateTime);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Chưa xác định';
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredActivities {
+    if (_selectedFilter == 'Tất cả') {
+      return _availableActivities;
+    } else if (_selectedFilter == 'DRL') {
+      return _availableActivities
+          .where((activity) => activity['type'] == 'DRL')
+          .toList();
+    } else if (_selectedFilter == 'CTXH') {
+      return _availableActivities
+          .where((activity) => activity['type'] == 'CTXH')
+          .toList();
+    }
+    return _availableActivities;
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Color(0xFF81C784),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Widget _buildFilterButton(String filter) {
+    final isSelected = _selectedFilter == filter;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedFilter = filter;
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Color(0xFF1E5A96) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Color(0xFF1E5A96) : Colors.grey[300]!,
+          ),
+        ),
+        child: Text(
+          filter,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey[700],
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
 
   void _showActivityDetail(Map<String, dynamic> activity) {
     showModalBottomSheet(
@@ -82,162 +257,270 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
   }
 
   void _handleRegister(Map<String, dynamic> activity) {
+    final diaDiem = activity['dia_diem_detail'] as Map<String, dynamic>? ?? {};
+    final giaTien = diaDiem['gia_tien'] as int?;
+    final isCtxhWithFee =
+        activity['type'] == 'CTXH' && giaTien != null && giaTien > 0;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Row(
-          children: [
-            Icon(Icons.help_outline, color: Color(0xFF2E5077)),
-            SizedBox(width: 8),
-            Text('Xác nhận đăng ký'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Bạn có chắc chắn muốn đăng ký hoạt động:'),
-            SizedBox(height: 8),
-            Text(
-              activity['title'],
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
             ),
-            SizedBox(height: 12),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Hạn hủy: ${activity['cancelDeadline']}',
-                      style: TextStyle(
-                        fontSize: 13,
+            title: Row(
+              children: [
+                Icon(Icons.help_outline, color: Color(0xFF2E5077)),
+                SizedBox(width: 8),
+                Text('Xác nhận đăng ký'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Bạn có chắc chắn muốn đăng ký hoạt động:'),
+                SizedBox(height: 8),
+                Text(
+                  activity['title'],
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
                         color: Colors.orange[700],
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Hạn hủy: ${activity['cancelDeadline']}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isCtxhWithFee)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red[300]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber,
+                            color: Colors.red[700],
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Yêu cầu thanh toán',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red[700],
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  '${giaTien.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (Match m) => ',')}đ',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red[900],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Hủy', style: TextStyle(color: Colors.grey)),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Hủy', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                activity['isRegistered'] = true;
-                int currentParticipants = int.parse(activity['participants']);
-                activity['participants'] = (currentParticipants + 1).toString();
-              });
-              Navigator.pop(context);
-              Navigator.pop(context); // Đóng bottom sheet
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Đăng ký hoạt động thành công!'),
-                    ],
-                  ),
-                  backgroundColor: Color(0xFF81C784),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              ElevatedButton(
+                onPressed: () => _confirmRegister(activity),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isCtxhWithFee ? Colors.orange : Color(0xFF2E5077),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF2E5077),
-            ),
-            child: Text('Xác nhận', style: TextStyle(color: Colors.white)),
+                child: Text(
+                  isCtxhWithFee ? 'Đăng ký & Thanh toán' : 'Xác nhận',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
+  }
+
+  Future<void> _confirmRegister(Map<String, dynamic> activity) async {
+    Navigator.pop(context); // Close dialog
+
+    try {
+      String endpoint;
+      if (activity['type'] == 'DRL') {
+        endpoint = '/activities/drl/${activity['id']}/register';
+      } else {
+        endpoint = '/activities/ctxh/${activity['id']}/register';
+      }
+
+      print('Registering for activity: ${activity['id']} via $endpoint');
+
+      final response = await ApiService.post(
+        endpoint,
+        body: {},
+        needAuth: true,
+      );
+
+      print('Registration response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = ApiService.parseResponse(response);
+
+        if (data['success'] == true) {
+          setState(() {
+            activity['isRegistered'] = true;
+          });
+
+          // Check if payment is required (from API response)
+          final responseData = data['data'] as Map<String, dynamic>? ?? {};
+          final canPay = responseData['can_pay'] ?? false;
+          final paymentAmount = responseData['amount'] ?? 0;
+
+          if (canPay && paymentAmount > 0) {
+            // Show payment required dialog with payment amount from API
+            Navigator.pop(context); // Close bottom sheet
+            _showPaymentRequiredDialog(activity, paymentAmount);
+          } else {
+            Navigator.pop(context); // Close bottom sheet
+            _showSuccessMessage('Đăng ký hoạt động thành công!');
+            _loadActivities();
+          }
+        } else {
+          _showErrorMessage(data['message'] ?? 'Có lỗi xảy ra khi đăng ký');
+        }
+      } else {
+        final errorData = ApiService.parseResponse(response);
+        _showErrorMessage(
+          errorData['message'] ?? 'Không thể đăng ký hoạt động',
+        );
+      }
+    } catch (e) {
+      _showErrorMessage('Có lỗi xảy ra: $e');
+    }
   }
 
   void _handleCancelRegistration(Map<String, dynamic> activity) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Xác nhận hủy đăng ký'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Bạn có chắc chắn muốn hủy đăng ký hoạt động:'),
-            SizedBox(height: 8),
-            Text(
-              activity['title'],
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Quay lại', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                activity['isRegistered'] = false;
-                int currentParticipants = int.parse(activity['participants']);
-                activity['participants'] = (currentParticipants - 1).toString();
-              });
-              Navigator.pop(context);
-              Navigator.pop(context); // Đóng bottom sheet
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(Icons.info, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Đã hủy đăng ký hoạt động'),
-                    ],
-                  ),
-                  backgroundColor: Colors.orange,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            title: Row(
+              children: [
+                Icon(Icons.warning_amber, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Xác nhận hủy đăng ký'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Bạn có chắc chắn muốn hủy đăng ký hoạt động:'),
+                SizedBox(height: 8),
+                Text(
+                  activity['title'],
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              ],
             ),
-            child: Text('Hủy đăng ký', style: TextStyle(color: Colors.white)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Quay lại', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () => _confirmCancelRegistration(activity),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: Text(
+                  'Hủy đăng ký',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
+  }
+
+  Future<void> _confirmCancelRegistration(Map<String, dynamic> activity) async {
+    Navigator.pop(context); // Close dialog
+
+    try {
+      String endpoint;
+      if (activity['type'] == 'DRL') {
+        endpoint = '/activities/drl/${activity['id']}/unregister';
+      } else {
+        endpoint = '/activities/ctxh/${activity['id']}/unregister';
+      }
+
+      final response = await ApiService.delete(endpoint, needAuth: true);
+
+      if (response.statusCode == 200) {
+        final data = ApiService.parseResponse(response);
+
+        if (data['success'] == true) {
+          setState(() {
+            activity['isRegistered'] = false;
+          });
+
+          Navigator.pop(context); // Close bottom sheet
+          _showSuccessMessage('Đã hủy đăng ký hoạt động thành công!');
+
+          // Refresh activities to get updated data
+          _loadActivities();
+        } else {
+          _showErrorMessage(data['message'] ?? 'Có lỗi xảy ra khi hủy đăng ký');
+        }
+      } else {
+        final errorData = ApiService.parseResponse(response);
+        _showErrorMessage(
+          errorData['message'] ?? 'Không thể hủy đăng ký hoạt động',
+        );
+      }
+    } catch (e) {
+      _showErrorMessage('Có lỗi xảy ra: $e');
+    }
   }
 
   @override
@@ -310,25 +593,91 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(
-                    width: 34,
-                  ),
+                  const SizedBox(width: 34),
                 ],
               ),
             ),
 
-
-
+            // Filter buttons
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  _buildFilterButton('Tất cả'),
+                  SizedBox(width: 8),
+                  _buildFilterButton('DRL'),
+                  SizedBox(width: 8),
+                  _buildFilterButton('CTXH'),
+                ],
+              ),
+            ),
 
             // Danh sách hoạt động
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.all(16),
-                itemCount: _upcomingActivities.length,
-                itemBuilder: (context, index) {
-                  return _buildActivityCard(_upcomingActivities[index]);
-                },
-              ),
+              child:
+                  _isLoading
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF1E5A96),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Đang tải hoạt động...',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      : _filteredActivities.isEmpty
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.event_busy,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Không có hoạt động nào',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Hiện tại chưa có hoạt động nào để đăng ký',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      : RefreshIndicator(
+                        onRefresh: _loadActivities,
+                        child: ListView.builder(
+                          padding: EdgeInsets.all(16),
+                          itemCount: _filteredActivities.length,
+                          itemBuilder: (context, index) {
+                            return _buildActivityCard(
+                              _filteredActivities[index],
+                            );
+                          },
+                        ),
+                      ),
             ),
           ],
         ),
@@ -338,14 +687,19 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
 
   Widget _buildActivityCard(Map<String, dynamic> activity) {
     final isRegistered = activity['isRegistered'] as bool;
-    final progress = int.parse(activity['participants']) / int.parse(activity['maxParticipants']);
+    final progress =
+        int.parse(activity['participants']) /
+        int.parse(activity['maxParticipants']);
 
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: isRegistered ? Border.all(color: Color(0xFF81C784), width: 2) : null,
+        border:
+            isRegistered
+                ? Border.all(color: Color(0xFF81C784), width: 2)
+                : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -403,7 +757,10 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                           ),
                           SizedBox(height: 4),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: activity['categoryColor'],
                               borderRadius: BorderRadius.circular(6),
@@ -422,14 +779,21 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                     ),
                     if (isRegistered)
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Color(0xFF81C784),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.white, size: 14),
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 14,
+                            ),
                             SizedBox(width: 4),
                             Text(
                               'Đã đăng ký',
@@ -459,7 +823,8 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                     SizedBox(height: 10),
                     _buildInfoRow(
                       icon: Icons.access_time,
-                      value: '${activity['startTime']} - ${activity['endTime']}',
+                      value:
+                          '${activity['startTime']} - ${activity['endTime']}',
                       color: Color(0xFF9575CD),
                     ),
                     SizedBox(height: 10),
@@ -479,7 +844,11 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.people, size: 18, color: Colors.grey[600]),
+                                Icon(
+                                  Icons.people,
+                                  size: 18,
+                                  color: Colors.grey[600],
+                                ),
                                 SizedBox(width: 6),
                                 Text(
                                   '${activity['participants']}/${activity['maxParticipants']} người',
@@ -593,7 +962,10 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                     children: [
                       // Category badge
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: activity['categoryColor'],
                           borderRadius: BorderRadius.circular(8),
@@ -713,11 +1085,13 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: isRegistered
-                          ? () => _handleCancelRegistration(activity)
-                          : () => _handleRegister(activity),
+                      onPressed:
+                          isRegistered
+                              ? () => _handleCancelRegistration(activity)
+                              : () => _handleRegister(activity),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isRegistered ? Colors.red : Color(0xFF2E5077),
+                        backgroundColor:
+                            isRegistered ? Colors.red : Color(0xFF2E5077),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -727,7 +1101,10 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(isRegistered ? Icons.cancel : Icons.check_circle, size: 20),
+                          Icon(
+                            isRegistered ? Icons.cancel : Icons.check_circle,
+                            size: 20,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             isRegistered ? 'Hủy đăng ký' : 'Đăng ký ngay',
@@ -749,7 +1126,132 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value, Color color) {
+  void _showPaymentRequiredDialog(
+      Map<String, dynamic> activity, dynamic giaTienRaw) {
+    // Handle amount - can be int or string
+    int giaTien = 0;
+    if (giaTienRaw != null) {
+      if (giaTienRaw is int) {
+        giaTien = giaTienRaw;
+      } else if (giaTienRaw is String) {
+        giaTien = int.tryParse(giaTienRaw) ?? 0;
+      } else {
+        giaTien = int.tryParse(giaTienRaw.toString()) ?? 0;
+      }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text('Yêu cầu thanh toán'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bạn đã đăng ký hoạt động thành công!',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Số tiền cần thanh toán:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '${giaTien.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (Match m) => ',')}đ',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange[900],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Vui lòng thanh toán để xác nhận đăng ký',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSuccessMessage(
+                'Đăng ký thành công! Vui lòng thanh toán để hoàn tất',
+              );
+              _loadActivities();
+            },
+            child: Text('Xong'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSuccessMessage(
+                'Đăng ký thành công! Vui lòng thanh toán để hoàn tất',
+              );
+              _loadActivities();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+            ),
+            child: Text('Đã hiểu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -768,10 +1270,7 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
               SizedBox(height: 2),
               Text(

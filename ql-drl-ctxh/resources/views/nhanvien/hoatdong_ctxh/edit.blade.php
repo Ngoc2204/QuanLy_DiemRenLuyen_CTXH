@@ -74,6 +74,9 @@
         <form action="{{ route('nhanvien.hoatdong_ctxh.update', $hoatdong_ctxh->MaHoatDong) }}" method="POST" id="editForm" novalidate>
             @csrf
             @method('PUT')
+            
+            <!-- Hidden field để đảm bảo category_tags luôn được submit -->
+            <input type="hidden" name="category_tags_submitted" value="1">
 
             {{-- Thông tin cơ bản --}}
             <div class="form-section mb-4">
@@ -93,12 +96,30 @@
                         <input type="text" class="form-control" id="MaHoatDong" value="{{ $hoatdong_ctxh->MaHoatDong }}" disabled readonly>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">
-                            <i class="fa-solid fa-tag me-1 text-muted"></i> Phân loại
-                        </label>
-                        {{-- Khóa/readonly: không cho đổi loại --}}
-                        <input type="text" class="form-control" value="{{ $hoatdong_ctxh->LoaiHoatDong }}" disabled readonly>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fa-solid fa-heart me-1 text-muted"></i>
+                                Sở thích liên quan <span class="text-danger">*</span>
+                            </label>
+                            <div class="interest-tags-container border rounded p-3" style="background-color: #f8f9fa; min-height: 120px;">
+                                @forelse($interests ?? [] as $interest)
+                                <div class="form-check form-check-inline" style="margin: 0.5rem 0;">
+                                    <input class="form-check-input" type="checkbox" id="interest_{{ $interest->InterestID }}" 
+                                           name="category_tags[]" value="{{ $interest->InterestID }}"
+                                           {{ in_array($interest->InterestID, $selectedTags ?? []) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="interest_{{ $interest->InterestID }}">
+                                        {{ $interest->InterestName }}
+                                    </label>
+                                </div>
+                                @empty
+                                <p class="text-muted mb-0">Không có sở thích nào</p>
+                                @endforelse
+                            </div>
+                            @error('category_tags')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="col-md-12">
@@ -124,23 +145,7 @@
                                value="{{ old('DiaDiem', $hoatdong_ctxh->DiaDiem) }}" required>
                     </div>
 
-                    {{-- Chỉ hiển thị (readonly) nếu là Địa chỉ đỏ --}}
-                    @if($hoatdong_ctxh->LoaiHoatDong == 'Địa chỉ đỏ')
-                        <div class="col-md-6">
-                            <label class="form-label">
-                                <i class="fa-solid fa-calendar-week me-1 text-muted"></i> Thuộc Đợt
-                            </label>
-                            <input type="text" class="form-control"
-                                   value="{{ $hoatdong_ctxh->dotDiaChiDo->TenDot ?? 'N/A' }}" disabled readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">
-                                <i class="fa-solid fa-map-location-dot me-1 text-muted"></i> Địa điểm tổ chức
-                            </label>
-                            <input type="text" class="form-control"
-                                   value="{{ $hoatdong_ctxh->diaDiem->TenDiaDiem ?? 'N/A' }}" disabled readonly>
-                        </div>
-                    @endif
+                    {{-- Chỉ hiển thị (readonly) nếu là Địa chỉ đỏ - NOT APPLICABLE ANYMORE --}}
                 </div>
             </div>
 
@@ -315,10 +320,29 @@ document.addEventListener('DOMContentLoaded', function () {
     tgKetThuc.addEventListener('change', validateDates);
     tgHuy.addEventListener('change', validateDates);
 
+    // Validate category_tags - at least one checkbox must be selected
+    function validateCategoryTags() {
+        const checkboxes = document.querySelectorAll('input[name="category_tags[]"]');
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        
+        if (checkedCount === 0) {
+            alert('Vui lòng chọn ít nhất một sở thích liên quan!');
+            return false;
+        }
+        return true;
+    }
+
     // Submit
     form.addEventListener('submit', function (e) {
         validateSoLuong();
         validateDates();
+        
+        if (!validateCategoryTags()) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+        
         if (!form.checkValidity()) {
             e.preventDefault();
             e.stopPropagation();

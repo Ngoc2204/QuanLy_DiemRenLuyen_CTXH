@@ -309,34 +309,40 @@
     <div class="page-header">
         <div class="container">
             <h3><i class="fas fa-magic me-3"></i>Hoạt Động Được Đề Xuất</h3>
-            <p class="subtitle">Những hoạt động phù hợp với bạn được hệ thống thông minh gợi ý</p>
+            <p class="subtitle">Những hoạt động phù hợp với bạn được hệ thống K-Means thông minh gợi ý</p>
         </div>
     </div>
 
     
-    <div class="stats-container">
-        <div class="stat-card danger">
-            <h5><i class="fas fa-exclamation-circle me-2"></i>Điểm RL Thấp</h5>
-            <p class="number"><?php echo e($countLowRL); ?></p>
-            <small class="text-muted">hoạt động đề xuất</small>
-        </div>
-        <div class="stat-card warning">
-            <h5><i class="fas fa-heart me-2"></i>CTXH Chưa Đủ</h5>
-            <p class="number"><?php echo e($countIncompleteCTXH); ?></p>
-            <small class="text-muted">hoạt động đề xuất</small>
-        </div>
-        <div class="stat-card info">
-            <h5><i class="fas fa-graduation-cap me-2"></i>Sắp Tốt Nghiệp</h5>
-            <p class="number"><?php echo e($countGraduatingSoon); ?></p>
-            <small class="text-muted">hoạt động đề xuất</small>
+    <?php if($studentCluster): ?>
+    <div class="stats-container" style="margin-bottom: 2rem;">
+        <div class="stat-card" style="border-left-color: #667eea; grid-column: 1 / -1;">
+            <h5><i class="fas fa-network-wired me-2"></i>Nhóm Sinh Viên của Bạn (K-Means)</h5>
+            <p class="number" style="font-size: 1.5rem; margin-bottom: 0.5rem;"><?php echo e($clusterName); ?></p>
+            <small class="text-muted">Được hệ thống phân loại dựa trên sở thích, điểm số và hành vi tham gia</small>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                <strong style="color: #475569;">Điểm số dự đoán (5 yếu tố):</strong>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem;">
+                    <span><i class="fas fa-heart" style="color: #f59e0b;"></i> Sở thích: 30%</span>
+                    <span><i class="fas fa-users" style="color: #3b82f6;"></i> Phổ biến: 25%</span>
+                    <span><i class="fas fa-check-circle" style="color: #10b981;"></i> Thành công: 20%</span>
+                    <span><i class="fas fa-clock" style="color: #8b5cf6;"></i> Gần đây: 15%</span>
+                    <span><i class="fas fa-star" style="color: #ec4899;"></i> Mới lạ: 10%</span>
+                </div>
+            </div>
         </div>
     </div>
+    <?php else: ?>
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Chưa phân cụm!</strong> Hãy chạy lệnh K-Means để sinh viên này được phân loại.
+    </div>
+    <?php endif; ?>
 
     
     <?php $__empty_1 = true; $__currentLoopData = $recommendations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $rec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
         <?php
             $activity = $rec->activity_type === 'drl' ? $rec->hoatDongDRL : $rec->hoatDongCTXH;
-            $reasons = array_map('trim', explode(',', $rec->recommendation_reason ?? ''));
         ?>
 
         <?php if($activity): ?>
@@ -355,24 +361,14 @@
             </div>
 
             
-            <div class="rec-reasons">
-                <?php $__currentLoopData = $reasons; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $reason): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <?php
-                        $reasonLabel = match($reason) {
-                            'low_rl_score' => 'Điểm RL Thấp',
-                            'incomplete_ctxh' => 'CTXH Chưa Đủ',
-                            'graduating_soon' => 'Sắp Tốt Nghiệp',
-                            'preference_match' => 'Phù Hợp Sở Thích',
-                            'red_address' => 'Địa Chỉ Đỏ',
-                            default => $reason
-                        };
-                    ?>
-                    <span class="reason-tag <?php echo e(in_array($reason, ['low_rl_score', 'graduating_soon']) ? 'priority' : ''); ?>">
-                        <?php echo e($reasonLabel); ?>
-
-                    </span>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                <span class="reason-tag priority">Priority <?php echo e($rec->priority); ?></span>
+            <div style="margin: 1rem 0; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--primary);">
+                <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">🤖 K-Means Match Score:</strong>
+                <p style="color: #555; margin: 0; line-height: 1.6; font-size: 0.9rem;">
+                    Hoạt động này được đề xuất dựa trên 5 yếu tố: 
+                    <strong>Sở thích</strong> (30%) + <strong>Phổ biến trong nhóm</strong> (25%) + 
+                    <strong>Tỉ lệ thành công</strong> (20%) + <strong>Gần đây</strong> (15%) + 
+                    <strong>Mới lạ</strong> (10%)
+                </p>
             </div>
 
             

@@ -14,6 +14,7 @@ use App\Models\DiemCtxh;
 use App\Models\DangKyHoatDongDrl;
 use App\Models\DangKyHoatDongCtxh;
 use App\Models\HocKy; // <-- Model quan trọng
+use App\Models\ActivityRecommendation;
 
 class DashboardController extends Controller
 {
@@ -121,7 +122,11 @@ class DashboardController extends Controller
             ->where('MSSV', $mssv)
             ->get();
 
-        // 10. Chuẩn bị dữ liệu cho Chart JS
+        // 10. Lấy danh sách hoạt động được đề xuất (K-Means)
+        $recommended_activities = ActivityRecommendation::where('MSSV', $mssv)
+            ->orderBy('recommendation_score', 'desc')
+            ->with(['hoatDongDRL', 'hoatDongCTXH'])
+            ->get();
         // Dữ liệu Biểu đồ ĐRL (Bar chart)
         $drl_scores = DiemRenLuyen::where('MSSV', $mssv)
             ->join('hocky', 'diemrenluyen.MaHocKy', '=', 'hocky.MaHocKy')
@@ -157,6 +162,7 @@ class DashboardController extends Controller
             'has_red_activity',
             'activities',
             'social_activities',
+            'recommended_activities',
             'training_chart_js',
             'social_chart_js'
         ));

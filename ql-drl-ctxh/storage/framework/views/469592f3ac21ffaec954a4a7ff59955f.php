@@ -185,6 +185,9 @@ $breadcrumbs = [
         
         <form action="<?php echo e(route('nhanvien.hoatdong_drl.store')); ?>" method="POST" id="createForm" novalidate>
             <?php echo csrf_field(); ?>
+            
+            <!-- Hidden field để đảm bảo category_tags luôn được submit -->
+            <input type="hidden" name="category_tags_submitted" value="1">
 
             
             <div class="form-section mb-4">
@@ -212,29 +215,37 @@ $breadcrumbs = [
                                 placeholder="Nhập tên hoạt động">
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="form-group">
-                            <label for="LoaiHoatDong" class="form-label">
-                                <i class="fa-solid fa-tag me-1 text-muted"></i>
-                                Loại Hoạt động <span class="text-danger">*</span>
+                            <label class="form-label">
+                                <i class="fa-solid fa-heart me-1 text-muted"></i>
+                                Sở thích liên quan <span class="text-danger">*</span>
                             </label>
-                            <input type="text"
-                                class="form-control"
-                                id="LoaiHoatDong"
-                                name="LoaiHoatDong"
-                                value="<?php echo e(old('LoaiHoatDong', 'Khác')); ?>"
-                                required
-                                list="loaihd-list-drl" 
-                                placeholder="Chọn hoặc nhập loại hoạt động">
-                            <datalist id="loaihd-list-drl"> 
-                                <option value="Học tập">
-                                <option value="Nghiên cứu khoa học">
-                                <option value="Văn hóa - Văn nghệ">
-                                <option value="Thể dục - Thể thao">
-                                <option value="Kỹ năng">
-                                <option value="Cộng đồng">
-                                <option value="Khác">
-                            </datalist>
+                            <div class="interest-tags-container border rounded p-3" style="background-color: #f8f9fa; min-height: 120px;">
+                                <?php $__empty_1 = true; $__currentLoopData = $interests ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $interest): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <div class="form-check form-check-inline" style="margin: 0.5rem 0;">
+                                    <input class="form-check-input" type="checkbox" id="interest_<?php echo e($interest->InterestID); ?>" 
+                                           name="category_tags[]" value="<?php echo e($interest->InterestID); ?>"
+                                           <?php echo e(in_array($interest->InterestID, old('category_tags', [])) ? 'checked' : ''); ?>>
+                                    <label class="form-check-label" for="interest_<?php echo e($interest->InterestID); ?>">
+                                        <?php echo e($interest->InterestName); ?>
+
+                                    </label>
+                                </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <p class="text-muted mb-0">Không có sở thích nào</p>
+                                <?php endif; ?>
+                            </div>
+                            <?php $__errorArgs = ['category_tags'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="invalid-feedback d-block"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -456,7 +467,6 @@ $breadcrumbs = [
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('createForm');
@@ -482,11 +492,27 @@ $breadcrumbs = [
             thoiHanHuy.reportValidity();
         }
 
+        function validateCategoryTags() {
+            const checkboxes = document.querySelectorAll('input[name="category_tags[]"]');
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            
+            if (checkedCount === 0) {
+                alert('Vui lòng chọn ít nhất một sở thích liên quan!');
+                return false;
+            }
+            return true;
+        }
+
         thoiGianBatDau.addEventListener('change', validateDates);
         thoiGianKetThuc.addEventListener('change', validateDates);
         thoiHanHuy.addEventListener('change', validateDates);
 
         form.addEventListener('submit', function(event) {
+            if (!validateCategoryTags()) {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();

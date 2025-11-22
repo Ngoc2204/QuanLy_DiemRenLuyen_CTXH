@@ -237,20 +237,20 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
                                 <div class="qr-code-wrapper-small">
                                     {!! QrCode::size(100)->generate(route('sinhvien.scan', ['token' => $hoatdong_ctxh->CheckInToken])) !!}
                                 </div>
-                                <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showQRModal('checkin', '{{ route('sinhvien.scan', ['token' => $hoatdong_ctxh->CheckInToken]) }}')">
+                                <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showQRModal('checkin', '{{ route('sinhvien.scan', ['token' => $hoatdong_ctxh->CheckInToken]) }}', '{{ $hoatdong_ctxh->TenHoatDong }}')">
                                     <i class="fa-solid fa-expand me-1"></i>Phóng to
                                 </button>
                                 <small class="text-muted d-block mt-1">Quét khi bắt đầu</small>
                             </div>
                             @endif
-                            
+
                             @if($hoatdong_ctxh->CheckOutToken)
                             <div class="col-6">
                                 <h6 class="fw-bold small text-uppercase mb-2">Check-Out</h6>
                                 <div class="qr-code-wrapper-small">
                                     {!! QrCode::size(100)->generate(route('sinhvien.scan', ['token' => $hoatdong_ctxh->CheckOutToken])) !!}
                                 </div>
-                                <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showQRModal('checkout', '{{ route('sinhvien.scan', ['token' => $hoatdong_ctxh->CheckOutToken]) }}')">
+                                <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showQRModal('checkout', '{{ route('sinhvien.scan', ['token' => $hoatdong_ctxh->CheckOutToken]) }}', '{{ $hoatdong_ctxh->TenHoatDong }}')">
                                     <i class="fa-solid fa-expand me-1"></i>Phóng to
                                 </button>
                                 <small class="text-muted d-block mt-1">Quét khi kết thúc</small>
@@ -264,22 +264,6 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
                             <small>Nhấn nút "Phát Mã QR Check-In" hoặc "Phát Mã QR Check-Out" ở bên dưới.</small>
                         </div>
                         @endif
-                    </div>
-                </div>
-
-                {{-- QR Modal --}}
-                <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header border-0">
-                                <h5 class="modal-title" id="qrModalTitle">QR Code</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body text-center py-5">
-                                <div id="qrModalContent"></div>
-                                <p class="text-muted mt-3 mb-0" id="qrModalDescription"></p>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -381,6 +365,48 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
                         <a href="{{ route('nhanvien.hoatdong_ctxh.index') }}" class="btn btn-outline-secondary">
                             <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
                         </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- QR Modal Fullscreen - Improved Version --}}
+        <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                    <div class="modal-header border-0 bg-white">
+                        <h5 class="modal-title fw-bold" id="qrModalTitle">
+                            <i class="fa-solid fa-qrcode me-2"></i>QR Code
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body d-flex flex-column align-items-center justify-content-center" style="min-height: 85vh; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);">
+                        <!-- QR Code Container -->
+                        <div class="qr-display-container mb-4">
+                            <div id="qrModalContent" class="qr-content-wrapper"></div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="text-center px-4">
+                            <h4 class="fw-bold mb-2" id="qrModalDescription">Quét mã QR để điểm danh</h4>
+                            <p class="text-muted mb-4" id="qrModalSubtext">Sử dụng camera điện thoại để quét mã</p>
+
+                            <!-- Activity Info Badge -->
+                            <div class="d-inline-flex align-items-center gap-2 px-4 py-2 bg-white rounded-pill shadow-sm mb-3">
+                                <i class="fa-solid fa-calendar-check text-primary"></i>
+                                <span class="fw-semibold" id="qrModalActivity">Hoạt động CTXH</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-4 d-flex gap-3 flex-wrap justify-content-center">
+                            <button type="button" class="btn btn-lg btn-outline-primary px-5" onclick="downloadQRCode()">
+                                <i class="fa-solid fa-download me-2"></i>Tải xuống
+                            </button>
+                            <button type="button" class="btn btn-lg btn-outline-secondary px-5" onclick="printQRCode()">
+                                <i class="fa-solid fa-print me-2"></i>In mã QR
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -519,23 +545,6 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
                 margin-bottom: 0.5rem;
             }
 
-            /* QR Code - Modal */
-            .qr-modal-wrapper {
-                display: inline-block;
-                padding: 20px;
-                background: #fff;
-                border: 5px solid #f3f4f6;
-                border-radius: 16px;
-            }
-
-            #qrModalContent svg,
-            #qrModalContent canvas,
-            #qrModalContent img {
-                display: block;
-                width: 300px;
-                height: 300px;
-            }
-
             /* Avatar Circle Small */
             .avatar-circle-small {
                 width: 38px;
@@ -610,49 +619,209 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
                 background-color: #f3f4f6;
                 color: #9ca3af;
             }
+
+            /* QR Modal Styles - Improved */
+            .qr-display-container {
+                position: relative;
+                animation: fadeInScale 0.4s ease-out;
+                margin-top: 100px;
+            }
+
+            @keyframes fadeInScale {
+                from {
+                    opacity: 0;
+                    transform: scale(0.9);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+
+            .qr-content-wrapper {
+                background: white;
+                padding: 30px;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+                border: 8px solid #f8f9fa;
+                position: relative;
+            }
+
+            .qr-content-wrapper::before {
+                content: '';
+                position: absolute;
+                top: -4px;
+                left: -4px;
+                right: -4px;
+                bottom: -4px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                border-radius: 28px;
+                z-index: -1;
+                opacity: 0.1;
+            }
+
+            #qrModalContent svg,
+            #qrModalContent canvas,
+            #qrModalContent img {
+                display: block;
+                width: 400px !important;
+                height: 400px !important;
+                border-radius: 12px;
+            }
+
+            /* Responsive */
+            @media (max-width: 768px) {
+
+                #qrModalContent svg,
+                #qrModalContent canvas,
+                #qrModalContent img {
+                    width: 300px !important;
+                    height: 300px !important;
+                }
+
+                .qr-content-wrapper {
+                    padding: 20px;
+                }
+
+                .btn-lg {
+                    padding: 0.6rem 1.5rem;
+                    font-size: 0.95rem;
+                }
+            }
+
+            /* Modal Animations */
+            .modal.fade .modal-dialog {
+                transition: transform 0.3s ease-out;
+            }
+
+            .modal.show .modal-dialog {
+                transform: none;
+            }
+
+            /* Buttons */
+            .btn-lg {
+                padding: 0.75rem 2rem;
+                border-radius: 12px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            }
+
+            .btn-lg:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            }
+
+            /* Badge */
+            .rounded-pill {
+                border-radius: 50rem !important;
+            }
+
+            /* Print Styles */
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+
+                .qr-display-container,
+                .qr-display-container * {
+                    visibility: visible;
+                }
+
+                .qr-display-container {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                }
+
+                #qrModalContent svg,
+                #qrModalContent canvas,
+                #qrModalContent img {
+                    width: 600px !important;
+                    height: 600px !important;
+                }
+            }
         </style>
         @endsection
 
         @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         <script>
-            function showQRModal(type, url) {
+            function showQRModal(type, url, activityName) {
                 const modal = new bootstrap.Modal(document.getElementById('qrModal'));
                 const modalTitle = document.getElementById('qrModalTitle');
                 const modalContent = document.getElementById('qrModalContent');
                 const modalDescription = document.getElementById('qrModalDescription');
+                const modalSubtext = document.getElementById('qrModalSubtext');
+                const modalActivity = document.getElementById('qrModalActivity');
 
+                // Clear previous content
                 modalContent.innerHTML = '';
 
+                // Set activity name
+                modalActivity.textContent = activityName;
+
+                // Set content based on type
                 if (type === 'checkin') {
                     modalTitle.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket me-2 text-success"></i>QR Code Check-In';
-                    modalDescription.textContent = 'Sinh viên quét mã này khi bắt đầu hoạt động';
+                    modalDescription.innerHTML = '<i class="fa-solid fa-clock me-2 text-success"></i>Quét để điểm danh vào';
+                    modalSubtext.textContent = 'Sinh viên quét mã này khi bắt đầu hoạt động';
                 } else {
-                    modalTitle.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger"></i>QR Code Check-Out';
-                    modalDescription.textContent = 'Sinh viên quét mã này khi kết thúc hoạt động';
+                    modalTitle.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket me-2 text-warning"></i>QR Code Check-Out';
+                    modalDescription.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2 text-warning"></i>Quét để điểm danh ra';
+                    modalSubtext.textContent = 'Sinh viên quét mã này khi kết thúc hoạt động';
                 }
 
+                // Generate QR Code
                 try {
                     new QRCode(modalContent, {
                         text: url,
-                        width: 300,
-                        height: 300,
+                        width: 400,
+                        height: 400,
                         colorDark: '#000000',
                         colorLight: '#ffffff',
                         correctLevel: QRCode.CorrectLevel.H
                     });
-                    if (modalContent.firstChild) {
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'qr-modal-wrapper';
-                        wrapper.appendChild(modalContent.firstChild);
-                        modalContent.appendChild(wrapper);
-                    }
                 } catch (e) {
                     console.error('Lỗi tạo QR Code:', e);
-                    modalContent.innerHTML = `<p class="text-danger">Lỗi khi tạo mã QR: ${e.message}</p>`;
+                    modalContent.innerHTML = `
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                            Không thể tạo mã QR. Vui lòng thử lại.
+                        </div>
+                    `;
                 }
 
                 modal.show();
             }
+
+            function downloadQRCode() {
+                const canvas = document.querySelector('#qrModalContent canvas');
+                if (canvas) {
+                    const link = document.createElement('a');
+                    const timestamp = new Date().toISOString().slice(0, 10);
+                    link.download = `qr-code-${timestamp}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } else {
+                    alert('Không tìm thấy mã QR để tải xuống.');
+                }
+            }
+
+            function printQRCode() {
+                window.print();
+            }
+
+            // Auto-hide alerts after 5 seconds
+            document.addEventListener('DOMContentLoaded', function() {
+                const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+                alerts.forEach(function(alert) {
+                    setTimeout(function() {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }, 5000);
+                });
+            });
         </script>
         @endpush

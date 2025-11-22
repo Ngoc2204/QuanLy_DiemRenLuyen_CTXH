@@ -176,10 +176,16 @@ $breadcrumbs = [
                                     @endif
                                 </div>
                                 <div>
+                                    @if($hd->MaHoatDong)
                                     <a href="{{ route('nhanvien.hoatdong_ctxh.show', $hd->MaHoatDong) }}"
                                        class="text-decoration-none fw-semibold text-dark">
                                         {{ $hd->TenHoatDong }}
                                     </a>
+                                    @else
+                                    <span class="text-decoration-none fw-semibold text-dark">
+                                        {{ $hd->TenHoatDong ?? 'N/A' }}
+                                    </span>
+                                    @endif
                                     <div class="small text-muted mt-1">
                                         {{-- --- HIỂN THỊ LOẠI --- --}}
                                         <i class="fa-solid fa-tag me-1"></i>
@@ -257,6 +263,7 @@ $breadcrumbs = [
 
                         <td class="text-center">
                             <div class="btn-group" role="group">
+                                @if($hd->MaHoatDong)
                                 <a href="{{ route('nhanvien.hoatdong_ctxh.show', $hd->MaHoatDong) }}"
                                    class="btn btn-sm btn-info text-white"
                                    title="Xem chi tiết">
@@ -274,9 +281,11 @@ $breadcrumbs = [
                                         title="Xóa">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
+                                @endif
                             </div>
 
                             <!-- Delete Confirmation Modal -->
+                            @if($hd->MaHoatDong)
                             <div class="modal fade" id="deleteModal{{ $hd->MaHoatDong }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ $hd->MaHoatDong }}" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content border-0 shadow">
@@ -309,6 +318,7 @@ $breadcrumbs = [
                                     </div>
                                 </div>
                             </div>
+                            @endif
                         </td>
                     </tr>
                     @empty

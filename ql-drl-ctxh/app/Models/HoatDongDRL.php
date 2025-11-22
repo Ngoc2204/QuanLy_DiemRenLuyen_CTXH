@@ -24,6 +24,7 @@ class HoatDongDRL extends Model
         'LoaiHoatDong',
         'MaHocKy',
         'MaQuyDinhDiem',
+        'category_tags',
         'CheckInToken',
         'CheckInOpenAt',
         'CheckInExpiresAt',

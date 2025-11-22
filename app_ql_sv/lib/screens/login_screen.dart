@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../services/auth_service.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -11,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _mssvController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   _login() async {
     if (_mssvController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -18,34 +21,76 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Giả lập API login (sau này thay bằng HTTP request)
-    if (_mssvController.text == "2001223103" && _passwordController.text == "123456") {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', "mock_token_example");
+    setState(() {
+      _isLoading = true;
+    });
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+    try {
+      final result = await AuthService.login(
+        _mssvController.text.trim(),
+        _passwordController.text,
       );
-    } else {
-      _showDialog("Sai MSSV hoặc mật khẩu!");
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result['success']) {
+        // Lưu thông tin user
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_data', result['user'].toString());
+
+        // Hiển thị thông báo thành công
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'Đăng nhập thành công',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+
+        // Chuyển đến màn hình chính
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      } else {
+        _showDialog(result['message'] ?? 'Đăng nhập thất bại');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showDialog("Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại!");
     }
   }
 
   void _showDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Text("Thông báo", style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("OK", style: TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.bold)),
-          )
-        ],
-      ),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            title: Text(
+              "Thông báo",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "OK",
+                  style: TextStyle(
+                    color: Color(0xFF003366),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
     );
   }
 
@@ -89,10 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: 8),
                 Text(
                   "Hệ thống quản lý điểm rèn luyện & CTXH",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 SizedBox(height: 32),
 
@@ -112,7 +154,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF003366), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF003366),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -129,7 +174,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.lock, color: Color(0xFF003366)),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -147,7 +194,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF003366), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF003366),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -175,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _login,
+                    onPressed: _isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF003366),
                       shape: RoundedRectangleBorder(
@@ -183,15 +233,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       elevation: 3,
                     ),
-                    child: Text(
-                      "ĐĂNG NHẬP",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    child:
+                        _isLoading
+                            ? CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            )
+                            : Text(
+                              "ĐĂNG NHẬP",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                   ),
                 ),
               ],

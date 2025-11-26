@@ -317,7 +317,14 @@ $breadcrumbs = [
             </div>
             @if($thongKeHoatDong->hasPages())
             <div class="pagination-wrapper">
-                {{ $thongKeHoatDong->appends(request()->query())->links(null, ['pageName' => 'page_hd']) }}
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="pagination-info">
+                        Hiển thị {{ $thongKeHoatDong->firstItem() }} đến {{ $thongKeHoatDong->lastItem() }} trong {{ $thongKeHoatDong->total() }} hoạt động
+                    </div>
+                    <div>
+                        {{ $thongKeHoatDong->appends(request()->query())->links('pagination::bootstrap-4', ['pageName' => 'page_hd']) }}
+                    </div>
+                </div>
             </div>
             @endif
         </div>
@@ -387,7 +394,14 @@ $breadcrumbs = [
             </div>
             @if($thongKeLop->hasPages())
             <div class="pagination-wrapper">
-                {{ $thongKeLop->appends(request()->query())->links(null, ['pageName' => 'page_lop']) }}
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="pagination-info">
+                        Hiển thị {{ $thongKeLop->firstItem() }} đến {{ $thongKeLop->lastItem() }} trong {{ $thongKeLop->total() }} lớp
+                    </div>
+                    <div>
+                        {{ $thongKeLop->appends(request()->query())->links('pagination::bootstrap-4', ['pageName' => 'page_lop']) }}
+                    </div>
+                </div>
             </div>
             @endif
         </div>
@@ -818,6 +832,18 @@ $breadcrumbs = [
         border-top: 1px solid #e5e7eb;
     }
 
+    .pagination-wrapper .d-flex {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .pagination-info {
+        color: #6b7280;
+        font-weight: 600;
+        font-size: 0.95rem;
+        white-space: nowrap;
+    }
+
     /* pagination default container (ul.pagination) and fallback anchors */
     .pagination, .pagination-wrapper .pagination-inline {
         display: inline-flex;
@@ -826,6 +852,49 @@ $breadcrumbs = [
         margin: 0;
         list-style: none;
         align-items: center;
+    }
+
+    /* Styling untuk Bootstrap pagination */
+    .pagination .page-item {
+        display: inline-flex;
+    }
+
+    .pagination .page-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+        padding: 0 0.75rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        color: #374151;
+        font-weight: 600;
+        text-decoration: none;
+        background: #fff;
+        transition: all 0.2s ease;
+        font-size: 0.95rem;
+    }
+
+    .pagination .page-link:hover:not(.disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: white;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .pagination .page-item.disabled .page-link {
+        opacity: 0.5;
+        pointer-events: none;
+        background: #fafafa;
+        border-color: #f3f4f6;
     }
 
     /* Generic page item styling covers both <li><a> and plain <a> outputs */
@@ -868,27 +937,6 @@ $breadcrumbs = [
         pointer-events: none;
         background: #fafafa;
         border-color: #f3f4f6;
-    }
-
-    .page-link:hover {
-        background: #667eea;
-        border-color: #667eea;
-        color: white;
-        transform: translateY(-2px);
-    }
-
-    .page-item.active .page-link {
-        background: var(--primary-gradient);
-        border-color: transparent;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    }
-
-    /* Small helper for the 'Showing' text above pagination */
-    .pagination-info {
-        text-align: center;
-        color: #6b7280;
-        margin-bottom: 0.5rem;
-        font-size: 0.95rem;
     }
 
     /* Responsive */

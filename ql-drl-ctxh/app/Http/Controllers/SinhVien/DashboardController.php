@@ -45,24 +45,23 @@ class DashboardController extends Controller
         $countCTXH = HoatDongCtxh::where('ThoiGianKetThuc', '>', $now)->count();
         $notifications_count = $countDRL + $countCTXH;
 
-        // Đếm "Hoạt động tuần này" (ĐÃ ĐĂNG KÝ)
+        // Đếm "Hoạt động tuần này" (Hoạt động đã đăng ký tuần này và trạng thái "Đã duyệt")
         $startOfWeek = Carbon::now()->startOfWeek();
         $endOfWeek = Carbon::now()->endOfWeek();
         
         $weekly_drl = DangKyHoatDongDrl::where('MSSV', $mssv)
+            ->where('TrangThaiDangKy', 'Đã duyệt')
             ->whereHas('hoatdong', function ($query) use ($startOfWeek, $endOfWeek) {
                 $query->whereBetween('ThoiGianBatDau', [$startOfWeek, $endOfWeek]);
             })->count();
 
         $weekly_ctxh = DangKyHoatDongCtxh::where('MSSV', $mssv)
+            ->where('TrangThaiDangKy', 'Đã duyệt')
             ->whereHas('hoatdong', function ($query) use ($startOfWeek, $endOfWeek) {
                 $query->whereBetween('ThoiGianBatDau', [$startOfWeek, $endOfWeek]);
             })->count();
             
-        // --- ĐÃ SỬA LỖI LOGIC TẠI ĐÂY ---
-        // (Sửa $weeklyDrlCount thành $weekly_drl)
-        $weekly_activities = $weekly_drl + $weekly_ctxh; 
-        // --- KẾT THÚC SỬA LOGIC ---
+        $weekly_activities = $weekly_drl + $weekly_ctxh;
 
 
         // 5. Lấy điểm rèn luyện (cho học kỳ hiện tại)

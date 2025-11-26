@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use App\Models\SinhVien;
 use App\Models\Lop;
 use App\Models\Khoa;
@@ -85,10 +86,10 @@ class SinhVienController extends Controller
         // 🔐 Mật khẩu mặc định là ngày sinh dạng ddmmyyyy
         $matkhau_macdinh = Carbon::parse($data['NgaySinh'])->format('dmY');
 
-        // ✅ Tạo tài khoản tương ứng
+        // ✅ Tạo tài khoản tương ứng với mật khẩu được hash
         TaiKhoan::create([
             'TenDangNhap' => $data['MSSV'],
-            'MatKhau' => $matkhau_macdinh,
+            'MatKhau' => Hash::make($matkhau_macdinh),
             'VaiTro' => 'SinhVien',
         ]);
 

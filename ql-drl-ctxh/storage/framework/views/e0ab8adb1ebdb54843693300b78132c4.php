@@ -555,6 +555,45 @@
             justify-content: center;
         }
     }
+
+    /* === PAGINATION STYLES === */
+    .pagination {
+        justify-content: center;
+        margin-top: 2rem;
+        gap: 0.5rem;
+    }
+
+    .pagination .page-link {
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+        color: var(--primary);
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        transition: var(--transition);
+        min-width: 44px;
+        text-align: center;
+    }
+
+    .pagination .page-link:hover {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: #fff;
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        border-color: var(--primary);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, .4);
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #cbd5e1;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
 </style>
 <?php $__env->stopPush(); ?>
 
@@ -602,7 +641,7 @@
                 <button class="nav-link active" id="drl-tab" data-bs-toggle="tab" data-bs-target="#drl-content" type="button" role="tab" aria-controls="drl-content" aria-selected="true">
                     <i class="fas fa-star"></i>
                     <span>Hoạt Động Rèn Luyện</span>
-                    <span class="badge bg-light text-dark"><?php echo e($activitiesDRL->count()); ?></span>
+                    <span class="badge bg-light text-dark"><?php echo e($activitiesDRL->total()); ?></span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -610,7 +649,7 @@
                     <i class="fas fa-heart"></i>
                     <span>Hoạt Động CTXH</span>
                     
-                    <span class="badge bg-light text-dark"><?php echo e($groupedActivities->count() + $normalActivities->count()); ?></span>
+                    <span class="badge bg-light text-dark"><?php echo e($paginatedCtxh->total()); ?></span>
                 </button>
             </li>
         </ul>
@@ -619,7 +658,7 @@
     <div class="tab-content" id="activityTabContent">
         
         <div class="tab-pane fade show active" id="drl-content" role="tabpanel" aria-labelledby="drl-tab">
-            <?php $__empty_1 = true; $__currentLoopData = $activitiesDRL; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $activity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <?php $__empty_1 = true; $__currentLoopData = $activitiesDRL; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $activity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?> 
             <?php
             $registered = $activity->dangky_count ?? $activity->dangky->count();
             $total = (int) $activity->SoLuong;
@@ -733,226 +772,240 @@
                 <p>Hiện tại chưa có thông báo hoạt động rèn luyện nào sắp diễn ra</p>
             </div>
             <?php endif; ?>
+
+            
+            <?php if($activitiesDRL->hasPages()): ?>
+            <div style="display: flex; justify-content: center; margin-top: 3rem; gap: 0.5rem;">
+                <?php echo e($activitiesDRL->links('pagination::bootstrap-4')); ?>
+
+            </div>
+            <?php endif; ?>
         </div>
 
         
         <div class="tab-pane fade" id="ctxh-content" role="tabpanel" aria-labelledby="ctxh-tab">
 
             
-            <?php $__currentLoopData = $groupedActivities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $groupKey => $activitiesInGroup): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <?php
-            // Lấy 1 hoạt động đại diện để hiển thị thông tin chung
-            $repActivity = $activitiesInGroup->first();
-            // Tính tổng số lượng
-            $totalRegistered = $activitiesInGroup->sum('dangky_count');
-            $totalSlots = $activitiesInGroup->sum('SoLuong');
-            $percentage = $totalSlots > 0 ? min(100, max(0, ($totalRegistered / $totalSlots) * 100)) : 0;
-            ?>
-
-            <div class="activity-card ctxh-card group-card">
-                <div class="activity-header">
-                    <span class="activity-type ctxh">
-                        <i class="fa-solid fa-map-location-dot"></i>
-                        <?php echo e($repActivity->LoaiHoatDong); ?>
-
-                    </span>
-                    <span class="activity-points">
-                        <i class="fas fa-trophy"></i>
-                        +<?php echo e($repActivity->quydinh->DiemNhan ?? 0); ?>
-
-                    </span>
-                </div>
-
-                <div class="activity-body">
+            <?php $__empty_1 = true; $__currentLoopData = $paginatedCtxh; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <?php if($item['type'] === 'group'): ?>
                     
-                    <h4><?php echo e($repActivity->dotDiaChiDo->TenDot ?? 'Hoạt động Địa chỉ đỏ'); ?></h4>
-
-                    <div class="diachi-info">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <span class="info-label">Địa điểm tổ chức:</span>
-                                <span class="info-value"><?php echo e($repActivity->diaDiem->TenDiaDiem ?? 'N/A'); ?></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                
-                <ul class="group-days-list">
-                    <?php $__currentLoopData = $activitiesInGroup; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dayActivity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php
-                    $registered = $dayActivity->dangky_count;
-                    $total = $dayActivity->SoLuong;
-                    $isFull_Day = $total > 0 && $registered >= $total;
-                    $isRegistered_Day = $dayActivity->is_registered;
+                    $activitiesInGroup = $item['data'];
+                    $repActivity = $activitiesInGroup->first();
+                    $totalRegistered = $activitiesInGroup->sum('dangky_count');
+                    $totalSlots = $activitiesInGroup->sum('SoLuong');
+                    $percentage = $totalSlots > 0 ? min(100, max(0, ($totalRegistered / $totalSlots) * 100)) : 0;
                     ?>
-                    <li class="day-item"
-                        data-type="ctxh"
-                        data-id="<?php echo e($dayActivity->MaHoatDong); ?>"
-                        data-title="<?php echo e(e($dayActivity->TenHoatDong)); ?>"
-                        data-description="<?php echo e(e($dayActivity->MoTa ?? '')); ?>"
-                        data-start="<?php echo e($dayActivity->ThoiGianBatDau->format('c')); ?>"
-                        data-end="<?php echo e($dayActivity->ThoiGianKetThuc->format('c')); ?>"
-                        data-cancel-deadline="<?php echo e(optional($dayActivity->ThoiHanHuy)->format('c')); ?>"
-                        data-location="<?php echo e(e($dayActivity->DiaDiem)); ?>"
-                        data-slots="<?php echo e($registered); ?> / <?php echo e($total); ?>"
-                        data-points="<?php echo e($dayActivity->quydinh->DiemNhan ?? 0); ?>"
-                        data-semester="Địa chỉ đỏ">
-                        <div class="day-info">
-                            <div class="day-date"><?php echo e($dayActivity->ThoiGianBatDau->format('l, d/m/Y')); ?></div>
-                            <div class="day-time">
-                                <?php echo e($dayActivity->ThoiGianBatDau->format('H:i')); ?> - <?php echo e($dayActivity->ThoiGianKetThuc->format('H:i')); ?>
 
-                            </div>
-                            <?php if($dayActivity->MoTa): ?>
-                            <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fef2f4; border-radius: 6px; border-left: 3px solid var(--accent); font-size: 0.875rem;">
-                                <strong style="color: var(--accent); display: block; margin-bottom: 0.25rem;">📋 Mô tả:</strong>
-                                <p style="color: #555; margin: 0; line-height: 1.4;"><?php echo e($dayActivity->MoTa); ?></p>
-                            </div>
-                            <?php endif; ?>
+                    <div class="activity-card ctxh-card group-card">
+                        <div class="activity-header">
+                            <span class="activity-type ctxh">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <?php echo e($repActivity->LoaiHoatDong); ?>
+
+                            </span>
+                            <span class="activity-points">
+                                <i class="fas fa-trophy"></i>
+                                +<?php echo e($repActivity->quydinh->DiemNhan ?? 0); ?>
+
+                            </span>
                         </div>
-                        <span class="day-slots <?php echo e($isFull_Day ? 'full' : ''); ?>">
-                            <i class="fas fa-users"></i>
-                            <?php echo e($registered); ?> / <?php echo e($total); ?>
 
-                        </span>
-                        <div>
-                            <?php if($isRegistered_Day): ?>
-                            <button class="btn btn-action btn-action-day btn-success" style="background: var(--success);" disabled>
-                                <i class="fas fa-check"></i> Đã Đăng Ký
-                            </button>
-                            <?php elseif($isFull_Day): ?>
-                            <button class="btn btn-action btn-action-day" style="background:#6c757d;color:#fff;" disabled>
-                                <i class="fas fa-times-circle"></i> Đã Đầy
-                            </button>
-                            <?php else: ?>
-                            <form action="<?php echo e(route('sinhvien.dangky.ctxh', $dayActivity->MaHoatDong)); ?>" method="POST" style="margin:0; display: inline-block;">
-                                <?php echo csrf_field(); ?>
-                                <button type="submit" class="btn btn-action btn-action-day btn-action-ctxh">
-                                    <i class="fas fa-user-plus"></i> Đăng Ký
-                                </button>
-                            </form>
-                            <?php endif; ?>
-                        </div>
-                    </li>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                </ul>
-            </div>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-
-            
-            <?php $__currentLoopData = $normalActivities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $activity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <?php
-            $registered = $activity->dangky_count ?? $activity->dangky->count();
-            $total = (int) $activity->SoLuong;
-            $percentage = $total > 0 ? min(100, max(0, ($registered / $total) * 100)) : 0;
-            $isRegistered_CTXH = $activity->is_registered;
-            $isFull_CTXH = $total > 0 && $registered >= $total;
-            ?>
-
-            <div class="activity-card ctxh-card"
-                data-type="ctxh"
-                data-id="<?php echo e($activity->MaHoatDong); ?>"
-                data-title="<?php echo e(e($activity->TenHoatDong)); ?>"
-                data-description="<?php echo e(e($activity->MoTa ?? '')); ?>"
-                data-start="<?php echo e(optional($activity->ThoiGianBatDau)->format('c')); ?>"
-                data-end="<?php echo e(optional($activity->ThoiGianKetThuc)->format('c')); ?>"
-                data-cancel-deadline="<?php echo e(optional($activity->ThoiHanHuy)->format('c')); ?>"
-                data-location="<?php echo e(e($activity->DiaDiem)); ?>"
-                data-slots="<?php echo e($registered); ?> / <?php echo e($total); ?>"
-                data-points="<?php echo e($activity->quydinh->DiemNhan ?? 0); ?>"
-                data-semester="N/A">
-                <div class="activity-header">
-                    <span class="activity-type ctxh">
-                        <i class="fas fa-heart"></i>
-                        <?php echo e($activity->LoaiHoatDong ?? 'Công tác xã hội'); ?>
-
-                    </span>
-                    <span class="activity-points">
-                        <i class="fas fa-trophy"></i>
-                        +<?php echo e($activity->quydinh->DiemNhan ?? 0); ?>
-
-                    </span>
-                </div>
-
-                <div class="activity-body">
-                    <h4><?php echo e($activity->TenHoatDong); ?></h4>
-                    
-                    
-                    <?php if($activity->MoTa): ?>
-                    <div class="mb-3 p-3" style="background: #fef2f4; border-radius: 8px; border-left: 4px solid var(--accent);">
-                        <strong style="color: var(--accent);">📋 Mô tả chi tiết:</strong>
-                        <p class="mt-2 mb-0" style="color: #555; line-height: 1.6;"><?php echo e($activity->MoTa); ?></p>
-                    </div>
-                    <?php endif; ?>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-calendar-alt"></i>
-                                <span>Bắt đầu: <strong><?php echo e(optional($activity->ThoiGianBatDau)->format('d/m/Y H:i')); ?></strong></span>
-                            </p>
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span>Ghi chú ĐĐ: <strong><?php echo e($activity->DiaDiem); ?></strong></span>
-                            </p>
+                        <div class="activity-body">
                             
+                            <h4><?php echo e($repActivity->dotDiaChiDo->TenDot ?? 'Hoạt động Địa chỉ đỏ'); ?></h4>
+
+                            <div class="diachi-info">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <span class="info-label">Địa điểm tổ chức:</span>
+                                        <span class="info-value"><?php echo e($repActivity->diaDiem->TenDiaDiem ?? 'N/A'); ?></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-calendar-check"></i>
-                                <span>Kết thúc: <strong><?php echo e(optional($activity->ThoiGianKetThuc)->format('d/m/Y H:i')); ?></strong></span>
-                            </p>
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-users"></i>
-                                <span>Số lượng: <strong><?php echo e($registered); ?> / <?php echo e($total); ?></strong></span>
-                            </p>
-                            <?php if($activity->ThoiHanHuy): ?>
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-times-circle"></i>
-                                <span>Hạn hủy: <strong><?php echo e(optional($activity->ThoiHanHuy)->format('d/m/Y H:i')); ?></strong></span>
-                            </p>
+
+                        
+                        <ul class="group-days-list">
+                            <?php $__currentLoopData = $activitiesInGroup; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dayActivity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php
+                            $registered = $dayActivity->dangky_count;
+                            $total = $dayActivity->SoLuong;
+                            $isFull_Day = $total > 0 && $registered >= $total;
+                            $isRegistered_Day = $dayActivity->is_registered;
+                            ?>
+                            <li class="day-item"
+                                data-type="ctxh"
+                                data-id="<?php echo e($dayActivity->MaHoatDong); ?>"
+                                data-title="<?php echo e(e($dayActivity->TenHoatDong)); ?>"
+                                data-description="<?php echo e(e($dayActivity->MoTa ?? '')); ?>"
+                                data-start="<?php echo e($dayActivity->ThoiGianBatDau->format('c')); ?>"
+                                data-end="<?php echo e($dayActivity->ThoiGianKetThuc->format('c')); ?>"
+                                data-cancel-deadline="<?php echo e(optional($dayActivity->ThoiHanHuy)->format('c')); ?>"
+                                data-location="<?php echo e(e($dayActivity->DiaDiem)); ?>"
+                                data-slots="<?php echo e($registered); ?> / <?php echo e($total); ?>"
+                                data-points="<?php echo e($dayActivity->quydinh->DiemNhan ?? 0); ?>"
+                                data-semester="Địa chỉ đỏ">
+                                <div class="day-info">
+                                    <div class="day-date"><?php echo e($dayActivity->ThoiGianBatDau->format('l, d/m/Y')); ?></div>
+                                    <div class="day-time">
+                                        <?php echo e($dayActivity->ThoiGianBatDau->format('H:i')); ?> - <?php echo e($dayActivity->ThoiGianKetThuc->format('H:i')); ?>
+
+                                    </div>
+                                    <?php if($dayActivity->MoTa): ?>
+                                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fef2f4; border-radius: 6px; border-left: 3px solid var(--accent); font-size: 0.875rem;">
+                                        <strong style="color: var(--accent); display: block; margin-bottom: 0.25rem;">📋 Mô tả:</strong>
+                                        <p style="color: #555; margin: 0; line-height: 1.4;"><?php echo e($dayActivity->MoTa); ?></p>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                <span class="day-slots <?php echo e($isFull_Day ? 'full' : ''); ?>">
+                                    <i class="fas fa-users"></i>
+                                    <?php echo e($registered); ?> / <?php echo e($total); ?>
+
+                                </span>
+                                <div>
+                                    <?php if($isRegistered_Day): ?>
+                                    <button class="btn btn-action btn-action-day btn-success" style="background: var(--success);" disabled>
+                                        <i class="fas fa-check"></i> Đã Đăng Ký
+                                    </button>
+                                    <?php elseif($isFull_Day): ?>
+                                    <button class="btn btn-action btn-action-day" style="background:#6c757d;color:#fff;" disabled>
+                                        <i class="fas fa-times-circle"></i> Đã Đầy
+                                    </button>
+                                    <?php else: ?>
+                                    <form action="<?php echo e(route('sinhvien.dangky.ctxh', $dayActivity->MaHoatDong)); ?>" method="POST" style="margin:0; display: inline-block;">
+                                        <?php echo csrf_field(); ?>
+                                        <button type="submit" class="btn btn-action btn-action-day btn-action-ctxh">
+                                            <i class="fas fa-user-plus"></i> Đăng Ký
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                </div>
+                            </li>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </ul>
+                    </div>
+                <?php else: ?>
+                    
+                    <?php
+                    $activity = $item['data'];
+                    $registered = $activity->dangky_count ?? $activity->dangky->count();
+                    $total = (int) $activity->SoLuong;
+                    $percentage = $total > 0 ? min(100, max(0, ($registered / $total) * 100)) : 0;
+                    $isRegistered_CTXH = $activity->is_registered;
+                    $isFull_CTXH = $total > 0 && $registered >= $total;
+                    ?>
+
+                    <div class="activity-card ctxh-card"
+                        data-type="ctxh"
+                        data-id="<?php echo e($activity->MaHoatDong); ?>"
+                        data-title="<?php echo e(e($activity->TenHoatDong)); ?>"
+                        data-description="<?php echo e(e($activity->MoTa ?? '')); ?>"
+                        data-start="<?php echo e(optional($activity->ThoiGianBatDau)->format('c')); ?>"
+                        data-end="<?php echo e(optional($activity->ThoiGianKetThuc)->format('c')); ?>"
+                        data-cancel-deadline="<?php echo e(optional($activity->ThoiHanHuy)->format('c')); ?>"
+                        data-location="<?php echo e(e($activity->DiaDiem)); ?>"
+                        data-slots="<?php echo e($registered); ?> / <?php echo e($total); ?>"
+                        data-points="<?php echo e($activity->quydinh->DiemNhan ?? 0); ?>"
+                        data-semester="N/A">
+                        <div class="activity-header">
+                            <span class="activity-type ctxh">
+                                <i class="fas fa-heart"></i>
+                                <?php echo e($activity->LoaiHoatDong ?? 'Công tác xã hội'); ?>
+
+                            </span>
+                            <span class="activity-points">
+                                <i class="fas fa-trophy"></i>
+                                +<?php echo e($activity->quydinh->DiemNhan ?? 0); ?>
+
+                            </span>
+                        </div>
+
+                        <div class="activity-body">
+                            <h4><?php echo e($activity->TenHoatDong); ?></h4>
+                            
+                            
+                            <?php if($activity->MoTa): ?>
+                            <div class="mb-3 p-3" style="background: #fef2f4; border-radius: 8px; border-left: 4px solid var(--accent);">
+                                <strong style="color: var(--accent);">📋 Mô tả chi tiết:</strong>
+                                <p class="mt-2 mb-0" style="color: #555; line-height: 1.6;"><?php echo e($activity->MoTa); ?></p>
+                            </div>
                             <?php endif; ?>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>Bắt đầu: <strong><?php echo e(optional($activity->ThoiGianBatDau)->format('d/m/Y H:i')); ?></strong></span>
+                                    </p>
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Ghi chú ĐĐ: <strong><?php echo e($activity->DiaDiem); ?></strong></span>
+                                    </p>
+                                    
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-calendar-check"></i>
+                                        <span>Kết thúc: <strong><?php echo e(optional($activity->ThoiGianKetThuc)->format('d/m/Y H:i')); ?></strong></span>
+                                    </p>
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-users"></i>
+                                        <span>Số lượng: <strong><?php echo e($registered); ?> / <?php echo e($total); ?></strong></span>
+                                    </p>
+                                    <?php if($activity->ThoiHanHuy): ?>
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Hạn hủy: <strong><?php echo e(optional($activity->ThoiHanHuy)->format('d/m/Y H:i')); ?></strong></span>
+                                    </p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-footer">
+                            <div class="progress-info">
+                                <span class="progress-text"><?php echo e(number_format($percentage, 0)); ?>% đã đăng ký</span>
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar-fill" style="width: <?php echo e($percentage); ?>%"></div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 10px;">
+                                <?php if($isRegistered_CTXH): ?>
+                                <button class="btn btn-action btn-success" style="background: var(--success);" disabled>
+                                    <i class="fas fa-check"></i> Đã Đăng Ký
+                                </button>
+                                <?php elseif($isFull_CTXH): ?>
+                                <button class="btn btn-action" style="background:#6c757d;color:#fff;" disabled>
+                                    <i class="fas fa-times-circle"></i> Đã Đầy
+                                </button>
+                                <?php else: ?>
+                                <form action="<?php echo e(route('sinhvien.dangky.ctxh', $activity->MaHoatDong)); ?>" method="POST" style="margin:0; flex: 1;">
+                                    <?php echo csrf_field(); ?>
+                                    <button type="submit" class="btn btn-action btn-action-ctxh" style="width: 100%;">
+                                        <i class="fas fa-user-plus"></i> Đăng Ký Ngay
+                                    </button>
+                                </form>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="activity-footer">
-                    <div class="progress-info">
-                        <span class="progress-text"><?php echo e(number_format($percentage, 0)); ?>% đã đăng ký</span>
-                        <div class="progress-bar-wrapper">
-                            <div class="progress-bar-fill" style="width: <?php echo e($percentage); ?>%"></div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
-                        <?php if($isRegistered_CTXH): ?>
-                        <button class="btn btn-action btn-success" style="background: var(--success);" disabled>
-                            <i class="fas fa-check"></i> Đã Đăng Ký
-                        </button>
-                        <?php elseif($isFull_CTXH): ?>
-                        <button class="btn btn-action" style="background:#6c757d;color:#fff;" disabled>
-                            <i class="fas fa-times-circle"></i> Đã Đầy
-                        </button>
-                        <?php else: ?>
-                        <form action="<?php echo e(route('sinhvien.dangky.ctxh', $activity->MaHoatDong)); ?>" method="POST" style="margin:0; flex: 1;">
-                            <?php echo csrf_field(); ?>
-                            <button type="submit" class="btn btn-action btn-action-ctxh" style="width: 100%;">
-                                <i class="fas fa-user-plus"></i> Đăng Ký Ngay
-                            </button>
-                        </form>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-
-            
-            <?php if($groupedActivities->isEmpty() && $normalActivities->isEmpty()): ?>
+                <?php endif; ?>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <div class="empty-state">
                 <i class="fas fa-inbox"></i>
                 <h5>Chưa có hoạt động mới nào</h5>
                 <p>Hiện tại chưa có thông báo hoạt động công tác xã hội nào sắp diễn ra</p>
+            </div>
+            <?php endif; ?>
+
+            
+            <?php if($paginatedCtxh->hasPages()): ?>
+            <div style="display: flex; justify-content: center; margin-top: 3rem; gap: 0.5rem;">
+                <?php echo e($paginatedCtxh->links('pagination::bootstrap-4')); ?>
+
             </div>
             <?php endif; ?>
         </div>

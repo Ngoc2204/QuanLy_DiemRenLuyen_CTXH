@@ -491,16 +491,14 @@
                 <span>Quy định điểm DRL</span>
             </a>
 
-            
-
             <div class="nav-section-title">Báo cáo & thống kê</div>
 
-            <a href="" class="<?php echo e(request()->routeIs('admin.thongke.drl*') ? 'active' : ''); ?>">
+            <a href="<?php echo e(route('admin.thongke.drl')); ?>" class="nav-item-section <?php echo e(request()->routeIs('admin.thongke.drl*') ? 'active' : ''); ?>">
                 <i class="fa-solid fa-chart-line"></i>
-                <span>Thống kê điểm DRL</span>
+                <span>Thống kê điểm rèn luyện</span>
             </a>
 
-            <a href="" class="<?php echo e(request()->routeIs('admin.thongke.ctxh*') ? 'active' : ''); ?>">
+            <a href="<?php echo e(route('admin.thongke.ctxh')); ?>" class="nav-item-section <?php echo e(request()->routeIs('admin.thongke.ctxh*') ? 'active' : ''); ?>">
                 <i class="fa-solid fa-chart-pie"></i>
                 <span>Thống kê CTXH</span>
             </a>

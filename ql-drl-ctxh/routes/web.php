@@ -117,6 +117,10 @@ Route::middleware(['auth'])->prefix('admin')->as('admin.')->group(function () {
 
      // Quản lý địa điểm địa chỉ đỏ
      Route::resource('diadiem', App\Http\Controllers\Admin\DiaDiemDiaChiDoController::class);
+
+     // Thống kê
+     Route::get('thongke/drl', [App\Http\Controllers\Admin\ThongKeController::class, 'drl'])->name('thongke.drl');
+     Route::get('thongke/ctxh', [App\Http\Controllers\Admin\ThongKeController::class, 'ctxh'])->name('thongke.ctxh');
 });
 
 // Nhân Viên routes 

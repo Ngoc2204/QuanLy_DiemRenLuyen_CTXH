@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Hash;
 use App\Models\TaiKhoan;
 
 // --- THÊM CÁC MODEL VÀ THƯ VIỆN CẦN THIẾT ---
@@ -74,11 +75,9 @@ class AuthController extends Controller
         // Xóa captcha sau khi kiểm tra (bảo mật)
         Session::forget('captcha_code');
 
-        $user = TaiKhoan::where('TenDangNhap', $data['TenDangNhap'])
-                        ->where('MatKhau', $data['password'])
-                        ->first();
+        $user = TaiKhoan::where('TenDangNhap', $data['TenDangNhap'])->first();
 
-        if ($user) {
+        if ($user && Hash::check($data['password'], $user->MatKhau)) {
             Auth::login($user);
             $request->session()->regenerate();
             return $this->redirectByRole($user->VaiTro);

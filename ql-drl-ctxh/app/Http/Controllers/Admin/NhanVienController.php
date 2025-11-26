@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use App\Models\NhanVien;
 use App\Models\TaiKhoan;
 use Carbon\Carbon;
@@ -41,10 +42,10 @@ class NhanVienController extends Controller
             'GioiTinh' => 'required|in:Nam,Nữ,Khác',
         ]);
 
-        // Tạo tài khoản tự động
+        // Tạo tài khoản tự động với mật khẩu được hash
         TaiKhoan::create([
             'TenDangNhap' => $data['MaNV'],
-            'MatKhau' => '123456', // Mật khẩu mặc định
+            'MatKhau' => Hash::make('123456'), // Mật khẩu mặc định được hash
             'VaiTro' => 'NhanVien',
         ]);
 

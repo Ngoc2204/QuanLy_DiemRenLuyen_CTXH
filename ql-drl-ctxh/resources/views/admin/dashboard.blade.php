@@ -287,7 +287,7 @@
                 </div>
                 <div class="stat-label">Tổng số nhân viên CTSV</div>
                 <div class="stat-value">{{ number_format($tongNhanVien) }}</div>
-                <a href="" class="btn btn-sm btn-outline-warning mt-2">
+                <a href="{{ route('admin.nhanvien.index') }}" class="btn btn-sm btn-outline-warning mt-2">
                     <i class="fa-solid fa-arrow-right me-1"></i>Xem chi tiết
                 </a>
             </div>
@@ -379,8 +379,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // Dữ liệu thực từ Controller
-const drlMonthlyData = @json($drlTheoThang ?? array_fill(0, 12, 0));
-const ctxhMonthlyData = @json($ctxhTheoThang ?? array_fill(0, 12, 0));
+const drlTheoThang = {!! json_encode(array_values($drlTheoThang ?? array_fill(0, 12, 0))) !!};
+const ctxhTheoThang = {!! json_encode(array_values($ctxhTheoThang ?? array_fill(0, 12, 0))) !!};
 
 // Biểu đồ người dùng
 const ctxUsers = document.getElementById('chartUsers');
@@ -457,10 +457,7 @@ new Chart(ctxUsers, {
     }
 });
 
-// Dữ liệu mẫu theo tháng cho DRL
-const drlDataByMonth = [120, 135, 150, 145, 160, 170, 155, 180, 165, 175, 190, 200];
-
-// Biểu đồ DRL - Line Chart
+// Biểu đồ DRL - Line Chart với dữ liệu thực
 const ctxDRL = document.getElementById('chartDRL');
 const chartDRL = new Chart(ctxDRL, {
     type: 'line',
@@ -468,7 +465,7 @@ const chartDRL = new Chart(ctxDRL, {
         labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
         datasets: [{
             label: 'Số hoạt động DRL',
-            data: drlDataByMonth,
+            data: drlTheoThang,
             backgroundColor: 'rgba(239, 68, 68, 0.1)',
             borderColor: 'rgba(239, 68, 68, 1)',
             borderWidth: 3,
@@ -527,10 +524,7 @@ const chartDRL = new Chart(ctxDRL, {
     }
 });
 
-// Dữ liệu mẫu theo tháng cho CTXH
-const ctxhDataByMonth = [80, 90, 100, 95, 110, 120, 105, 130, 115, 125, 140, 150];
-
-// Biểu đồ CTXH - Line Chart
+// Biểu đồ CTXH - Line Chart với dữ liệu thực
 const ctxCTXH = document.getElementById('chartCTXH');
 const chartCTXH = new Chart(ctxCTXH, {
     type: 'line',
@@ -538,7 +532,7 @@ const chartCTXH = new Chart(ctxCTXH, {
         labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
         datasets: [{
             label: 'Số hoạt động CTXH',
-            data: ctxhDataByMonth,
+            data: ctxhTheoThang,
             backgroundColor: 'rgba(6, 182, 212, 0.1)',
             borderColor: 'rgba(6, 182, 212, 1)',
             borderWidth: 3,
@@ -609,11 +603,6 @@ document.getElementById('yearFilterDRL').addEventListener('change', function() {
     //         chartDRL.data.datasets[0].data = data;
     //         chartDRL.update();
     //     });
-    
-    // Tạm thời cập nhật dữ liệu mẫu
-    const randomData = Array.from({length: 12}, () => Math.floor(Math.random() * 100) + 100);
-    chartDRL.data.datasets[0].data = randomData;
-    chartDRL.update('active');
 });
 
 // Xử lý filter năm học cho CTXH
@@ -628,11 +617,6 @@ document.getElementById('yearFilterCTXH').addEventListener('change', function() 
     //         chartCTXH.data.datasets[0].data = data;
     //         chartCTXH.update();
     //     });
-    
-    // Tạm thời cập nhật dữ liệu mẫu
-    const randomData = Array.from({length: 12}, () => Math.floor(Math.random() * 80) + 70);
-    chartCTXH.data.datasets[0].data = randomData;
-    chartCTXH.update('active');
 });
 </script>
 @endpush

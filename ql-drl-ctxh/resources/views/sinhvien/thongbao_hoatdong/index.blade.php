@@ -555,6 +555,45 @@
             justify-content: center;
         }
     }
+
+    /* === PAGINATION STYLES === */
+    .pagination {
+        justify-content: center;
+        margin-top: 2rem;
+        gap: 0.5rem;
+    }
+
+    .pagination .page-link {
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+        color: var(--primary);
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        transition: var(--transition);
+        min-width: 44px;
+        text-align: center;
+    }
+
+    .pagination .page-link:hover {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: #fff;
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        border-color: var(--primary);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, .4);
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #cbd5e1;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
 </style>
 @endpush
 
@@ -600,15 +639,15 @@
                 <button class="nav-link active" id="drl-tab" data-bs-toggle="tab" data-bs-target="#drl-content" type="button" role="tab" aria-controls="drl-content" aria-selected="true">
                     <i class="fas fa-star"></i>
                     <span>Hoạt Động Rèn Luyện</span>
-                    <span class="badge bg-light text-dark">{{ $activitiesDRL->count() }}</span>
+                    <span class="badge bg-light text-dark">{{ $activitiesDRL->total() }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="ctxh-tab" data-bs-toggle="tab" data-bs-target="#ctxh-content" type="button" role="tab" aria-controls="ctxh-content" aria-selected="false">
                     <i class="fas fa-heart"></i>
                     <span>Hoạt Động CTXH</span>
-                    {{-- Đếm (Số nhóm ĐCĐ) + (Số HĐ thường) --}}
-                    <span class="badge bg-light text-dark">{{ $groupedActivities->count() + $normalActivities->count() }}</span>
+                    {{-- Đếm tổng số items (Địa chỉ đỏ + Thường) --}}
+                    <span class="badge bg-light text-dark">{{ $paginatedCtxh->total() }}</span>
                 </button>
             </li>
         </ul>
@@ -617,7 +656,7 @@
     <div class="tab-content" id="activityTabContent">
         {{-- ===== DRL ===== (Giữ nguyên) --}}
         <div class="tab-pane fade show active" id="drl-content" role="tabpanel" aria-labelledby="drl-tab">
-            @forelse($activitiesDRL as $activity)
+            @forelse($activitiesDRL as $activity) 
             @php
             $registered = $activity->dangky_count ?? $activity->dangky->count();
             $total = (int) $activity->SoLuong;
@@ -729,220 +768,232 @@
                 <p>Hiện tại chưa có thông báo hoạt động rèn luyện nào sắp diễn ra</p>
             </div>
             @endforelse
+
+            {{-- Phân trang DRL --}}
+            @if($activitiesDRL->hasPages())
+            <div style="display: flex; justify-content: center; margin-top: 3rem; gap: 0.5rem;">
+                {{ $activitiesDRL->links('pagination::bootstrap-4') }}
+            </div>
+            @endif
         </div>
 
         {{-- ===== CTXH ===== (SỬA LẠI HOÀN TOÀN) --}}
         <div class="tab-pane fade" id="ctxh-content" role="tabpanel" aria-labelledby="ctxh-tab">
 
-            {{-- VÒNG LẶP 1: CÁC HOẠT ĐỘNG GOM NHÓM (ĐỊA CHỈ ĐỎ) --}}
-            @foreach($groupedActivities as $groupKey => $activitiesInGroup)
-            @php
-            // Lấy 1 hoạt động đại diện để hiển thị thông tin chung
-            $repActivity = $activitiesInGroup->first();
-            // Tính tổng số lượng
-            $totalRegistered = $activitiesInGroup->sum('dangky_count');
-            $totalSlots = $activitiesInGroup->sum('SoLuong');
-            $percentage = $totalSlots > 0 ? min(100, max(0, ($totalRegistered / $totalSlots) * 100)) : 0;
-            @endphp
-
-            <div class="activity-card ctxh-card group-card">
-                <div class="activity-header">
-                    <span class="activity-type ctxh">
-                        <i class="fa-solid fa-map-location-dot"></i>
-                        {{ $repActivity->LoaiHoatDong }}
-                    </span>
-                    <span class="activity-points">
-                        <i class="fas fa-trophy"></i>
-                        +{{ $repActivity->quydinh->DiemNhan ?? 0 }}
-                    </span>
-                </div>
-
-                <div class="activity-body">
-                    {{-- Hiển thị tên Đợt, không phải tên HĐ --}}
-                    <h4>{{ $repActivity->dotDiaChiDo->TenDot ?? 'Hoạt động Địa chỉ đỏ' }}</h4>
-
-                    <div class="diachi-info">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <span class="info-label">Địa điểm tổ chức:</span>
-                                <span class="info-value">{{ $repActivity->diaDiem->TenDiaDiem ?? 'N/A' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- DANH SÁCH CÁC NGÀY ĐĂNG KÝ --}}
-                <ul class="group-days-list">
-                    @foreach($activitiesInGroup as $dayActivity)
+            {{-- VÒNG LẶP: CÁC HOẠT ĐỘNG CTXH (Gom nhóm + Thường) --}}
+            @forelse($paginatedCtxh as $item)
+                @if($item['type'] === 'group')
+                    {{-- Item loại 'group' (Địa chỉ đỏ gom nhóm) --}}
                     @php
-                    $registered = $dayActivity->dangky_count;
-                    $total = $dayActivity->SoLuong;
-                    $isFull_Day = $total > 0 && $registered >= $total;
-                    $isRegistered_Day = $dayActivity->is_registered;
+                    $activitiesInGroup = $item['data'];
+                    $repActivity = $activitiesInGroup->first();
+                    $totalRegistered = $activitiesInGroup->sum('dangky_count');
+                    $totalSlots = $activitiesInGroup->sum('SoLuong');
+                    $percentage = $totalSlots > 0 ? min(100, max(0, ($totalRegistered / $totalSlots) * 100)) : 0;
                     @endphp
-                    <li class="day-item"
+
+                    <div class="activity-card ctxh-card group-card">
+                        <div class="activity-header">
+                            <span class="activity-type ctxh">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                {{ $repActivity->LoaiHoatDong }}
+                            </span>
+                            <span class="activity-points">
+                                <i class="fas fa-trophy"></i>
+                                +{{ $repActivity->quydinh->DiemNhan ?? 0 }}
+                            </span>
+                        </div>
+
+                        <div class="activity-body">
+                            {{-- Hiển thị tên Đợt, không phải tên HĐ --}}
+                            <h4>{{ $repActivity->dotDiaChiDo->TenDot ?? 'Hoạt động Địa chỉ đỏ' }}</h4>
+
+                            <div class="diachi-info">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <span class="info-label">Địa điểm tổ chức:</span>
+                                        <span class="info-value">{{ $repActivity->diaDiem->TenDiaDiem ?? 'N/A' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- DANH SÁCH CÁC NGÀY ĐĂNG KÝ --}}
+                        <ul class="group-days-list">
+                            @foreach($activitiesInGroup as $dayActivity)
+                            @php
+                            $registered = $dayActivity->dangky_count;
+                            $total = $dayActivity->SoLuong;
+                            $isFull_Day = $total > 0 && $registered >= $total;
+                            $isRegistered_Day = $dayActivity->is_registered;
+                            @endphp
+                            <li class="day-item"
+                                data-type="ctxh"
+                                data-id="{{ $dayActivity->MaHoatDong }}"
+                                data-title="{{ e($dayActivity->TenHoatDong) }}"
+                                data-description="{{ e($dayActivity->MoTa ?? '') }}"
+                                data-start="{{ $dayActivity->ThoiGianBatDau->format('c') }}"
+                                data-end="{{ $dayActivity->ThoiGianKetThuc->format('c') }}"
+                                data-cancel-deadline="{{ optional($dayActivity->ThoiHanHuy)->format('c') }}"
+                                data-location="{{ e($dayActivity->DiaDiem) }}"
+                                data-slots="{{ $registered }} / {{ $total }}"
+                                data-points="{{ $dayActivity->quydinh->DiemNhan ?? 0 }}"
+                                data-semester="Địa chỉ đỏ">
+                                <div class="day-info">
+                                    <div class="day-date">{{ $dayActivity->ThoiGianBatDau->format('l, d/m/Y') }}</div>
+                                    <div class="day-time">
+                                        {{ $dayActivity->ThoiGianBatDau->format('H:i') }} - {{ $dayActivity->ThoiGianKetThuc->format('H:i') }}
+                                    </div>
+                                    @if($dayActivity->MoTa)
+                                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fef2f4; border-radius: 6px; border-left: 3px solid var(--accent); font-size: 0.875rem;">
+                                        <strong style="color: var(--accent); display: block; margin-bottom: 0.25rem;">📋 Mô tả:</strong>
+                                        <p style="color: #555; margin: 0; line-height: 1.4;">{{ $dayActivity->MoTa }}</p>
+                                    </div>
+                                    @endif
+                                </div>
+                                <span class="day-slots {{ $isFull_Day ? 'full' : '' }}">
+                                    <i class="fas fa-users"></i>
+                                    {{ $registered }} / {{ $total }}
+                                </span>
+                                <div>
+                                    @if($isRegistered_Day)
+                                    <button class="btn btn-action btn-action-day btn-success" style="background: var(--success);" disabled>
+                                        <i class="fas fa-check"></i> Đã Đăng Ký
+                                    </button>
+                                    @elseif($isFull_Day)
+                                    <button class="btn btn-action btn-action-day" style="background:#6c757d;color:#fff;" disabled>
+                                        <i class="fas fa-times-circle"></i> Đã Đầy
+                                    </button>
+                                    @else
+                                    <form action="{{ route('sinhvien.dangky.ctxh', $dayActivity->MaHoatDong) }}" method="POST" style="margin:0; display: inline-block;">
+                                        @csrf
+                                        <button type="submit" class="btn btn-action btn-action-day btn-action-ctxh">
+                                            <i class="fas fa-user-plus"></i> Đăng Ký
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @else
+                    {{-- Item loại 'normal' (Hoạt động CTXH thường) --}}
+                    @php
+                    $activity = $item['data'];
+                    $registered = $activity->dangky_count ?? $activity->dangky->count();
+                    $total = (int) $activity->SoLuong;
+                    $percentage = $total > 0 ? min(100, max(0, ($registered / $total) * 100)) : 0;
+                    $isRegistered_CTXH = $activity->is_registered;
+                    $isFull_CTXH = $total > 0 && $registered >= $total;
+                    @endphp
+
+                    <div class="activity-card ctxh-card"
                         data-type="ctxh"
-                        data-id="{{ $dayActivity->MaHoatDong }}"
-                        data-title="{{ e($dayActivity->TenHoatDong) }}"
-                        data-description="{{ e($dayActivity->MoTa ?? '') }}"
-                        data-start="{{ $dayActivity->ThoiGianBatDau->format('c') }}"
-                        data-end="{{ $dayActivity->ThoiGianKetThuc->format('c') }}"
-                        data-cancel-deadline="{{ optional($dayActivity->ThoiHanHuy)->format('c') }}"
-                        data-location="{{ e($dayActivity->DiaDiem) }}"
+                        data-id="{{ $activity->MaHoatDong }}"
+                        data-title="{{ e($activity->TenHoatDong) }}"
+                        data-description="{{ e($activity->MoTa ?? '') }}"
+                        data-start="{{ optional($activity->ThoiGianBatDau)->format('c') }}"
+                        data-end="{{ optional($activity->ThoiGianKetThuc)->format('c') }}"
+                        data-cancel-deadline="{{ optional($activity->ThoiHanHuy)->format('c') }}"
+                        data-location="{{ e($activity->DiaDiem) }}"
                         data-slots="{{ $registered }} / {{ $total }}"
-                        data-points="{{ $dayActivity->quydinh->DiemNhan ?? 0 }}"
-                        data-semester="Địa chỉ đỏ">
-                        <div class="day-info">
-                            <div class="day-date">{{ $dayActivity->ThoiGianBatDau->format('l, d/m/Y') }}</div>
-                            <div class="day-time">
-                                {{ $dayActivity->ThoiGianBatDau->format('H:i') }} - {{ $dayActivity->ThoiGianKetThuc->format('H:i') }}
-                            </div>
-                            @if($dayActivity->MoTa)
-                            <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fef2f4; border-radius: 6px; border-left: 3px solid var(--accent); font-size: 0.875rem;">
-                                <strong style="color: var(--accent); display: block; margin-bottom: 0.25rem;">📋 Mô tả:</strong>
-                                <p style="color: #555; margin: 0; line-height: 1.4;">{{ $dayActivity->MoTa }}</p>
-                            </div>
-                            @endif
+                        data-points="{{ $activity->quydinh->DiemNhan ?? 0 }}"
+                        data-semester="N/A">
+                        <div class="activity-header">
+                            <span class="activity-type ctxh">
+                                <i class="fas fa-heart"></i>
+                                {{ $activity->LoaiHoatDong ?? 'Công tác xã hội' }}
+                            </span>
+                            <span class="activity-points">
+                                <i class="fas fa-trophy"></i>
+                                +{{ $activity->quydinh->DiemNhan ?? 0 }}
+                            </span>
                         </div>
-                        <span class="day-slots {{ $isFull_Day ? 'full' : '' }}">
-                            <i class="fas fa-users"></i>
-                            {{ $registered }} / {{ $total }}
-                        </span>
-                        <div>
-                            @if($isRegistered_Day)
-                            <button class="btn btn-action btn-action-day btn-success" style="background: var(--success);" disabled>
-                                <i class="fas fa-check"></i> Đã Đăng Ký
-                            </button>
-                            @elseif($isFull_Day)
-                            <button class="btn btn-action btn-action-day" style="background:#6c757d;color:#fff;" disabled>
-                                <i class="fas fa-times-circle"></i> Đã Đầy
-                            </button>
-                            @else
-                            <form action="{{ route('sinhvien.dangky.ctxh', $dayActivity->MaHoatDong) }}" method="POST" style="margin:0; display: inline-block;">
-                                @csrf
-                                <button type="submit" class="btn btn-action btn-action-day btn-action-ctxh">
-                                    <i class="fas fa-user-plus"></i> Đăng Ký
-                                </button>
-                            </form>
-                            @endif
-                        </div>
-                    </li>
-                    @endforeach
-                </ul>
-            </div>
-            @endforeach
 
-            {{-- VÒNG LẶP 2: CÁC HOẠT ĐỘNG CTXH THƯỜNG (Tình nguyện, Hội thảo...) --}}
-            @foreach($normalActivities as $activity)
-            @php
-            $registered = $activity->dangky_count ?? $activity->dangky->count();
-            $total = (int) $activity->SoLuong;
-            $percentage = $total > 0 ? min(100, max(0, ($registered / $total) * 100)) : 0;
-            $isRegistered_CTXH = $activity->is_registered;
-            $isFull_CTXH = $total > 0 && $registered >= $total;
-            @endphp
-
-            <div class="activity-card ctxh-card"
-                data-type="ctxh"
-                data-id="{{ $activity->MaHoatDong }}"
-                data-title="{{ e($activity->TenHoatDong) }}"
-                data-description="{{ e($activity->MoTa ?? '') }}"
-                data-start="{{ optional($activity->ThoiGianBatDau)->format('c') }}"
-                data-end="{{ optional($activity->ThoiGianKetThuc)->format('c') }}"
-                data-cancel-deadline="{{ optional($activity->ThoiHanHuy)->format('c') }}"
-                data-location="{{ e($activity->DiaDiem) }}"
-                data-slots="{{ $registered }} / {{ $total }}"
-                data-points="{{ $activity->quydinh->DiemNhan ?? 0 }}"
-                data-semester="N/A">
-                <div class="activity-header">
-                    <span class="activity-type ctxh">
-                        <i class="fas fa-heart"></i>
-                        {{ $activity->LoaiHoatDong ?? 'Công tác xã hội' }}
-                    </span>
-                    <span class="activity-points">
-                        <i class="fas fa-trophy"></i>
-                        +{{ $activity->quydinh->DiemNhan ?? 0 }}
-                    </span>
-                </div>
-
-                <div class="activity-body">
-                    <h4>{{ $activity->TenHoatDong }}</h4>
-                    
-                    {{-- Mô tả chi tiết --}}
-                    @if($activity->MoTa)
-                    <div class="mb-3 p-3" style="background: #fef2f4; border-radius: 8px; border-left: 4px solid var(--accent);">
-                        <strong style="color: var(--accent);">📋 Mô tả chi tiết:</strong>
-                        <p class="mt-2 mb-0" style="color: #555; line-height: 1.6;">{{ $activity->MoTa }}</p>
-                    </div>
-                    @endif
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-calendar-alt"></i>
-                                <span>Bắt đầu: <strong>{{ optional($activity->ThoiGianBatDau)->format('d/m/Y H:i') }}</strong></span>
-                            </p>
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span>Ghi chú ĐĐ: <strong>{{ $activity->DiaDiem }}</strong></span>
-                            </p>
+                        <div class="activity-body">
+                            <h4>{{ $activity->TenHoatDong }}</h4>
                             
-                        </div>
-                        <div class="col-md-6">
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-calendar-check"></i>
-                                <span>Kết thúc: <strong>{{ optional($activity->ThoiGianKetThuc)->format('d/m/Y H:i') }}</strong></span>
-                            </p>
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-users"></i>
-                                <span>Số lượng: <strong>{{ $registered }} / {{ $total }}</strong></span>
-                            </p>
-                            @if($activity->ThoiHanHuy)
-                            <p class="activity-meta ctxh">
-                                <i class="fas fa-times-circle"></i>
-                                <span>Hạn hủy: <strong>{{ optional($activity->ThoiHanHuy)->format('d/m/Y H:i') }}</strong></span>
-                            </p>
+                            {{-- Mô tả chi tiết --}}
+                            @if($activity->MoTa)
+                            <div class="mb-3 p-3" style="background: #fef2f4; border-radius: 8px; border-left: 4px solid var(--accent);">
+                                <strong style="color: var(--accent);">📋 Mô tả chi tiết:</strong>
+                                <p class="mt-2 mb-0" style="color: #555; line-height: 1.6;">{{ $activity->MoTa }}</p>
+                            </div>
                             @endif
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>Bắt đầu: <strong>{{ optional($activity->ThoiGianBatDau)->format('d/m/Y H:i') }}</strong></span>
+                                    </p>
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Ghi chú ĐĐ: <strong>{{ $activity->DiaDiem }}</strong></span>
+                                    </p>
+                                    
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-calendar-check"></i>
+                                        <span>Kết thúc: <strong>{{ optional($activity->ThoiGianKetThuc)->format('d/m/Y H:i') }}</strong></span>
+                                    </p>
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-users"></i>
+                                        <span>Số lượng: <strong>{{ $registered }} / {{ $total }}</strong></span>
+                                    </p>
+                                    @if($activity->ThoiHanHuy)
+                                    <p class="activity-meta ctxh">
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Hạn hủy: <strong>{{ optional($activity->ThoiHanHuy)->format('d/m/Y H:i') }}</strong></span>
+                                    </p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-footer">
+                            <div class="progress-info">
+                                <span class="progress-text">{{ number_format($percentage, 0) }}% đã đăng ký</span>
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar-fill" style="width: {{ $percentage }}%"></div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 10px;">
+                                @if($isRegistered_CTXH)
+                                <button class="btn btn-action btn-success" style="background: var(--success);" disabled>
+                                    <i class="fas fa-check"></i> Đã Đăng Ký
+                                </button>
+                                @elseif($isFull_CTXH)
+                                <button class="btn btn-action" style="background:#6c757d;color:#fff;" disabled>
+                                    <i class="fas fa-times-circle"></i> Đã Đầy
+                                </button>
+                                @else
+                                <form action="{{ route('sinhvien.dangky.ctxh', $activity->MaHoatDong) }}" method="POST" style="margin:0; flex: 1;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-action btn-action-ctxh" style="width: 100%;">
+                                        <i class="fas fa-user-plus"></i> Đăng Ký Ngay
+                                    </button>
+                                </form>
+                                @endif
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="activity-footer">
-                    <div class="progress-info">
-                        <span class="progress-text">{{ number_format($percentage, 0) }}% đã đăng ký</span>
-                        <div class="progress-bar-wrapper">
-                            <div class="progress-bar-fill" style="width: {{ $percentage }}%"></div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
-                        @if($isRegistered_CTXH)
-                        <button class="btn btn-action btn-success" style="background: var(--success);" disabled>
-                            <i class="fas fa-check"></i> Đã Đăng Ký
-                        </button>
-                        @elseif($isFull_CTXH)
-                        <button class="btn btn-action" style="background:#6c757d;color:#fff;" disabled>
-                            <i class="fas fa-times-circle"></i> Đã Đầy
-                        </button>
-                        @else
-                        <form action="{{ route('sinhvien.dangky.ctxh', $activity->MaHoatDong) }}" method="POST" style="margin:0; flex: 1;">
-                            @csrf
-                            <button type="submit" class="btn btn-action btn-action-ctxh" style="width: 100%;">
-                                <i class="fas fa-user-plus"></i> Đăng Ký Ngay
-                            </button>
-                        </form>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            @endforeach
-
-            {{-- Empty State (Nếu cả 2 đều rỗng) --}}
-            @if($groupedActivities->isEmpty() && $normalActivities->isEmpty())
+                @endif
+            @empty
             <div class="empty-state">
                 <i class="fas fa-inbox"></i>
                 <h5>Chưa có hoạt động mới nào</h5>
                 <p>Hiện tại chưa có thông báo hoạt động công tác xã hội nào sắp diễn ra</p>
+            </div>
+            @endforelse
+
+            {{-- Phân trang CTXH --}}
+            @if($paginatedCtxh->hasPages())
+            <div style="display: flex; justify-content: center; margin-top: 3rem; gap: 0.5rem;">
+                {{ $paginatedCtxh->links('pagination::bootstrap-4') }}
             </div>
             @endif
         </div>

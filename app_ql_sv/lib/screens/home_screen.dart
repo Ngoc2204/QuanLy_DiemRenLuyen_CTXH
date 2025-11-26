@@ -10,6 +10,7 @@ import 'diem_ctxh_page.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
 import 'my_registrations_screen.dart';
+import 'recommendations_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,7 +27,6 @@ class _HomeScreenState extends State<HomeScreen> {
     const ActivityScheduleScreen(),
     const ContactScreen(),
     const StudentProfileScreen(),
-    const RegisterActivityScreen(),
   ];
 
   @override
@@ -52,6 +52,7 @@ class _HomeViewState extends State<HomeView> {
   Map<String, dynamic>? _userData;
   Map<String, dynamic>? _dashboardData;
   List<dynamic> _todayActivities = [];
+  List<dynamic> _recommendations = [];
   bool _isLoading = true;
 
   @override
@@ -75,6 +76,14 @@ class _HomeViewState extends State<HomeView> {
       if (dashboardResult['success']) {
         setState(() {
           _dashboardData = dashboardResult['data'];
+        });
+      }
+
+      // Load recommendations
+      final recsResult = await ActivityService.getRecommendations();
+      if (recsResult['success']) {
+        setState(() {
+          _recommendations = recsResult['data'] ?? [];
         });
       }
 
@@ -339,6 +348,85 @@ class _HomeViewState extends State<HomeView> {
                               ),
                             )
                             .toList(),
+                  ),
+
+              // Gợi ý hoạt động
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.lightbulb, color: Color(0xFF2E5077), size: 20),
+                        SizedBox(width: 6),
+                        Text(
+                          'Hoạt động được gợi ý',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E5077),
+                          ),
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RecommendationsScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Xem tất cả',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF2196F3),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              _recommendations.isEmpty
+                  ? Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Không có hoạt động được gợi ý',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                    ),
+                  )
+                  : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: _recommendations
+                          .take(3)
+                          .map(
+                            (rec) => _buildRecommendationCard(
+                              rec as Map<String, dynamic>,
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
 
               // Phần chức năng
@@ -606,6 +694,116 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  Widget _buildRecommendationCard(Map<String, dynamic> rec) {
+    final activity = rec['activity'] as Map<String, dynamic>? ?? {};
+    final matchScore = (rec['recommendation_score'] as num?)?.toInt() ?? 0;
+    final reason = rec['recommendation_reason'] as String? ?? 'Hoạt động phù hợp với bạn';
+    
+    final typeColor = activity['type'] == 'DRL' ? Color(0xFF64B5F6) : Color(0xFF81C784);
+
+    return Container(
+      width: 280,
+      margin: const EdgeInsets.only(right: 12, bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  activity['type'] == 'DRL' ? 'Rèn luyện' : 'Xã hội',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: typeColor,
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFB74D).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '$matchScore%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFFB74D),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+          Text(
+            activity['ten'] ?? 'Hoạt động',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Color(0xFF1A1A1A),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 8),
+          Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Color(0xFF2196F3).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              reason,
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF1976D2),
+                fontStyle: FontStyle.italic,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(Icons.location_on, size: 14, color: Colors.grey),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  activity['dia_diem'] ?? 'Địa điểm',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMenuItem(
     IconData icon,
     String label,
@@ -645,17 +843,19 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 child: Icon(icon, size: 26, color: color),
               ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[700],
-                  height: 1.2,
-                  fontWeight: FontWeight.w500,
+              const SizedBox(height: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[700],
+                    height: 1.1,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],

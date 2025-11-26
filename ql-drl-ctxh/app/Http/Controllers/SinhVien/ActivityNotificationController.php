@@ -26,16 +26,35 @@ class ActivityNotificationController extends Controller
     {
         $now  = now();
         $mssv = Auth::user()->TenDangNhap;
+        $perPage = 5; // Số item mỗi trang
 
-        // 1. Lấy Hoạt động DRL (Giữ nguyên)
-        $activitiesDRL = HoatDongDRL::with(['quydinh', 'hocKy'])
-            ->withCount('dangky') // Đếm số lượng đăng ký
+        // 1. Lấy Hoạt động DRL (với phân trang)
+        $allDRL = HoatDongDRL::with(['quydinh', 'hocKy'])
+            ->withCount('dangky')
             ->where('ThoiGianKetThuc', '>', $now)
             ->withExists(['dangky as is_registered' => function ($query) use ($mssv) {
                 $query->where('MSSV', $mssv);
             }])
             ->orderBy('ThoiGianBatDau')
             ->get();
+
+        // Phân trang thủ công
+        $drlPage = request('page_drl', 1);
+        $drlPage = max(1, $drlPage);
+        $drlOffset = ($drlPage - 1) * $perPage;
+        $drlItems = $allDRL->slice($drlOffset, $perPage);
+        
+        $activitiesDRL = new \Illuminate\Pagination\LengthAwarePaginator(
+            $drlItems->values(),
+            $allDRL->count(),
+            $perPage,
+            $drlPage,
+            [
+                'path' => route('sinhvien.thongbao_hoatdong'),
+                'query' => request()->query(),
+                'pageName' => 'page_drl',
+            ]
+        );
 
         // 2. Lấy TẤT CẢ Hoạt động CTXH
         $allActivitiesCTXH = HoatDongCTXH::with(['quydinh', 'dotDiaChiDo', 'diaDiem'])
@@ -57,11 +76,45 @@ class ActivityNotificationController extends Controller
             return $activity->dot_id . '_' . $activity->diadiem_id;
         });
 
-        // 5. Truyền 3 biến sang View:
+        // 5. Phân trang hoạt động CTXH (ưu tiên Địa chỉ đỏ)
+        $ctxhItemsPerPage = $perPage;
+        $ctxhPage = request('page_ctxh', 1);
+        $ctxhPage = max(1, $ctxhPage); // Đảm bảo trang >= 1
+
+        // Tính toán offset
+        $ctxhOffset = ($ctxhPage - 1) * $ctxhItemsPerPage;
+        
+        // Gộp 2 collection theo thứ tự ưu tiên
+        $allCtxhItems = new \Illuminate\Support\Collection();
+        foreach ($groupedActivities as $group) {
+            $allCtxhItems->push(['type' => 'group', 'data' => $group]);
+        }
+        foreach ($normalActivities as $activity) {
+            $allCtxhItems->push(['type' => 'normal', 'data' => $activity]);
+        }
+
+        // Lấy items cho trang hiện tại
+        $ctxhItems = $allCtxhItems->slice($ctxhOffset, $ctxhItemsPerPage);
+        
+        // Tạo LengthAwarePaginator
+        $paginatedCtxh = new \Illuminate\Pagination\LengthAwarePaginator(
+            $ctxhItems->values(),
+            $allCtxhItems->count(),
+            $ctxhItemsPerPage,
+            $ctxhPage,
+            [
+                'path' => route('sinhvien.thongbao_hoatdong'),
+                'query' => request()->query(),
+                'pageName' => 'page_ctxh',
+            ]
+        );
+
+        // 6. Truyền biến sang View:
         return view('sinhvien.thongbao_hoatdong.index', compact(
-            'activitiesDRL',      // Danh sách HĐ Rèn luyện
-            'normalActivities',   // Danh sách HĐ CTXH thường (Tình nguyện, Hội thảo...)
-            'groupedActivities'   // Danh sách ĐÃ GOM NHÓM của Địa chỉ đỏ
+            'activitiesDRL',      // Danh sách HĐ Rèn luyện (đã phân trang)
+            'groupedActivities',  // Danh sách ĐÃ GOM NHÓM của Địa chỉ đỏ (dùng cho render)
+            'normalActivities',   // Danh sách HĐ CTXH thường (dùng cho render)
+            'paginatedCtxh'       // Hoạt động CTXH đã phân trang
         ));
     }
 

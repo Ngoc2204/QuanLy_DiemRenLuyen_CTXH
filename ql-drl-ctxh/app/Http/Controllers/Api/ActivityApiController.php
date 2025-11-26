@@ -977,4 +977,87 @@ class ActivityApiController extends Controller
             ], 500);
         }
     }
+
+    public function getRecommendations(Request $request)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            // Get user MSSV from SinhVien table
+            $sinhVien = SinhVien::where('Email', $user->email)->first();
+            if (!$sinhVien) {
+                return response()->json([
+                    'success' => true,
+                    'data' => []
+                ]);
+            }
+
+            // Get recommendations from database
+            $recommendations = DB::table('activity_recommendations')
+                ->where('MSSV', $sinhVien->MSSV)
+                ->orderBy('recommendation_score', 'desc')
+                ->limit(10)
+                ->get();
+
+            if ($recommendations->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => []
+                ]);
+            }
+
+            // Format recommendations with activity details
+            $formattedRecs = $recommendations->map(function($rec) {
+                $activity = null;
+                
+                // Get activity details based on MaHoatDong and type
+                if (strtoupper($rec->activity_type) === 'DRL') {
+                    $activity = HoatDongDRL::with(['quydinh'])
+                        ->where('MaHoatDong', $rec->MaHoatDong)
+                        ->first();
+                } else {
+                    $activity = HoatDongCTXH::with(['quydinh'])
+                        ->where('MaHoatDong', $rec->MaHoatDong)
+                        ->first();
+                }
+
+                if (!$activity) {
+                    return null;
+                }
+
+                return [
+                    'id' => $rec->id,
+                    'recommendation_score' => (int)$rec->recommendation_score,
+                    'recommendation_reason' => $rec->recommendation_reason,
+                    'activity' => [
+                        'id' => $activity->MaHoatDong,
+                        'ten' => $activity->TenHoatDong,
+                        'mo_ta' => $activity->MoTa,
+                        'ngay_to_chuc' => $activity->ThoiGianBatDau,
+                        'dia_diem' => $activity->DiaDiem,
+                        'so_luong_toi_da' => $activity->SoLuong,
+                        'diem' => $activity->quydinh->DiemNhan ?? 0,
+                        'type' => strtoupper($rec->activity_type)
+                    ]
+                ];
+            })->filter();
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedRecs->values()->all()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get recommendations error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể lấy gợi ý hoạt động: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

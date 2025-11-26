@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   static const String baseUrl =
-      'http://192.168.1.94:8000/api/v1'; // IP máy tính: 192.168.1.94
+      'http://192.168.5.251:8000/api/v1'; // Real IP của máy
   static const _storage = FlutterSecureStorage();
 
   static Future<String?> getToken() async {

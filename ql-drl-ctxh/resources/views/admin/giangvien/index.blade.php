@@ -461,12 +461,12 @@
                     <thead>
                         <tr>
                             <th style="width: 60px;">STT</th>
-                            <th>Mã GV</th>
+                            <th >Mã GV</th>
                             <th>Họ và tên</th>
                             <th>Email</th>
                             <th>SĐT</th>
                             <th>Giới tính</th>
-                            <th>Lớp cố vấn</th>
+                            <th style="width: 50px;">Lớp cố vấn</th>
                             <th style="width: 130px;" class="text-center">Thao tác</th>
                         </tr>
                     </thead>

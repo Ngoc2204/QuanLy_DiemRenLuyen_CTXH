@@ -554,7 +554,7 @@
                         <th class="text-center" width="80">STT</th>
                         <th width="150">Mã lớp</th>
                         <th>Tên lớp</th>
-                        <th width="200">Khoa</th>
+                        <th width="400">Khoa</th>
                         <th class="text-center" width="160">Thao tác</th>
                     </tr>
                 </thead>

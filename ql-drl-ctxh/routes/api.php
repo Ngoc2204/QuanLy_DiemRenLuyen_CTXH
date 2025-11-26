@@ -71,6 +71,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     // Weekly schedule
     Route::get('/schedule/weekly', [ActivityApiController::class, 'getWeeklySchedule']);
     
+    // Recommendations
+    Route::get('/recommendations', [ActivityApiController::class, 'getRecommendations']);
+    
     // Diem ren luyen data
     Route::get('/diem-ren-luyen', [ActivityApiController::class, 'getDiemRenLuyenData']);
     

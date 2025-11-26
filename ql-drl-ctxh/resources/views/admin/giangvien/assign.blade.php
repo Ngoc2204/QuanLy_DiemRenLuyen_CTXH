@@ -474,11 +474,16 @@
                                    type="checkbox"
                                    name="lop[]"
                                    value="{{ $lop->MaLop }}"
-                                   {{ $giangvien->lopPhuTrach->contains($lop->MaLop) ? 'checked' : '' }}>
+                                   {{ in_array($lop->MaLop, $lopPhuTrach) ? 'checked' : '' }}>
                             <span class="form-check-label-modern">{{ $lop->TenLop }}</span>
                         </label>
                         @empty
-                            <p class="text-muted fst-italic">Không có lớp học nào để gán.</p>
+                            <div style="grid-column: 1/-1; padding: 2rem; text-align: center; background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(220, 38, 38, 0.05)); border-radius: 12px; border: 2px dashed var(--danger);">
+                                <i class="fa-solid fa-info-circle" style="font-size: 2rem; color: var(--danger); margin-bottom: 0.5rem;"></i>
+                                <p style="margin: 0.5rem 0 0 0; color: var(--danger); font-weight: 500;">
+                                    Tất cả các lớp đã có cố vấn hoặc không có lớp nào để gán.
+                                </p>
+                            </div>
                         @endforelse
                     </div>
                     {{-- Hiển thị lỗi nếu có cho trường lop[] --}}

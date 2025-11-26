@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use App\Models\GiangVien;
 use App\Models\Lop;
 
@@ -70,10 +71,10 @@ class GiangVienController extends Controller
         ]);
 
         DB::transaction(function () use ($data) {
-            // Tạo tài khoản đăng nhập tương ứng
+            // Tạo tài khoản đăng nhập tương ứng với mật khẩu được hash
             \App\Models\TaiKhoan::create([
                 'TenDangNhap' => $data['MaGV'],
-                'MatKhau' => '123456',
+                'MatKhau' => Hash::make('123456'),
                 'VaiTro' => 'GiangVien',
             ]);
 
@@ -150,7 +151,18 @@ class GiangVienController extends Controller
     public function assignLopForm($MaGV)
     {
         $giangvien = GiangVien::with('lopPhuTrach')->findOrFail($MaGV);
-        $lops = Lop::orderBy('TenLop')->get();
+        
+        // Lấy ID của các lớp đã có cố vấn (trừ lớp của giảng viên hiện tại)
+        $lopsWithCoVan = DB::table('covanht')
+            ->where('MaGiangVien', '!=', $MaGV)
+            ->pluck('MaLop')
+            ->toArray();
+        
+        // Lấy các lớp chưa có cố vấn hoặc đã gán cho giảng viên hiện tại
+        $lops = Lop::whereNotIn('MaLop', $lopsWithCoVan)
+            ->orderBy('TenLop')
+            ->get();
+        
         $lopPhuTrach = $giangvien->lopPhuTrach->pluck('MaLop')->toArray();
 
         return view('admin.giangvien.assign', compact('giangvien', 'lops', 'lopPhuTrach'));

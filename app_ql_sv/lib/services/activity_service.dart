@@ -3,8 +3,10 @@ import 'api_service.dart';
 class ActivityService {
   static Future<Map<String, dynamic>> getAllActivities() async {
     try {
+      print('[ActivityService] Fetching all activities...');
       final response = await ApiService.get('/activities', needAuth: true);
       final data = ApiService.parseResponse(response);
+      print('[ActivityService] Response: $response');
 
       if (ApiService.isSuccessResponse(response) && data['success'] == true) {
         return {'success': true, 'data': data['data']};
@@ -15,7 +17,8 @@ class ActivityService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Không thể kết nối đến server'};
+      print('[ActivityService] Error: $e');
+      return {'success': false, 'message': 'Không thể kết nối đến server: $e'};
     }
   }
 
@@ -429,6 +432,28 @@ class ActivityService {
         };
       }
     } catch (e) {
+      return {'success': false, 'message': 'Không thể kết nối đến server'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getRecommendations() async {
+    try {
+      final response = await ApiService.get('/recommendations', needAuth: true);
+      final data = ApiService.parseResponse(response);
+
+      if (ApiService.isSuccessResponse(response) && data['success'] == true) {
+        return {
+          'success': true,
+          'data': data['data'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Không thể lấy gợi ý hoạt động',
+        };
+      }
+    } catch (e) {
+      print('[ActivityService] getRecommendations error: $e');
       return {'success': false, 'message': 'Không thể kết nối đến server'};
     }
   }

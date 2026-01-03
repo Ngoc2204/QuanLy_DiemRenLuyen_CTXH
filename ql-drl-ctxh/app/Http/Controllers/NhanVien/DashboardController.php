@@ -14,8 +14,6 @@ use App\Models\DangKyHoatDongDrl;
 use App\Models\DangKyHoatDongCtxh;
 use App\Models\DiemRenLuyen;
 use App\Models\DiemCTXH;
-use App\Models\KetQuaThamGiaCtxh;
-use App\Models\KetQuaThamGiaDRL;
 
 // Import các thư viện hỗ trợ
 use Carbon\Carbon;
@@ -68,8 +66,8 @@ class DashboardController extends Controller
         // View yêu cầu: $labelsDRL, $dataDRL
         // CẬP NHẬT: Sửa lại logic theo yêu cầu: "giống như kết quả của CTXH"
         
-        // Đếm số lượng sinh viên đã 'Hoàn thành' (Giả sử TrangThai='Hoàn thành')
-        $hoanThanhDRL = KetQuaThamGiaDRL::where('TrangThai', 'Hoàn thành')->count();
+        // Đếm số lượng đăng ký DRL đã hoàn thành (Tham gia = 'Đã tham gia')
+        $hoanThanhDRL = DangKyHoatDongDrl::where('TrangThaiThamGia', 'Đã tham gia')->count();
         
         // Đếm tổng số lượt đăng ký DRL
         $tongDangKyDrl = DangKyHoatDongDrl::count();
@@ -88,8 +86,8 @@ class DashboardController extends Controller
         // --- 4. Truy vấn dữ liệu Biểu đồ CTXH ---
         // View yêu cầu: $labelsCTXH, $dataCTXH ('Hoàn thành', 'Chưa hoàn thành')
 
-        // Đếm số lượng sinh viên đã 'Hoàn thành' (Giả sử TrangThai='Hoàn thành')
-        $hoanThanh = KetQuaThamGiaCtxh::where('TrangThai', 'Hoàn thành')->count();
+        // Đếm số lượng đăng ký CTXH đã hoàn thành (Tham gia = 'Đã tham gia')
+        $hoanThanh = DangKyHoatDongCtxh::where('TrangThaiThamGia', 'Đã tham gia')->count();
         
         // Đếm tổng số lượt đăng ký CTXH
         $tongDangKyCtxh = DangKyHoatDongCtxh::count();

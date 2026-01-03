@@ -822,35 +822,51 @@ unset($__errorArgs, $__bag); ?>
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group-modern">
-                            <label for="ThoiGianTotNghiepDuKien" class="form-label-modern">
-                                <i class="fa-solid fa-calendar-check"></i>
-                                Thời gian tốt nghiệp dự kiến
-                            </label>
-                            <input type="date" 
-                                   id="ThoiGianTotNghiepDuKien"
-                                   name="ThoiGianTotNghiepDuKien"
-                                   value="<?php echo e(old('ThoiGianTotNghiepDuKien', $sinhvien->ThoiGianTotNghiepDuKien)); ?>"
-                                   class="form-control-modern">
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group-modern">
-                            <label for="SoThich" class="form-label-modern">
-                                <i class="fa-solid fa-heart"></i>
-                                Sở thích
+                            <label for="NamNhapHoc" class="form-label-modern">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Năm nhập học
+                                <span class="required-mark">*</span>
                             </label>
                             <div class="input-wrapper">
-                                <i class="input-icon fa-solid fa-pen"></i>
-                                <input type="text" 
-                                       id="SoThich" 
-                                       name="SoThich" 
-                                       value="<?php echo e(old('SoThich', $sinhvien->SoThich)); ?>"
-                                       class="form-control-modern" 
-                                       placeholder="Ví dụ: Đọc sách, chơi thể thao...">
+                                <i class="input-icon fa-solid fa-graduation-cap"></i>
+                                <input type="number" 
+                                       id="NamNhapHoc"
+                                       name="NamNhapHoc"
+                                       value="<?php echo e(old('NamNhapHoc', $sinhvien->NamNhapHoc)); ?>"
+                                       min="1900" max="<?php echo e(date('Y')); ?>"
+                                       class="form-control-modern <?php $__errorArgs = ['NamNhapHoc'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                                       placeholder="Ví dụ: 2022, 2023, 2024"
+                                       required>
+                                <?php $__errorArgs = ['NamNhapHoc'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <i class="invalid-icon fa-solid fa-circle-exclamation"></i>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
+                            <?php $__errorArgs = ['NamNhapHoc'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="error-message"><i class="fa-solid fa-circle-xmark"></i><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
                     </div>
                 </div>

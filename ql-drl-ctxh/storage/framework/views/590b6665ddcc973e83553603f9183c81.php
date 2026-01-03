@@ -217,7 +217,7 @@ $tyLeLopDay = $tyLeLopDayCurrentPage ?? 0;
         <?php if($hoatDongs->hasPages()): ?>
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="text-muted small">Hiển thị <?php echo e($hoatDongs->firstItem()); ?> - <?php echo e($hoatDongs->lastItem()); ?> / <?php echo e($hoatDongs->total()); ?></div>
-            <div><?php echo e($hoatDongs->appends(request()->query())->links()); ?></div>
+            <div><?php echo e($hoatDongs->appends(request()->query())->links('pagination.custom')); ?></div>
         </div>
         <?php endif; ?>
     </div>

@@ -464,7 +464,7 @@
                         <td>
                             <?php if($sinhVien): ?>
                             <div class="student-info">
-                                <div class="student-avatar"><?php echo e($initials); ?></div>
+                                
                                 <div class="student-details">
                                     <div class="name"><?php echo e($sinhVien->HoTen); ?></div>
                                     <div class="mssv"><?php echo e($sinhVien->MSSV); ?></div>

@@ -85,6 +85,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     
     // Contact/Feedback
     Route::get('/profile', [ProfileApiController::class, 'getProfile']);
+    Route::get('/interests', [ProfileApiController::class, 'getInterests']);
     Route::put('/profile/update', [ProfileApiController::class, 'updateProfileComplete']);
     Route::post('/lienhe', [ProfileApiController::class, 'submitFeedback']);
     

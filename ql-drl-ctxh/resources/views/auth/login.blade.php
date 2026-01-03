@@ -207,8 +207,67 @@
         });
 
         function refreshCaptcha() {
-            // Reload ảnh captcha với timestamp để tránh cache
-            document.getElementById('newcaptcha').src = '{{ route("captcha.image") }}?' + Date.now();
+            // Lấy các phần tử cần thiết
+            const refreshBtn = document.querySelector('.captcharefresh');
+            const captchaImg = document.getElementById('newcaptcha');
+            const captchaInput = document.getElementById('Captcha');
+            
+            // Disable nút
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.style.opacity = '0.6';
+            }
+            
+            // Fade out ảnh cũ
+            captchaImg.style.opacity = '0.5';
+            captchaImg.style.transition = 'opacity 0.3s ease';
+            
+            // Tạo URL mới với timestamp
+            const timestamp = new Date().getTime();
+            const newUrl = '{{ route("captcha.image") }}?t=' + timestamp;
+            
+            // Load ảnh mới
+            const newImg = new Image();
+            newImg.onload = function() {
+                // Cập nhật src
+                captchaImg.src = newUrl;
+                captchaImg.style.opacity = '1';
+                
+                // Clear input Captcha
+                captchaInput.value = '';
+                captchaInput.focus();
+                
+                // Xóa tất cả error messages liên quan đến Captcha
+                const groupDiv = captchaInput.closest('.group');
+                if (groupDiv) {
+                    const errors = groupDiv.querySelectorAll('.text-danger');
+                    errors.forEach(err => {
+                        // Chỉ xóa nếu là error của Captcha
+                        if (err.textContent.includes('Captcha') || err.textContent.includes('mã')) {
+                            err.remove();
+                        }
+                    });
+                }
+                
+                // Re-enable nút
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.style.opacity = '1';
+                }
+            };
+            
+            newImg.onerror = function() {
+                // Restore ảnh cũ
+                captchaImg.style.opacity = '1';
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.style.opacity = '1';
+                }
+                console.error('Lỗi tải Captcha');
+                alert('Không thể tải lại Captcha. Vui lòng thử lại!');
+            };
+            
+            newImg.src = newUrl;
         }
     </script>
 </body>

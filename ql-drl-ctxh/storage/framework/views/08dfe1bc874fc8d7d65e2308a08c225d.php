@@ -392,10 +392,9 @@
                     <table class="table table-custom mb-0">
                         <thead>
                             <tr>
-                                <th style="width: 40%;">Tên Hoạt Động</th>
-                                <th style="width: 20%;">Loại</th>
-                                <th class="text-center" style="width: 20%;">Ngày tham gia</th>
-                                <th class="text-center" style="width: 20%;">Điểm</th>
+                                <th style="width: 50%;">Tên Hoạt Động</th>
+                                <th class="text-center" style="width: 25%;">Ngày tham gia</th>
+                                <th class="text-center" style="width: 25%;">Điểm</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -411,9 +410,6 @@
                                     <td>
                                         <div class="activity-name"><?php echo e($activity->TenHoatDong); ?></div>
                                         <div class="activity-description"><?php echo e($quyDinh->TenCongViec); ?></div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-type"><?php echo e($activity->LoaiHoatDong); ?></span>
                                     </td>
                                     <td class="text-center">
                                         <?php echo e($activity->ThoiGianKetThuc ? \Carbon\Carbon::parse($activity->ThoiGianKetThuc)->format('d/m/Y') : 'N/A'); ?>

@@ -39,7 +39,7 @@
 @section('content')
 <div class="card shadow-sm border-0">
     <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <h5 class="mb-0 text-white">
+        <h5 class="mb-0">
             <i class="fa-solid fa-pen-to-square me-2"></i>
             Chỉnh sửa Hoạt động: {{ $hoatdong_ctxh->TenHoatDong }}
         </h5>
@@ -74,8 +74,6 @@
         <form action="{{ route('nhanvien.hoatdong_ctxh.update', $hoatdong_ctxh->MaHoatDong) }}" method="POST" id="editForm" novalidate>
             @csrf
             @method('PUT')
-            
-            <!-- Hidden field để đảm bảo category_tags luôn được submit -->
             <input type="hidden" name="category_tags_submitted" value="1">
 
             {{-- Thông tin cơ bản --}}

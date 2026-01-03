@@ -23,6 +23,14 @@ class DashboardController extends Controller
         // 1. Lấy MSSV từ user đang đăng nhập
         $mssv = Auth::user()->TenDangNhap;
 
+        // ===== ONBOARDING CHECK =====
+        // Kiểm tra: nếu sinh viên chưa chọn sở thích -> redirect tới onboarding
+        $onboarding = new OnboardingController();
+        if (!$onboarding->hasSelectedInterests()) {
+            return redirect()->route('sinhvien.onboarding.interests')
+                ->with('info', 'Vui lòng chọn sở thích để tiếp tục!');
+        }
+
         // 2. Lấy thông tin sinh viên và các quan hệ (lớp, khoa)
         $student = SinhVien::with(['lop.khoa'])->where('MSSV', $mssv)->firstOrFail();
 
@@ -65,33 +73,53 @@ class DashboardController extends Controller
 
 
         // 5. Lấy điểm rèn luyện (cho học kỳ hiện tại)
-        // --- LOGIC firstOrCreate (KHỞI TẠO 70Đ) ---
+        // Tính điểm dựa trên hoạt động thực tế
         
         if ($currentHocKy) {
-            $training_score_data = DiemRenLuyen::firstOrCreate(
-                [
-                    // Điều kiện tìm:
-                    'MSSV' => $mssv,
-                    'MaHocKy' => $currentHocKy->MaHocKy
-                ],
-                [
-                    // Dữ liệu tạo mới nếu không tìm thấy:
-                    'TongDiem' => 70, // Điểm khởi đầu
-                    'XepLoai' => 'Khá', // 70 điểm là Xếp loại Khá
-                    'NgayCapNhat' => $now
-                ]
-            );
+            // Lấy record DiemRenLuyen từ DB (không tạo mới)
+            $training_score_data = DiemRenLuyen::where('MSSV', $mssv)
+                ->where('MaHocKy', $currentHocKy->MaHocKy)
+                ->first();
 
-            // Gán giá trị (bây giờ $training_score_data chắc chắn tồn tại)
-            $training_score = $training_score_data->TongDiem;
-            $training_rank = $training_score_data->XepLoai;
+            if ($training_score_data) {
+                // Nếu đã có record, lấy giá trị từ DB
+                $training_score = $training_score_data->TongDiem;
+                $training_rank = $training_score_data->XepLoai;
+            } else {
+                // Nếu chưa có, tính từ hoạt động tham gia
+                $baseDRL = 70; // Điểm khởi đầu
+                
+                // Tính tổng điểm từ hoạt động đã tham gia
+                $earnedPoints = DangKyHoatDongDrl::where('MSSV', $mssv)
+                    ->where('TrangThaiThamGia', 'Đã tham gia')
+                    ->whereHas('hoatdong', function ($query) use ($currentHocKy) {
+                        $query->where('MaHocKy', $currentHocKy->MaHocKy);
+                    })
+                    ->with('hoatdong.quydinh')
+                    ->get()
+                    ->sum(fn($activity) => $activity->hoatdong->quydinh->DiemNhan ?? 0);
+                
+                $training_score = $baseDRL + $earnedPoints;
+                
+                // Xếp loại dựa trên điểm
+                if ($training_score >= 90) {
+                    $training_rank = 'Xuất sắc';
+                } elseif ($training_score >= 80) {
+                    $training_rank = 'Tốt';
+                } elseif ($training_score >= 70) {
+                    $training_rank = 'Khá';
+                } elseif ($training_score >= 60) {
+                    $training_rank = 'Trung bình';
+                } else {
+                    $training_rank = 'Yếu';
+                }
+            }
 
         } else {
             // Trường hợp không tìm thấy học kỳ nào
             $training_score = 0;
             $training_rank = 'N/A';
         }
-        // --- KẾT THÚC LOGIC 70Đ ---
 
 
         // 6. Lấy điểm CTXH (toàn khoá)

@@ -81,9 +81,40 @@ class _HomeViewState extends State<HomeView> {
 
       // Load recommendations
       final recsResult = await ActivityService.getRecommendations();
+      print('[HomeScreen] Recommendations result: $recsResult');
       if (recsResult['success']) {
+        final rawRecs = recsResult['data'] ?? [];
+        print('[HomeScreen] Raw recommendations: $rawRecs');
+        
+        // Map và transform recommendations data
+        final mappedRecs = List<Map<String, dynamic>>.from(
+          (rawRecs as List).map((rec) {
+            final activity = rec['activity'] as Map<String, dynamic>? ?? {};
+            return {
+              'id': rec['id'] ?? '',
+              'recommendation_score': (rec['recommendation_score'] ?? 0).toDouble(),
+              'recommendation_reason': rec['recommendation_reason'] ?? 'Hoạt động phù hợp',
+              'activity_type': rec['activity_type'] ?? activity['type'] ?? 'DRL',
+              'activity': {
+                'id': activity['id'] ?? rec['MaHoatDong'] ?? '',
+                'ten': activity['ten'] ?? rec['ten'] ?? 'N/A',
+                'mo_ta': activity['mo_ta'] ?? '',
+                'dia_diem': activity['dia_diem'] ?? 'Chưa xác định',
+                'type': activity['type'] ?? rec['activity_type'] ?? 'DRL',
+                'ngay_to_chuc': activity['ngay_to_chuc'] ?? '',
+              }
+            };
+          }),
+        );
+        
         setState(() {
-          _recommendations = recsResult['data'] ?? [];
+          _recommendations = mappedRecs;
+          print('[HomeScreen] Loaded ${_recommendations.length} recommendations');
+        });
+      } else {
+        print('[HomeScreen] Failed to load recommendations: ${recsResult['message']}');
+        setState(() {
+          _recommendations = [];
         });
       }
 
@@ -350,84 +381,40 @@ class _HomeViewState extends State<HomeView> {
                             .toList(),
                   ),
 
-              // Gợi ý hoạt động
+              // Gợi ý hoạt động - Button
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.lightbulb, color: Color(0xFF2E5077), size: 20),
-                        SizedBox(width: 6),
-                        Text(
-                          'Hoạt động được gợi ý',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2E5077),
-                          ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RecommendationsScreen(),
                         ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RecommendationsScreen(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'Xem tất cả',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF2196F3),
-                          fontWeight: FontWeight.w500,
-                        ),
+                      );
+                    },
+                    icon: Icon(Icons.lightbulb_outline, size: 20),
+                    label: Text(
+                      'Hoạt động được gợi ý',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              _recommendations.isEmpty
-                  ? Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 10,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Không có hoạt động được gợi ý',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF2E5077),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                  )
-                  : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: _recommendations
-                          .take(3)
-                          .map(
-                            (rec) => _buildRecommendationCard(
-                              rec as Map<String, dynamic>,
-                            ),
-                          )
-                          .toList(),
+                      elevation: 2,
                     ),
                   ),
+                ),
+              ),
 
               // Phần chức năng
               Padding(
@@ -685,116 +672,6 @@ class _HomeViewState extends State<HomeView> {
                   activity['type'] == 'DRL'
                       ? '${activity['diem_rl'] ?? 0} điểm rèn luyện'
                       : '${activity['diem_ctxh'] ?? 0} điểm CTXH',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecommendationCard(Map<String, dynamic> rec) {
-    final activity = rec['activity'] as Map<String, dynamic>? ?? {};
-    final matchScore = (rec['recommendation_score'] as num?)?.toInt() ?? 0;
-    final reason = rec['recommendation_reason'] as String? ?? 'Hoạt động phù hợp với bạn';
-    
-    final typeColor = activity['type'] == 'DRL' ? Color(0xFF64B5F6) : Color(0xFF81C784);
-
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 12, bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: typeColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  activity['type'] == 'DRL' ? 'Rèn luyện' : 'Xã hội',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: typeColor,
-                  ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFFB74D).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '$matchScore%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFFFB74D),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
-          Text(
-            activity['ten'] ?? 'Hoạt động',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: Color(0xFF1A1A1A),
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: 8),
-          Container(
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Color(0xFF2196F3).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              reason,
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF1976D2),
-                fontStyle: FontStyle.italic,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(height: 10),
-          Row(
-            children: [
-              Icon(Icons.location_on, size: 14, color: Colors.grey),
-              SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  activity['dia_diem'] ?? 'Địa điểm',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

@@ -8,13 +8,42 @@ use App\Models\Interest;
 use App\Models\StudentCluster;
 use App\Models\ClusterStatistic;
 use App\Models\DangKyHoatDongDRL;
+use App\Models\DangKyHoatDongCTXH;
+use App\Models\HoatDongDRL;
+use App\Models\HoatDongCTXH;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Hệ thống Gợi ý Hoạt động DRL/CTXH sử dụng Thuật toán K-Means
+ * 
+ * Mô tả kỹ thuật:
+ * - Phân nhóm sinh viên dựa trên tương đồng về đặc điểm nhân khẩu học và hành vi
+ * - Áp dụng User-based Collaborative Filtering để gợi ý hoạt động
+ * - Xử lý Cold Start problem thông qua chiến lược lai ghép (Hybrid Strategy)
+ */
 class KMeansClusteringService
 {
     protected $k = 4; // Số cụm
     protected $maxIterations = 100;
     protected $tolerance = 0.0001;
+    
+    // Trọng số động - Giai đoạn Cold Start vs Refinement
+    protected $weights_cold_start = [
+        'faculty'    => 0.3,   // W1: Khoa
+        'year'       => 0.3,   // W2: Năm học
+        'interests'  => 0.4,   // W3: Sở thích
+        'history'    => 0.0    // W4: Lịch sử (disabled ở Cold Start)
+    ];
+    
+    protected $weights_refinement = [
+        'faculty'    => 0.2,   // W1
+        'year'       => 0.2,   // W2
+        'interests'  => 0.3,   // W3
+        'history'    => 0.3    // W4
+    ];
+    
+    // Ngưỡng xác định chuyển từ Cold Start sang Refinement
+    protected $activity_threshold = 5; // Sinh viên phải tham gia ≥5 hoạt động
     
     public function __construct($k = 4)
     {
@@ -22,96 +51,273 @@ class KMeansClusteringService
     }
 
     /**
-     * Xây dựng Feature Vector cho mỗi sinh viên
+     * BƯỚC 1: XÂY DỰNG KHÔNG GIAN VECTOR ĐẶC TRƯNG
      * 
-     * Vector được thiết kế gồm 4 nhóm đặc trưng chính:
-     * 1. Explicit Interests (10 chiều): Mức độ quan tâm của SV tới 10 loại hình sở thích
-     * 2. Behavioral History (2 chiều):
-     *    - Participation Rate: Tỷ lệ tham gia thực tế vs đăng ký
-     *    - Activity Intensity: Cường độ tham gia tuyệt đối (chuẩn hóa theo ngưỡng 20 activities/năm)
-     * 3. Performance (1 chiều): Điểm rèn luyện trung bình (chuẩn hóa về [0,1])
-     * 4. Demographics & Context (N+1 chiều):
-     *    - Faculty (N chiều): One-Hot Encoding cho mỗi khoa
-     *    - Academic Year Level (1 chiều): Năm học hiện tại (1-4) được chuẩn hóa
+     * Vector sinh viên u: V_u = [W1·F_Khoa, W2·F_Nam, W3·F_SoThich, W4·F_LichSu]
+     * 
+     * Gồm 4 thành phần chính:
+     * 1. F_Khoa (Vector Khoa): One-Hot Encoding - phân loại sinh viên theo đơn vị quản lý
+     * 2. F_Nam (Vector Năm học): Min-Max Normalization - mức độ ưu tiên hoạt động theo khóa học
+     * 3. F_SoThich (Vector Sở thích): Multi-Hot Encoding - nhu cầu nội tại của sinh viên
+     * 4. F_LichSu (Vector Lịch sử): Frequency Distribution - hành vi thực tế đã tham gia
+     * 
+     * 📌 **PHẦN 2: Vector Năm học Chi Tiết**
+     * 
+     * Hệ thống ưu tiên sử dụng trường `NamNhapHoc` lưu trữ trực tiếp trong CSDL:
+     * - Chính xác: Không phải tính toán gián tiếp
+     * - Bắt buộc: Tất cả sinh viên phải có giá trị này
+     * - Fallback: Nếu null, trích xuất từ Mã lớp (2 ký tự đầu)
+     * 
+     * Quy trình:
+     * 1. Lấy giá trị NamNhapHoc từ database (ví dụ: 2021, 2022, 2023, 2024)
+     * 2. Tính năm học hiện tại: $academicYear = (năm hiện tại) - (năm nhập học) + 1
+     *    - Ví dụ: Sinh viên nhập năm 2022, hiện tại 2025 → Năm 4
+     * 3. Chuẩn hóa Min-Max:
+     *    - Năm 1 → 0.25 (Giai đoạn hòa nhập, khám phá)
+     *    - Năm 2 → 0.50 (Giai đoạn phát triển kỹ năng)
+     *    - Năm 3 → 0.75 (Giai đoạn chuyên sâu, chuyên môn)
+     *    - Năm 4+ → 1.00 (Giai đoạn thực tập, tốt nghiệp)
+     * 4. Ép giá trị về khoảng [0, 1] để đồng bộ với các thành phần khác
      */
     public function buildFeatureVectors()
     {
         $students = SinhVien::all();
-        $interests = Interest::orderBy('InterestID')->get();
         $facultyCodes = DB::table('khoa')->orderBy('MaKhoa')->pluck('MaKhoa')->toArray();
         $vectors = [];
 
         foreach ($students as $student) {
             $vector = [];
             
-            // ===== NHÓM 1: EXPLICIT INTERESTS (10 chiều) =====
-            // Phản ánh nhu cầu nội tại của sinh viên dựa trên khai báo sở thích
-            foreach ($interests as $interest) {
-                $studentInterest = StudentInterest::where('MSSV', $student->MSSV)
-                    ->where('InterestID', $interest->InterestID)
-                    ->first();
-                // Chuẩn hóa mức độ quan tâm từ thang điểm 1-5 sang [0,1]
-                $vector[] = $studentInterest ? ($studentInterest->InterestLevel / 5.0) : 0;
-            }
-            
-            // ===== NHÓM 2: BEHAVIORAL HISTORY (2 chiều) =====
-            
-            // 2.1 Participation Rate: Tỷ lệ tham gia thực tế
-            // Tính từ cả DRL và CTXH để có cái nhìn toàn diện
-            $drlRegistered = DangKyHoatDongDRL::where('MSSV', $student->MSSV)->count();
-            $drlAttended = DangKyHoatDongDRL::where('MSSV', $student->MSSV)
-                ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
-                ->count();
-            
-            $ctxhRegistered = \App\Models\DangKyHoatDongCTXH::where('MSSV', $student->MSSV)->count();
-            $ctxhAttended = \App\Models\DangKyHoatDongCTXH::where('MSSV', $student->MSSV)
-                ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
-                ->count();
-            
-            $totalRegistered = $drlRegistered + $ctxhRegistered;
-            $totalAttended = $drlAttended + $ctxhAttended;
-            $participationRate = $totalRegistered > 0 ? ($totalAttended / $totalRegistered) : 0;
-            $vector[] = $participationRate;
-            
-            // 2.2 Activity Intensity: Cường độ tham gia tuyệt đối
-            // Chuẩn hóa theo ngưỡng benchmark = 20 hoạt động/năm
-            $activityIntensity = min($totalAttended / 20.0, 1.0);
-            $vector[] = $activityIntensity;
-            
-            // ===== NHÓM 3: PERFORMANCE (1 chiều) =====
-            // Điểm rèn luyện trung bình, chuẩn hóa [0,1]
-            $avgScore = \App\Models\DiemRenLuyen::where('MSSV', $student->MSSV)
-                ->avg('TongDiem');
-            $normalizedScore = $avgScore ? ($avgScore / 100.0) : 0.0;
-            $vector[] = $normalizedScore;
-            
-            // ===== NHÓM 4: DEMOGRAPHICS & CONTEXT (N+1 chiều) =====
-            
-            // 4.1 Faculty (One-Hot Encoding): N chiều tương ứng với N khoa
-            // Đảm bảo không sai lệch khoảng cách do gán số thứ tự
+            // ===== PHẦN 1: VECTOR KHOA (One-Hot Encoding) =====
+            // Ví dụ: [1, 0, 0, 0] nếu sinh viên thuộc khoa đầu tiên
             foreach ($facultyCodes as $faculty) {
                 $vector[] = ($student->MaKhoa === $faculty) ? 1.0 : 0.0;
             }
             
-            // 4.2 Academic Year Level: Chuẩn hóa dựa trên năm học hiện tại
-            // Lấy khóa từ mã lớp (ví dụ: "13DH..." => Khóa 13)
-            $classCode = $student->MaLop; // Ví dụ: "13DH001"
-            $cohort = intval(substr($classCode, 0, 2)); // Lấy 2 ký tự đầu
+            // ===== PHẦN 2: VECTOR NĂM HỌC (Min-Max Normalization) =====
+            // Sử dụng trường NamNhapHoc từ database
+            // Fallback: Trích xuất từ 2 ký tự đầu Mã lớp nếu NamNhapHoc null
+            $yearOfEntry = $student->NamNhapHoc;
             
-            // Tính năm thứ: năm hệ thống - năm nhập học + 1
-            // Giả sử K1 bắt đầu năm 2010
-            $yearOfEntry = 2010 + ($cohort - 1);
+            if (!$yearOfEntry) {
+                // Fallback: Trích xuất khóa từ 2 ký tự đầu Mã lớp (VD: "13DHTH06" -> 13)
+                $classCode = $student->MaLop;
+                $cohort = intval(substr($classCode, 0, 2));
+                $yearOfEntry = 2010 + ($cohort - 1); // Giả sử K1 = năm 2010
+            }
+            
             $currentYear = date('Y');
-            $academicYear = min($currentYear - $yearOfEntry + 1, 4); // Capped at 4
+            $academicYear = min($currentYear - $yearOfEntry + 1, 4); // Capped at 4 years
             
-            // Chuẩn hóa: Năm 1 -> 0.25, Năm 2 -> 0.50, Năm 3 -> 0.75, Năm 4+ -> 1.00
+            // Chuẩn hóa: Năm 1->0.25, Năm 2->0.50, Năm 3->0.75, Năm 4+->1.0
+            // Ánh xạ theo giai đoạn học tập
             $yearNormalized = $this->encodeYear($academicYear);
-            $vector[] = $yearNormalized;
+            $vector[] = min(1.0, max(0.0, $yearNormalized));
+            
+            // ===== PHẦN 3: VECTOR SỞ THÍCH (Multi-Hot Encoding) =====
+            // Lấy 10 danh mục sở thích từ bảng interests
+            $interests = \App\Models\Interest::orderBy('InterestID')->limit(10)->get();
+            foreach ($interests as $interest) {
+                $studentInterest = StudentInterest::where('MSSV', $student->MSSV)
+                    ->where('InterestID', $interest->InterestID)
+                    ->first();
+                // Chuẩn hóa mức độ quan tâm: 1-5 -> [0,1]
+                $vector[] = $studentInterest ? ($studentInterest->InterestLevel / 5.0) : 0;
+            }
+            
+            // ===== PHẦN 4: VECTOR LỊCH SỬ (Frequency Distribution) =====
+            // Tỷ lệ phân bố hoạt động sinh viên đã tham gia theo danh mục
+            $historyVector = $this->calculateHistoryVector($student->MSSV, $interests);
+            $vector = array_merge($vector, $historyVector);
             
             $vectors[$student->MSSV] = $vector;
         }
         
         return $vectors;
+    }
+
+    /**
+     * Tính Vector Lịch sử (Frequency Distribution)
+     * h_i = Số hoạt động thuộc danh mục i đã tham gia / Tổng số hoạt động đã tham gia
+     */
+    private function calculateHistoryVector($mssv, $interests)
+    {
+        // Lấy hoạt động DRL đã tham gia
+        $drlParticipated = DangKyHoatDongDRL::where('MSSV', $mssv)
+            ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
+        // Lấy hoạt động CTXH đã tham gia
+        $ctxhParticipated = DB::table('dangkyhoatdongctxh')
+            ->where('MSSV', $mssv)
+            ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
+        $allActivities = array_merge($drlParticipated, $ctxhParticipated);
+        $totalActivities = count($allActivities);
+        
+        // Nếu chưa tham gia hoạt động nào -> vector 0
+        if ($totalActivities === 0) {
+            return array_fill(0, 10, 0);
+        }
+        
+        // Đếm hoạt động theo danh mục
+        $historyCounts = array_fill(0, 10, 0);
+        
+        // Từ DRL activities
+        foreach ($drlParticipated as $actId) {
+            $activity = HoatDongDRL::find($actId);
+            if ($activity && $activity->category_tags) {
+                $tags = $this->parseInterestTags($activity->category_tags);
+                foreach ($tags as $tag) {
+                    if ($tag >= 1 && $tag <= 10) {
+                        $historyCounts[$tag - 1]++;
+                    }
+                }
+            }
+        }
+        
+        // Từ CTXH activities
+        foreach ($ctxhParticipated as $actId) {
+            $activity = HoatDongCTXH::find($actId);
+            if ($activity && $activity->category_tags) {
+                $tags = $this->parseInterestTags($activity->category_tags);
+                foreach ($tags as $tag) {
+                    if ($tag >= 1 && $tag <= 10) {
+                        $historyCounts[$tag - 1]++;
+                    }
+                }
+            }
+        }
+        
+        // Chuẩn hóa thành tỷ lệ
+        $historyVector = array_map(function($count) use ($totalActivities) {
+            return $count / $totalActivities;
+        }, $historyCounts);
+        
+        return $historyVector;
+    }
+
+    /**
+     * Parse category_tags string thành mảng InterestID
+     * Hỗ trợ format: "1,2,3" hoặc "[1,2,3]"
+     */
+    private function parseInterestTags($tags)
+    {
+        $tags = trim($tags);
+        
+        // Loại bỏ dấu ngoặc nếu có
+        if (str_starts_with($tags, '[') && str_ends_with($tags, ']')) {
+            $tags = substr($tags, 1, -1);
+        }
+        
+        // Split bằng comma
+        $ids = array_map(function($id) {
+            return intval(trim($id));
+        }, explode(',', $tags));
+        
+        return array_filter($ids); // Loại bỏ 0 hoặc empty
+    }
+
+    /**
+     * BƯỚC 2: TÍNH KHOẢNG CÁCH EUCLIDEAN CÓ TRỌNG SỐ
+     * 
+     * Formula: D_w(A, B) = √[Σ_k W_k·(A_k - B_k)²]
+     * 
+     * Với:
+     * - W_k: Trọng số của thành phần k (phụ thuộc vào giai đoạn: Cold Start / Refinement)
+     * - A_k, B_k: Giá trị thành phần k của vector A, B
+     * 
+     * ĐIỂM KHÁC BIỆT SO VỚI KHOẢNG CÁCH THÔNG THƯỜNG:
+     * - Trọng số cao → thành phần đó ảnh hưởng nhiều hơn đến khoảng cách
+     * - Trọng số thấp → thành phần đó ảnh hưởng ít hơn
+     * - Thích ứng theo bối cảnh: Cold Start (ưu tiên khoa/năm), Refinement (ưu tiên lịch sử)
+     */
+    public function euclideanDistanceWeighted($vector1, $vector2, $weights = null)
+    {
+        if ($weights === null) {
+            // Nếu không truyền weights, dùng mặc định (không phân biệt giai đoạn)
+            $weights = array_fill(0, count($vector1), 1.0);
+        }
+        
+        $sumSquaredDiff = 0;
+        $dimensionCount = min(count($vector1), count($vector2), count($weights));
+        
+        for ($i = 0; $i < $dimensionCount; $i++) {
+            $diff = $vector1[$i] - $vector2[$i];
+            $sumSquaredDiff += $weights[$i] * ($diff * $diff);
+        }
+        
+        return sqrt(max(0, $sumSquaredDiff)); // max(0, ...) để tránh sqrt số âm
+    }
+
+    /**
+     * Chọn trọng số phù hợp dựa trên giai đoạn của sinh viên
+     * 
+     * COLD START PHASE:
+     * - Sinh viên mới (< 5 hoạt động): Dựa vào khoa, năm học, sở thích
+     * - W = [30% Khoa, 30% Năm, 40% Sở thích, 0% Lịch sử]
+     * 
+     * REFINEMENT PHASE:
+     * - Sinh viên có kinh nghiệm (≥ 5 hoạt động): Dựa thêm vào hành vi quá khứ
+     * - W = [20% Khoa, 20% Năm, 30% Sở thích, 30% Lịch sử]
+     */
+    private function getApplicableWeights($mssv)
+    {
+        // Đếm hoạt động đã tham gia
+        $activityCount = DangKyHoatDongDRL::where('MSSV', $mssv)
+            ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+            ->count()
+            + DB::table('dangkyhoatdongctxh')
+                ->where('MSSV', $mssv)
+                ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+                ->count();
+        
+        // Nếu < threshold -> Cold Start, ngược lại -> Refinement
+        if ($activityCount < $this->activity_threshold) {
+            return $this->weights_cold_start;
+        } else {
+            return $this->weights_refinement;
+        }
+    }
+
+    /**
+     * Tạo mảng trọng số hoàn chỉnh từ cấu hình trọng số theo thành phần
+     * 
+     * Ví dụ input:
+     *   ['faculty' => 0.3, 'year' => 0.3, 'interests' => 0.4, 'history' => 0.0]
+     * 
+     * Sẽ trở thành mảng full chiều dài vector:
+     *   [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, ...] (Khoa: N chiều)
+     *   [0.3] (Năm học: 1 chiều)
+     *   [0.4, 0.4, ..., 0.4] (Sở thích: 10 chiều)
+     *   [0.0, 0.0, ..., 0.0] (Lịch sử: 10 chiều)
+     */
+    private function expandWeights($componentWeights, $facultyCount = 6)
+    {
+        $expandedWeights = [];
+        
+        // Faculty component: N chiều (ứng với N khoa)
+        for ($i = 0; $i < $facultyCount; $i++) {
+            $expandedWeights[] = $componentWeights['faculty'];
+        }
+        
+        // Year component: 1 chiều
+        $expandedWeights[] = $componentWeights['year'];
+        
+        // Interests component: 10 chiều
+        for ($i = 0; $i < 10; $i++) {
+            $expandedWeights[] = $componentWeights['interests'];
+        }
+        
+        // History component: 10 chiều
+        for ($i = 0; $i < 10; $i++) {
+            $expandedWeights[] = $componentWeights['history'];
+        }
+        
+        return $expandedWeights;
     }
 
     /**
@@ -149,25 +355,22 @@ class KMeansClusteringService
     }
 
     /**
-     * Chạy K-Means clustering
+     * Chạy K-Means clustering với Trọng số Động
      * 
-     * LƯU Ý: Không normalize vectors lần nữa vì dữ liệu đã được chuẩn hóa [0,1] trong buildFeatureVectors().
-     * Các features đã được thiết kế với scale chuẩn:
-     * - Explicit Interests: [0, 1] (chia cho 5.0)
-     * - Participation Rate: [0, 1] (là tỷ lệ)
-     * - Activity Intensity: [0, 1] (min với 1.0)
-     * - Performance: [0, 1] (chia cho 100)
-     * - Faculty (One-Hot): [0, 1]
-     * - Academic Year: [0, 1] (0.25/0.50/0.75/1.00)
+     * THUẬT TOÁN:
+     * 1. Khởi tạo centroids ngẫu nhiên từ vectors
+     * 2. Lặp cho tới khi hội tụ:
+     *    a. Gán mỗi sinh viên vào cụm gần nhất (dùng weighted distance)
+     *    b. Cập nhật centroids bằng trung bình vector trong mỗi cụm
+     *    c. Kiểm tra hội tụ (assignments không thay đổi)
+     * 3. Trả về assignments, centroids, số lần lặp
      * 
-     * Nếu normalize lại bằng Min-Max Scaling sẽ bị "Normalization Trap":
-     * - Trọng số giữa các features bị triệt tiêu
-     * - Dữ liệu bị thay đổi bất thường
+     * ĐIỂM KHÁC BIỆT VỚI K-MEANS TIÊU CHUẨN:
+     * - Sử dụng Weighted Euclidean Distance thay vì Standard Euclidean
+     * - Trọng số được lựa chọn động dựa trên giai đoạn: Cold Start vs Refinement
      */
     public function cluster($vectors)
     {
-        // $vectors = $this->normalizeVectors($vectors);  // ❌ REMOVED - Gây lỗi Normalization Trap
-        
         if (empty($vectors)) {
             return ['assignments' => [], 'centroids' => [], 'iterations' => 0];
         }
@@ -184,6 +387,9 @@ class KMeansClusteringService
         $assignments = [];
         $iteration = 0;
         
+        // Số khoa để mở rộng trọng số
+        $facultyCount = DB::table('khoa')->count();
+        
         while ($iteration < $this->maxIterations) {
             // Gán sinh viên vào cụm gần nhất
             $newAssignments = [];
@@ -191,8 +397,13 @@ class KMeansClusteringService
                 $minDistance = PHP_FLOAT_MAX;
                 $closestCluster = 0;
                 
+                // Lấy trọng số phù hợp cho sinh viên này
+                $componentWeights = $this->getApplicableWeights($mssv);
+                $expandedWeights = $this->expandWeights($componentWeights, $facultyCount);
+                
+                // Tìm cụm gần nhất dùng weighted distance
                 foreach ($centroids as $clusterIdx => $centroid) {
-                    $distance = $this->euclideanDistance($vector, $centroid);
+                    $distance = $this->euclideanDistanceWeighted($vector, $centroid, $expandedWeights);
                     if ($distance < $minDistance) {
                         $minDistance = $distance;
                         $closestCluster = $clusterIdx;
@@ -237,19 +448,6 @@ class KMeansClusteringService
             'centroids' => $centroids,
             'iterations' => $iteration
         ];
-    }
-
-    /**
-     * Tính khoảng cách Euclidean
-     */
-    protected function euclideanDistance($vector1, $vector2)
-    {
-        $sum = 0;
-        foreach ($vector1 as $i => $val1) {
-            $val2 = $vector2[$i] ?? 0;
-            $sum += pow($val1 - $val2, 2);
-        }
-        return sqrt($sum);
     }
 
     /**
@@ -472,7 +670,7 @@ class KMeansClusteringService
             
             $clusterId = $assignments[$mssv];
             $centroid = $centroids[$clusterId];
-            $distance = $this->euclideanDistance($vector, $centroid);
+            $distance = $this->euclideanDistanceWeighted($vector, $centroid);
             $inertia += pow($distance, 2);
         }
         
@@ -495,7 +693,7 @@ class KMeansClusteringService
             $intraClusterDistances = [];
             foreach ($vectorArray as $j => $otherVector) {
                 if ($assignmentArray[$j] == $currentCluster && $idx != $j) {
-                    $intraClusterDistances[] = $this->euclideanDistance($vector, $otherVector);
+                    $intraClusterDistances[] = $this->euclideanDistanceWeighted($vector, $otherVector);
                 }
             }
             $a = !empty($intraClusterDistances) ? array_sum($intraClusterDistances) / count($intraClusterDistances) : 0;
@@ -508,7 +706,7 @@ class KMeansClusteringService
                 $distances = [];
                 foreach ($vectorArray as $j => $otherVector) {
                     if ($assignmentArray[$j] == $c) {
-                        $distances[] = $this->euclideanDistance($vector, $otherVector);
+                        $distances[] = $this->euclideanDistanceWeighted($vector, $otherVector);
                     }
                 }
                 
@@ -553,7 +751,7 @@ class KMeansClusteringService
         foreach ($clusterMembers as $clusterId => $members) {
             $distances = [];
             foreach ($members as $vector) {
-                $distances[] = $this->euclideanDistance($vector, $centroids[$clusterId]);
+                $distances[] = $this->euclideanDistanceWeighted($vector, $centroids[$clusterId]);
             }
             $clusterScatter[$clusterId] = !empty($distances) ? array_sum($distances) / count($distances) : 0;
         }
@@ -569,7 +767,7 @@ class KMeansClusteringService
             foreach ($clusterMembers as $j => $members2) {
                 if ($i == $j) continue;
                 
-                $distance = $this->euclideanDistance($centroids[$i], $centroids[$j]);
+                $distance = $this->euclideanDistanceWeighted($centroids[$i], $centroids[$j]);
                 if ($distance > 0) {
                     $ratio = ($clusterScatter[$i] + $clusterScatter[$j]) / $distance;
                     $maxRatio = max($maxRatio, $ratio);
@@ -597,6 +795,31 @@ class KMeansClusteringService
 
     /**
      * Tạo recommendations cho sinh viên dựa trên cluster
+     * 
+     * Chiến lược:
+     * 1. Ưu tiên: Hoạt động phổ biến trong cluster + match interest
+     * 2. Fallback: Hoạt động được tagging match interest (nếu cluster member ít hoạt động)
+     * 3. Last resort: Hoạt động phổ biến toàn hệ thống
+     */
+    /**
+     * BƯỚC 3: WORKFLOW GỢI Ý HOẠT ĐỘNG (HYBRID STRATEGY)
+     * 
+     * QUI TRÌNH:
+     * 1. Xác định giai đoạn: Cold Start (< 5 hoạt động) hay Refinement (≥ 5 hoạt động)
+     * 2. Tùy theo giai đoạn, áp dụng chiến lược khác:
+     *
+     * COLD START STRATEGY (Sinh viên mới):
+     * - Sử dụng: Collaborative Filtering trên cluster
+     * - Cơ chế: Gợi ý hoạt động phổ biến mà các bạn trong cluster tham gia
+     * - Lợi ích: Giúp sinh viên nhanh chóng intergrate vào nhóm, tìm hoạt động "trend"
+     *
+     * REFINEMENT STRATEGY (Sinh viên kinh nghiệm):
+     * - Sử dụng: User-based Collaborative Filtering + Content-based
+     * - Cơ chế: Gợi ý dựa trên:
+     *   a. Popularity trong cluster (các bạn cùng nhóm thích)
+     *   b. Lịch sử tham gia (hoạt động tương tự hành vi quá khứ)
+     *   c. Sở thích khai báo
+     * - Lợi ích: Giới thiệu hoạt động mới nhưng vẫn phù hợp với hành vi đã chứng minh
      */
     public function generateRecommendations()
     {
@@ -609,37 +832,92 @@ class KMeansClusteringService
             $mssv = $assignment->MSSV;
             $clusterId = $assignment->ClusterID;
             
+            // Xác định giai đoạn của sinh viên
+            $activityCount = DangKyHoatDongDRL::where('MSSV', $mssv)
+                ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+                ->count()
+                + DB::table('dangkyhoatdongctxh')
+                    ->where('MSSV', $mssv)
+                    ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+                    ->count();
+            
+            $isInColdStart = ($activityCount < $this->activity_threshold);
+            
             // Lấy các thành viên khác trong cùng cluster
             $clusterMembers = \App\Models\StudentCluster::where('ClusterID', $clusterId)
                 ->where('MSSV', '!=', $mssv)
                 ->pluck('MSSV')
                 ->toArray();
             
-            if (!empty($clusterMembers)) {
-                // Gợi ý DRL dựa trên hoạt động phổ biến trong cluster
-                $this->recommendPopularActivitiesDRL($mssv, $clusterMembers, $clusterId);
+            if ($isInColdStart) {
+                // ===== COLD START: Collaborative Filtering =====
+                // Gợi ý dựa trên "đám đông" - hoạt động phổ biến trong cluster
                 
-                // Gợi ý CTXH dựa trên hoạt động phổ biến trong cluster
-                $this->recommendPopularActivitiesCTXH($mssv, $clusterMembers, $clusterId);
+                // Gợi ý DRL
+                $drlRecommendCount = 0;
+                if (!empty($clusterMembers)) {
+                    $drlRecommendCount = $this->recommendPopularActivitiesDRL($mssv, $clusterMembers, $clusterId);
+                }
+                
+                // Nếu không đủ gợi ý, fallback dùng content-based (quan tâm đến sở thích)
+                if ($drlRecommendCount < 5) {
+                    $this->recommendContentBasedActivitiesDRL($mssv, $clusterMembers, 5 - $drlRecommendCount);
+                }
+                
+                // Gợi ý CTXH
+                $ctxhRecommendCount = 0;
+                if (!empty($clusterMembers)) {
+                    $ctxhRecommendCount = $this->recommendPopularActivitiesCTXH($mssv, $clusterMembers, $clusterId);
+                }
+                
+                // Fallback cho CTXH
+                if ($ctxhRecommendCount < 5) {
+                    $this->recommendContentBasedActivitiesCTXH($mssv, $clusterMembers, 5 - $ctxhRecommendCount);
+                }
+            } else {
+                // ===== REFINEMENT: Hybrid Collaborative + Content-based =====
+                // Gợi ý dựa trên: Popularity + History + Interest Match
+                
+                // Gợi ý DRL
+                $drlRecommendCount = 0;
+                if (!empty($clusterMembers)) {
+                    $drlRecommendCount = $this->recommendPopularActivitiesDRL($mssv, $clusterMembers, $clusterId);
+                }
+                
+                // Fallback với activity-based recommendation (dựa trên lịch sử)
+                if ($drlRecommendCount < 5) {
+                    $this->recommendActivityBasedActivitiesDRL($mssv, 5 - $drlRecommendCount);
+                }
+                
+                // Gợi ý CTXH
+                $ctxhRecommendCount = 0;
+                if (!empty($clusterMembers)) {
+                    $ctxhRecommendCount = $this->recommendPopularActivitiesCTXH($mssv, $clusterMembers, $clusterId);
+                }
+                
+                // Fallback cho CTXH
+                if ($ctxhRecommendCount < 5) {
+                    $this->recommendActivityBasedActivitiesCTXH($mssv, 5 - $ctxhRecommendCount);
+                }
             }
         }
     }
 
     /**
      * Gợi ý hoạt động DRL dựa trên popularity trong cluster
+     * (Collaborative Filtering - Phù hợp với cả Cold Start và Refinement)
+     * 
+     * FIX: Chỉ gợi ý hoạt động nếu có ≥2 người trong cluster tham gia (không quá generic)
+     * Nếu cluster member ít tham gia → đừng khuyến cáo những hoạt động có <2 người
      */
     private function recommendPopularActivitiesDRL($mssv, $clusterMembers, $clusterId)
     {
-        // Lấy sở thích của sinh viên
-        $studentInterests = StudentInterest::where('MSSV', $mssv)
-            ->pluck('InterestID')
-            ->toArray();
-        
         // Lấy các hoạt động đã được tham gia bởi những người trong cùng cluster
         $populateActivities = DB::table('dangkyhoatdongdrl as dk')
             ->join('hoatdongdrl as hd', 'dk.MaHoatDong', '=', 'hd.MaHoatDong')
             ->select('dk.MaHoatDong', 'hd.category_tags', DB::raw('COUNT(*) as popularity'))
             ->whereIn('dk.MSSV', $clusterMembers)
+            ->where('dk.TrangThaiThamGia', 'Đã tham gia') // Chỉ lấy những hoạt động đã tham gia
             ->groupBy('dk.MaHoatDong', 'hd.category_tags')
             ->orderByDesc('popularity')
             ->limit(30)
@@ -652,65 +930,148 @@ class KMeansClusteringService
         
         // Tạo gợi ý cho các hoạt động phù hợp
         $recommendCount = 0;
-        foreach ($populateActivities as $activity) {
-            if ($recommendCount >= 5) break;
-            if (in_array($activity->MaHoatDong, $studentRegistered)) continue;
-            
-            // Tính interest match score
-            $interestMatchScore = $this->calculateActivityInterestMatch(
-                $activity->category_tags,
-                $studentInterests
-            );
-            
-            // Nếu không match sở thích, bỏ qua
-            if ($interestMatchScore < 40) continue;
-            
-            // Lấy thông tin activity
-            $activityInfo = \App\Models\HoatDongDRL::find($activity->MaHoatDong);
-            if (!$activityInfo) continue;
-            
-            // Tính popularity score (normalized)
-            $maxPopularity = $populateActivities->max('popularity');
-            $popularityScore = ($activity->popularity / $maxPopularity) * 100;
-            
-            // Tính match score dựa trên:
-            // - Popularity trong cluster (40%)
-            // - Tính mới của hoạt động (10%)
-            // - Interest match (50%)
-            $recencyBonus = $this->getRecencyBonus($activityInfo->ThoiGianBatDau);
-            $matchScore = (0.4 * $popularityScore) + (0.1 * $recencyBonus) + (0.5 * $interestMatchScore);
-            
-            \App\Models\ActivityRecommendation::create([
-                'MSSV' => $mssv,
-                'MaHoatDong' => $activity->MaHoatDong,
-                'activity_type' => 'drl',
-                'recommendation_score' => round(min(100, max(50, $matchScore)), 2),
-                'recommendation_reason' => sprintf(
-                    'Được %d thành viên khác trong cluster tham gia. Phù hợp với sở thích của bạn',
-                    intval($activity->popularity)
-                ),
-                'viewed_at' => null
-            ]);
-            
-            $recommendCount++;
+        if ($populateActivities->count() > 0) {
+            foreach ($populateActivities as $activity) {
+                if ($recommendCount >= 5) break;
+                if (in_array($activity->MaHoatDong, $studentRegistered)) continue;
+                
+                // FIX: Skip activities with < 2 cluster members participated (too generic)
+                // Only recommend if there's meaningful participation (≥2 people)
+                if ($activity->popularity < 2) {
+                    continue;
+                }
+                
+                // Lấy thông tin activity
+                $activityInfo = \App\Models\HoatDongDRL::find($activity->MaHoatDong);
+                if (!$activityInfo) continue;
+                
+                // Tính popularity score (normalized)
+                $maxPopularity = $populateActivities->max('popularity');
+                $popularityScore = ($activity->popularity / $maxPopularity) * 100;
+                
+                // Lấy sở thích của sinh viên
+                $studentInterests = StudentInterest::where('MSSV', $mssv)
+                    ->pluck('InterestID')
+                    ->toArray();
+                
+                // Tính interest match score
+                $interestMatchScore = $this->calculateActivityInterestMatch(
+                    $activity->category_tags,
+                    $studentInterests
+                );
+                
+                // Tính match score dựa trên:
+                // - Interest Match (50%): Hoạt động có liên quan sở thích
+                // - Popularity trong cluster (35%): Phổ biến trong nhóm
+                // - Tính mới của hoạt động (15%)
+                $recencyBonus = $this->getRecencyBonus($activityInfo->ThoiGianBatDau);
+                $matchScore = (0.5 * $interestMatchScore) + (0.35 * $popularityScore) + (0.15 * $recencyBonus);
+                
+                // Tạo reason message
+                $reasonParts = [];
+                $reasonParts[] = sprintf('Được %d thành viên khác tham gia', intval($activity->popularity));
+                if ($interestMatchScore > 0) {
+                    $reasonParts[] = sprintf('Match sở thích %.0f%%', $interestMatchScore);
+                }
+                $reason = implode('. ', $reasonParts);
+                
+                \App\Models\ActivityRecommendation::create([
+                    'MSSV' => $mssv,
+                    'MaHoatDong' => $activity->MaHoatDong,
+                    'activity_type' => 'drl',
+                    'recommendation_score' => round(min(100, max(50, $matchScore)), 2),
+                    'recommendation_reason' => $reason,
+                    'viewed_at' => null
+                ]);
+                
+                $recommendCount++;
+            }
         }
+        
+        return $recommendCount;
     }
 
     /**
-     * Gợi ý hoạt động CTXH dựa trên popularity trong cluster
+     * Content-Based Recommendation cho DRL (Cold Start)
+     * Dùng khi cluster member ít tham gia hoạt động
+     * Gợi ý dựa trên: Interest match + Recency
      */
-    private function recommendPopularActivitiesCTXH($mssv, $clusterMembers, $clusterId)
+    private function recommendContentBasedActivitiesDRL($mssv, $clusterMembers, $remainingSlots)
     {
+        if ($remainingSlots <= 0) return;
+        
+        // Lấy hoạt động chưa đăng ký
+        $studentRegistered = DangKyHoatDongDRL::where('MSSV', $mssv)
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
         // Lấy sở thích của sinh viên
         $studentInterests = StudentInterest::where('MSSV', $mssv)
             ->pluck('InterestID')
             ->toArray();
         
+        if (empty($studentInterests)) return;
+        
+        // Lấy hoạt động được tagging (category_tags không NULL)
+        $allActivities = DB::table('hoatdongdrl')
+            ->select('MaHoatDong', 'TenHoatDong', 'category_tags', 'ThoiGianBatDau')
+            ->whereNotNull('category_tags')
+            ->whereNotIn('MaHoatDong', $studentRegistered)
+            ->orderByDesc('ThoiGianBatDau')
+            ->limit(50)
+            ->get();
+        
+        $recommendCount = 0;
+        foreach ($allActivities as $activity) {
+            if ($recommendCount >= $remainingSlots) break;
+            
+            // Tính interest match
+            $interestMatchScore = $this->calculateActivityInterestMatch(
+                $activity->category_tags,
+                $studentInterests
+            );
+            
+            // Chỉ gợi ý nếu có match hoặc hoạt động mới
+            if ($interestMatchScore > 0 || $this->getRecencyBonus($activity->ThoiGianBatDau) > 50) {
+                $recencyBonus = $this->getRecencyBonus($activity->ThoiGianBatDau);
+                $matchScore = (0.7 * $interestMatchScore) + (0.3 * $recencyBonus);
+                
+                // Chỉ tạo gợi ý nếu score >= 50
+                if ($matchScore >= 50) {
+                    $reason = 'Hoạt động phù hợp với sở thích của bạn';
+                    if ($interestMatchScore > 0) {
+                        $reason .= sprintf(' (Match %.0f%%)', $interestMatchScore);
+                    }
+                    
+                    \App\Models\ActivityRecommendation::create([
+                        'MSSV' => $mssv,
+                        'MaHoatDong' => $activity->MaHoatDong,
+                        'activity_type' => 'drl',
+                        'recommendation_score' => round(min(100, max(50, $matchScore)), 2),
+                        'recommendation_reason' => $reason,
+                        'viewed_at' => null
+                    ]);
+                    
+                    $recommendCount++;
+                }
+            }
+        }
+    }
+
+    /**
+     * Gợi ý hoạt động CTXH dựa trên popularity trong cluster
+     * 
+     * FIX: Chỉ gợi ý hoạt động nếu có ≥2 người trong cluster tham gia (không quá generic)
+     * Nếu cluster member ít tham gia → đừng khuyến cáo những hoạt động có <2 người
+     */
+    private function recommendPopularActivitiesCTXH($mssv, $clusterMembers, $clusterId)
+    {
         // Lấy các hoạt động đã được tham gia bởi những người trong cùng cluster
         $populateActivities = DB::table('dangkyhoatdongctxh as dk')
             ->join('hoatdongctxh as hc', 'dk.MaHoatDong', '=', 'hc.MaHoatDong')
             ->select('dk.MaHoatDong', 'hc.category_tags', DB::raw('COUNT(*) as popularity'))
             ->whereIn('dk.MSSV', $clusterMembers)
+            ->where('dk.TrangThaiThamGia', 'Đã tham gia') // Chỉ lấy những hoạt động đã tham gia
             ->groupBy('dk.MaHoatDong', 'hc.category_tags')
             ->orderByDesc('popularity')
             ->limit(30)
@@ -724,47 +1085,132 @@ class KMeansClusteringService
         
         // Tạo gợi ý cho các hoạt động phù hợp
         $recommendCount = 0;
-        foreach ($populateActivities as $activity) {
-            if ($recommendCount >= 5) break;
-            if (in_array($activity->MaHoatDong, $studentRegistered)) continue;
+        if ($populateActivities->count() > 0) {
+            foreach ($populateActivities as $activity) {
+                if ($recommendCount >= 5) break;
+                if (in_array($activity->MaHoatDong, $studentRegistered)) continue;
+                
+                // FIX: Skip activities with < 2 cluster members participated (too generic)
+                // Only recommend if there's meaningful participation (≥2 people)
+                if ($activity->popularity < 2) {
+                    continue;
+                }
+                
+                // Lấy thông tin activity
+                $activityInfo = \App\Models\HoatDongCTXH::find($activity->MaHoatDong);
+                if (!$activityInfo) continue;
+                
+                // Tính popularity score (normalized)
+                $maxPopularity = $populateActivities->max('popularity');
+                $popularityScore = ($activity->popularity / $maxPopularity) * 100;
+                
+                // Lấy sở thích của sinh viên
+                $studentInterests = StudentInterest::where('MSSV', $mssv)
+                    ->pluck('InterestID')
+                    ->toArray();
+                
+                // Tính interest match score
+                $interestMatchScore = $this->calculateActivityInterestMatch(
+                    $activity->category_tags,
+                    $studentInterests
+                );
+                
+                // Tính match score dựa trên:
+                // - Interest Match (50%): Hoạt động có liên quan sở thích
+                // - Popularity trong cluster (35%): Phổ biến trong nhóm
+                // - Tính mới của hoạt động (15%)
+                $recencyBonus = $this->getRecencyBonus($activityInfo->ThoiGianBatDau);
+                $matchScore = (0.5 * $interestMatchScore) + (0.35 * $popularityScore) + (0.15 * $recencyBonus);
+                
+                // Tạo reason message
+                $reasonParts = [];
+                $reasonParts[] = sprintf('Được %d thành viên khác tham gia', intval($activity->popularity));
+                if ($interestMatchScore > 0) {
+                    $reasonParts[] = sprintf('Match sở thích %.0f%%', $interestMatchScore);
+                }
+                $reason = implode('. ', $reasonParts);
+                
+                \App\Models\ActivityRecommendation::create([
+                    'MSSV' => $mssv,
+                    'MaHoatDong' => $activity->MaHoatDong,
+                    'activity_type' => 'ctxh',
+                    'recommendation_score' => round(min(100, max(50, $matchScore)), 2),
+                    'recommendation_reason' => $reason,
+                    'viewed_at' => null
+                ]);
+                
+                $recommendCount++;
+            }
+        }
+        
+        return $recommendCount;
+    }
+
+    /**
+     * Content-Based Recommendation cho CTXH
+     * Dùng khi cluster member ít tham gia hoạt động
+     * Gợi ý dựa trên: Interest match + Recency
+     */
+    private function recommendContentBasedActivitiesCTXH($mssv, $clusterMembers, $remainingSlots)
+    {
+        if ($remainingSlots <= 0) return;
+        
+        // Lấy hoạt động chưa đăng ký
+        $studentRegistered = DB::table('dangkyhoatdongctxh')
+            ->where('MSSV', $mssv)
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
+        // Lấy sở thích của sinh viên
+        $studentInterests = StudentInterest::where('MSSV', $mssv)
+            ->pluck('InterestID')
+            ->toArray();
+        
+        if (empty($studentInterests)) return;
+        
+        // Lấy hoạt động được tagging (category_tags không NULL)
+        $allActivities = DB::table('hoatdongctxh')
+            ->select('MaHoatDong', 'TenHoatDong', 'category_tags', 'ThoiGianBatDau')
+            ->whereNotNull('category_tags')
+            ->whereNotIn('MaHoatDong', $studentRegistered)
+            ->orderByDesc('ThoiGianBatDau')
+            ->limit(50)
+            ->get();
+        
+        $recommendCount = 0;
+        foreach ($allActivities as $activity) {
+            if ($recommendCount >= $remainingSlots) break;
             
-            // Tính interest match score
+            // Tính interest match
             $interestMatchScore = $this->calculateActivityInterestMatch(
                 $activity->category_tags,
                 $studentInterests
             );
             
-            // Nếu không match sở thích, bỏ qua
-            if ($interestMatchScore < 40) continue;
-            
-            // Lấy thông tin activity
-            $activityInfo = \App\Models\HoatDongCTXH::find($activity->MaHoatDong);
-            if (!$activityInfo) continue;
-            
-            // Tính popularity score (normalized)
-            $maxPopularity = $populateActivities->max('popularity');
-            $popularityScore = ($activity->popularity / $maxPopularity) * 100;
-            
-            // Tính match score dựa trên:
-            // - Popularity trong cluster (40%)
-            // - Tính mới của hoạt động (10%)
-            // - Interest match (50%)
-            $recencyBonus = $this->getRecencyBonus($activityInfo->ThoiGianBatDau);
-            $matchScore = (0.4 * $popularityScore) + (0.1 * $recencyBonus) + (0.5 * $interestMatchScore);
-            
-            \App\Models\ActivityRecommendation::create([
-                'MSSV' => $mssv,
-                'MaHoatDong' => $activity->MaHoatDong,
-                'activity_type' => 'ctxh',
-                'recommendation_score' => round(min(100, max(50, $matchScore)), 2),
-                'recommendation_reason' => sprintf(
-                    'Được %d thành viên khác trong cluster tham gia. Phù hợp với sở thích của bạn',
-                    intval($activity->popularity)
-                ),
-                'viewed_at' => null
-            ]);
-            
-            $recommendCount++;
+            // Chỉ gợi ý nếu có match hoặc hoạt động mới
+            if ($interestMatchScore > 0 || $this->getRecencyBonus($activity->ThoiGianBatDau) > 50) {
+                $recencyBonus = $this->getRecencyBonus($activity->ThoiGianBatDau);
+                $matchScore = (0.7 * $interestMatchScore) + (0.3 * $recencyBonus);
+                
+                // Chỉ tạo gợi ý nếu score >= 50
+                if ($matchScore >= 50) {
+                    $reason = 'Hoạt động phù hợp với sở thích của bạn';
+                    if ($interestMatchScore > 0) {
+                        $reason .= sprintf(' (Match %.0f%%)', $interestMatchScore);
+                    }
+                    
+                    \App\Models\ActivityRecommendation::create([
+                        'MSSV' => $mssv,
+                        'MaHoatDong' => $activity->MaHoatDong,
+                        'activity_type' => 'ctxh',
+                        'recommendation_score' => round(min(100, max(50, $matchScore)), 2),
+                        'recommendation_reason' => $reason,
+                        'viewed_at' => null
+                    ]);
+                    
+                    $recommendCount++;
+                }
+            }
         }
     }
 
@@ -814,4 +1260,308 @@ class KMeansClusteringService
         $matchRatio = count($matches) / count($activityInterests);
         return $matchRatio * 100;
     }
+
+    /**
+     * Tính Implicit Interests dựa trên hoạt động thực tế sinh viên tham gia
+     * 
+     * Phương pháp:
+     * 1. Lấy tất cả hoạt động mà sinh viên đã tham gia (Có mặt/Đã tham gia)
+     * 2. Trích xuất category_tags từ mỗi hoạt động
+     * 3. Đếm số lần mỗi InterestID xuất hiện trong hoạt động
+     * 4. Chuẩn hóa thành [0, 1] scale dựa trên max count
+     */
+    private function calculateImplicitInterests($mssv, $interests)
+    {
+        // Lấy tất cả hoạt động DRL mà sinh viên đã tham gia
+        $drlActivities = DB::table('dangkyhoatdongdrl as dk')
+            ->join('hoatdongdrl as hd', 'dk.MaHoatDong', '=', 'hd.MaHoatDong')
+            ->select('hd.category_tags')
+            ->where('dk.MSSV', $mssv)
+            ->whereIn('dk.TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+            ->pluck('category_tags')
+            ->toArray();
+        
+        // Lấy tất cả hoạt động CTXH mà sinh viên đã tham gia
+        $ctxhActivities = DB::table('dangkyhoatdongctxh as dk')
+            ->join('hoatdongctxh as hc', 'dk.MaHoatDong', '=', 'hc.MaHoatDong')
+            ->select('hc.category_tags')
+            ->where('dk.MSSV', $mssv)
+            ->whereIn('dk.TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+            ->pluck('category_tags')
+            ->toArray();
+        
+        $allActivityTags = array_merge($drlActivities, $ctxhActivities);
+        
+        // Đếm số lần mỗi InterestID xuất hiện
+        $interestCounts = array_fill(0, 10, 0); // Khởi tạo cho 10 loại sở thích
+        
+        foreach ($allActivityTags as $tags) {
+            if (!$tags) continue;
+            
+            // Parse category_tags (comma-separated interest IDs hoặc JSON)
+            $interestIds = $this->parseInterestTags($tags);
+            
+            foreach ($interestIds as $interestId) {
+                if ($interestId >= 1 && $interestId <= 10) {
+                    $interestCounts[$interestId - 1]++;
+                }
+            }
+        }
+        
+        // Chuẩn hóa: Chia cho số hoạt động tối đa (để scale [0, 1])
+        // Benchmark: Nếu sinh viên tham gia 20 hoạt động, max count ~ 20
+        // Chuẩn hóa: count / max(count, 20) để giới hạn [0, 1]
+        $maxCount = max($interestCounts) ?: 1;
+        $maxBenchmark = max($maxCount, 20); // Benchmark là 20 hoạt động
+        
+        $normalizedInterests = array_map(function($count) use ($maxBenchmark) {
+            return $count / $maxBenchmark;
+        }, $interestCounts);
+        
+        return $normalizedInterests;
+    }
+
+
+    /**
+     * ACTIVITY-BASED RECOMMENDATION cho DRL (Refinement Phase)
+     * 
+     * Sử dụng cho sinh viên kinh nghiệm (≥ 5 hoạt động)
+     * Gợi ý dựa trên: Tương đồng hoạt động + Lịch sử hành vi
+     * 
+     * LÝ THUYẾT:
+     * - Tìm hoạt động tương tự với những hoạt động sinh viên đã tham gia
+     * - "Tương tự" được định nghĩa bằng category_tags overlap
+     * - Ưu tiên hoạt động được tham gia bởi nhiều bạn cùng khóa/khoa
+     */
+    private function recommendActivityBasedActivitiesDRL($mssv, $remainingSlots)
+    {
+        if ($remainingSlots <= 0) return;
+        
+        // Lấy hoạt động DRL mà sinh viên đã tham gia
+        $participatedActivities = DangKyHoatDongDRL::where('MSSV', $mssv)
+            ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
+        if (empty($participatedActivities)) {
+            // Fallback: Content-based nếu chưa tham gia hoạt động nào
+            $this->recommendContentBasedActivitiesDRL($mssv, [], $remainingSlots);
+            return;
+        }
+        
+        // Lấy hoạt động chưa đăng ký
+        $studentRegistered = DangKyHoatDongDRL::where('MSSV', $mssv)
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
+        // Lấy category tags của hoạt động đã tham gia
+        $participatedTags = DB::table('hoatdongdrl')
+            ->whereIn('MaHoatDong', $participatedActivities)
+            ->pluck('category_tags')
+            ->toArray();
+        
+        // Merge tất cả tags từ hoạt động đã tham gia
+        $studentTagSet = [];
+        foreach ($participatedTags as $tags) {
+            $parsed = $this->parseInterestTags($tags);
+            foreach ($parsed as $tag) {
+                if (!isset($studentTagSet[$tag])) {
+                    $studentTagSet[$tag] = 0;
+                }
+                $studentTagSet[$tag]++;
+            }
+        }
+        
+        // Lấy hoạt động chưa tham gia nhưng có category_tags
+        $candidateActivities = DB::table('hoatdongdrl')
+            ->select('MaHoatDong', 'TenHoatDong', 'category_tags', 'ThoiGianBatDau')
+            ->whereNotNull('category_tags')
+            ->whereNotIn('MaHoatDong', $studentRegistered)
+            ->orderByDesc('ThoiGianBatDau')
+            ->limit(100)
+            ->get();
+        
+        // Tính similarity score cho mỗi hoạt động
+        $activityScores = [];
+        foreach ($candidateActivities as $activity) {
+            $activityTags = $this->parseInterestTags($activity->category_tags);
+            
+            // Tính Jaccard similarity: |A ∩ B| / |A ∪ B|
+            $intersection = count(array_intersect(array_keys($studentTagSet), $activityTags));
+            $union = count(array_unique(array_merge(array_keys($studentTagSet), $activityTags)));
+            $jaccardSimilarity = $union > 0 ? ($intersection / $union) : 0;
+            
+            // Tính popularity: Số sinh viên cùng khoa/năm tham gia
+            $studentInfo = SinhVien::find($mssv);
+            $similarStudents = SinhVien::where('MaKhoa', $studentInfo->MaKhoa)
+                ->where('MaLop', 'like', $studentInfo->MaLop[0] . '%')
+                ->pluck('MSSV')
+                ->toArray();
+            
+            $popularityInCluster = DangKyHoatDongDRL::whereIn('MSSV', $similarStudents)
+                ->where('MaHoatDong', $activity->MaHoatDong)
+                ->where('TrangThaiThamGia', 'Đã tham gia')
+                ->count();
+            
+            $maxPopularity = max(1, count($similarStudents));
+            $popularityScore = ($popularityInCluster / $maxPopularity) * 100;
+            
+            // Tính final score
+            $recencyBonus = $this->getRecencyBonus($activity->ThoiGianBatDau);
+            $finalScore = (0.5 * $jaccardSimilarity * 100) + (0.35 * $popularityScore) + (0.15 * $recencyBonus);
+            
+            if ($finalScore >= 40) { // Threshold
+                $activityScores[$activity->MaHoatDong] = [
+                    'activity' => $activity,
+                    'score' => $finalScore,
+                    'similarity' => $jaccardSimilarity
+                ];
+            }
+        }
+        
+        // Sort theo score
+        usort($activityScores, function($a, $b) {
+            return $b['score'] <=> $a['score'];
+        });
+        
+        // Tạo gợi ý
+        $recommendCount = 0;
+        foreach ($activityScores as $item) {
+            if ($recommendCount >= $remainingSlots) break;
+            
+            $reason = sprintf('Tương tự với hoạt động bạn tham gia (%.0f%% match)', $item['similarity'] * 100);
+            
+            \App\Models\ActivityRecommendation::create([
+                'MSSV' => $mssv,
+                'MaHoatDong' => $item['activity']->MaHoatDong,
+                'activity_type' => 'drl',
+                'recommendation_score' => round(min(100, max(50, $item['score'])), 2),
+                'recommendation_reason' => $reason,
+                'viewed_at' => null
+            ]);
+            
+            $recommendCount++;
+        }
+    }
+
+    /**
+     * ACTIVITY-BASED RECOMMENDATION cho CTXH (Refinement Phase)
+     * 
+     * Sử dụng cho sinh viên kinh nghiệm (≥ 5 hoạt động)
+     * Gợi ý dựa trên: Tương đồng hoạt động + Lịch sử hành vi
+     */
+    private function recommendActivityBasedActivitiesCTXH($mssv, $remainingSlots)
+    {
+        if ($remainingSlots <= 0) return;
+        
+        // Lấy hoạt động CTXH mà sinh viên đã tham gia
+        $participatedActivities = DB::table('dangkyhoatdongctxh')
+            ->where('MSSV', $mssv)
+            ->whereIn('TrangThaiThamGia', ['Có mặt', 'Đã tham gia'])
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
+        if (empty($participatedActivities)) {
+            // Fallback: Content-based nếu chưa tham gia hoạt động nào
+            $this->recommendContentBasedActivitiesCTXH($mssv, [], $remainingSlots);
+            return;
+        }
+        
+        // Lấy hoạt động chưa đăng ký
+        $studentRegistered = DB::table('dangkyhoatdongctxh')
+            ->where('MSSV', $mssv)
+            ->pluck('MaHoatDong')
+            ->toArray();
+        
+        // Lấy category tags của hoạt động đã tham gia
+        $participatedTags = DB::table('hoatdongctxh')
+            ->whereIn('MaHoatDong', $participatedActivities)
+            ->pluck('category_tags')
+            ->toArray();
+        
+        // Merge tất cả tags từ hoạt động đã tham gia
+        $studentTagSet = [];
+        foreach ($participatedTags as $tags) {
+            $parsed = $this->parseInterestTags($tags);
+            foreach ($parsed as $tag) {
+                if (!isset($studentTagSet[$tag])) {
+                    $studentTagSet[$tag] = 0;
+                }
+                $studentTagSet[$tag]++;
+            }
+        }
+        
+        // Lấy hoạt động chưa tham gia nhưng có category_tags
+        $candidateActivities = DB::table('hoatdongctxh')
+            ->select('MaHoatDong', 'TenHoatDong', 'category_tags', 'ThoiGianBatDau')
+            ->whereNotNull('category_tags')
+            ->whereNotIn('MaHoatDong', $studentRegistered)
+            ->orderByDesc('ThoiGianBatDau')
+            ->limit(100)
+            ->get();
+        
+        // Tính similarity score cho mỗi hoạt động
+        $activityScores = [];
+        foreach ($candidateActivities as $activity) {
+            $activityTags = $this->parseInterestTags($activity->category_tags);
+            
+            // Tính Jaccard similarity: |A ∩ B| / |A ∪ B|
+            $intersection = count(array_intersect(array_keys($studentTagSet), $activityTags));
+            $union = count(array_unique(array_merge(array_keys($studentTagSet), $activityTags)));
+            $jaccardSimilarity = $union > 0 ? ($intersection / $union) : 0;
+            
+            // Tính popularity: Số sinh viên cùng khoa/năm tham gia
+            $studentInfo = SinhVien::find($mssv);
+            $similarStudents = SinhVien::where('MaKhoa', $studentInfo->MaKhoa)
+                ->where('MaLop', 'like', $studentInfo->MaLop[0] . '%')
+                ->pluck('MSSV')
+                ->toArray();
+            
+            $popularityInCluster = DB::table('dangkyhoatdongctxh')
+                ->whereIn('MSSV', $similarStudents)
+                ->where('MaHoatDong', $activity->MaHoatDong)
+                ->where('TrangThaiThamGia', 'Đã tham gia')
+                ->count();
+            
+            $maxPopularity = max(1, count($similarStudents));
+            $popularityScore = ($popularityInCluster / $maxPopularity) * 100;
+            
+            // Tính final score
+            $recencyBonus = $this->getRecencyBonus($activity->ThoiGianBatDau);
+            $finalScore = (0.5 * $jaccardSimilarity * 100) + (0.35 * $popularityScore) + (0.15 * $recencyBonus);
+            
+            if ($finalScore >= 40) { // Threshold
+                $activityScores[$activity->MaHoatDong] = [
+                    'activity' => $activity,
+                    'score' => $finalScore,
+                    'similarity' => $jaccardSimilarity
+                ];
+            }
+        }
+        
+        // Sort theo score
+        usort($activityScores, function($a, $b) {
+            return $b['score'] <=> $a['score'];
+        });
+        
+        // Tạo gợi ý
+        $recommendCount = 0;
+        foreach ($activityScores as $item) {
+            if ($recommendCount >= $remainingSlots) break;
+            
+            $reason = sprintf('Tương tự với hoạt động bạn tham gia (%.0f%% match)', $item['similarity'] * 100);
+            
+            \App\Models\ActivityRecommendation::create([
+                'MSSV' => $mssv,
+                'MaHoatDong' => $item['activity']->MaHoatDong,
+                'activity_type' => 'ctxh',
+                'recommendation_score' => round(min(100, max(50, $item['score'])), 2),
+                'recommendation_reason' => $reason,
+                'viewed_at' => null
+            ]);
+            
+            $recommendCount++;
+        }
+    }
 }
+

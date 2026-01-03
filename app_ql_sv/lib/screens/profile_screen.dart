@@ -14,6 +14,7 @@ class StudentProfileScreen extends StatefulWidget {
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
   static const _storage = FlutterSecureStorage();
   Map<String, dynamic>? profileData;
+  List<Map<String, dynamic>> availableInterests = [];
   bool isLoading = true;
   bool isEditing = false;
 
@@ -21,8 +22,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _emailController;
   late TextEditingController _sdtController;
-  late TextEditingController _soThichController;
-  DateTime? _selectedTotNghiepDuKien;
+  List<String> selectedInterests = [];
+  
 
   @override
   void initState() {
@@ -34,14 +35,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   void _initializeControllers() {
     _emailController = TextEditingController();
     _sdtController = TextEditingController();
-    _soThichController = TextEditingController();
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _sdtController.dispose();
-    _soThichController.dispose();
     super.dispose();
   }
 
@@ -73,16 +72,44 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     }
   }
 
+  Future<void> _loadInterests() async {
+    try {
+      final response = await ApiService.get('/interests', needAuth: true);
+
+      if (response.statusCode == 200) {
+        final data = ApiService.parseResponse(response);
+        if (data['success'] == true) {
+          setState(() {
+            availableInterests = List<Map<String, dynamic>>.from(
+              (data['data']['interests'] as List).map(
+                (interest) => {
+                  'InterestID': interest['InterestID'],
+                  'InterestName': interest['InterestName'],
+                  'Icon': interest['Icon'] ?? 'fas fa-heart',
+                },
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading interests: $e');
+    }
+  }
+
   void _populateControllers() {
     if (profileData != null) {
       _emailController.text = profileData!['Email'] ?? '';
       _sdtController.text = profileData!['SDT'] ?? '';
-      _soThichController.text = profileData!['SoThich'] ?? '';
-
-      if (profileData!['ThoiGianTotNghiepDuKien'] != null) {
-        _selectedTotNghiepDuKien = DateTime.parse(
-          profileData!['ThoiGianTotNghiepDuKien'],
-        );
+      
+      // Parse sở thích từ chuỗi
+      if (profileData!['SoThich'] != null && profileData!['SoThich'].isNotEmpty) {
+        selectedInterests = (profileData!['SoThich'] as String)
+            .split(',')
+            .map((s) => s.trim())
+            .toList();
+      } else {
+        selectedInterests = [];
       }
     }
   }
@@ -94,9 +121,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       final requestData = {
         'Email': _emailController.text.trim(),
         'SDT': _sdtController.text.trim(),
-        'ThoiGianTotNghiepDuKien':
-            _selectedTotNghiepDuKien?.toIso8601String().split('T')[0],
-        'SoThich': _soThichController.text.trim(),
+        'SoThich': selectedInterests.join(', '),
       };
 
       final response = await ApiService.put(
@@ -256,7 +281,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 if (!isEditing)
                   IconButton(
                     icon: Icon(Icons.edit, color: Colors.white),
-                    onPressed: () => setState(() => isEditing = true),
+                    onPressed: () {
+                      setState(() => isEditing = true);
+                      _loadInterests(); // Tải toàn bộ danh sách sở thích
+                    },
                   )
                 else
                   SizedBox(width: 48),
@@ -388,20 +416,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 keyboardType: TextInputType.phone,
               ),
               SizedBox(height: 16),
-              _buildDateField(
-                label: 'Dự kiến tốt nghiệp',
-                icon: Icons.school,
-                selectedDate: _selectedTotNghiepDuKien,
-                onDateSelected:
-                    (date) => setState(() => _selectedTotNghiepDuKien = date),
-              ),
-              SizedBox(height: 16),
-              _buildTextFormField(
-                controller: _soThichController,
-                label: 'Sở thích',
-                icon: Icons.interests,
-                maxLines: 2,
-              ),
+              _buildInterestsSelector(),
             ]),
 
             SizedBox(height: 16),
@@ -624,8 +639,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         final DateTime? picked = await showDatePicker(
           context: context,
           initialDate: selectedDate ?? DateTime.now(),
-          firstDate: DateTime(1900),
-          lastDate: DateTime(2100),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now().add(Duration(days: 365 * 5)),
         );
         if (picked != null) {
           onDateSelected(picked);
@@ -670,6 +685,93 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInterestsSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Sở thích',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+        ),
+        SizedBox(height: 12),
+        availableInterests.isEmpty
+            ? Text(
+              'Đang tải danh sách sở thích...',
+              style: TextStyle(color: Colors.grey[500]),
+            )
+            : GridView.count(
+              crossAxisCount: 2,
+              childAspectRatio: 1.2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              children: availableInterests.map((interest) {
+                final interestName = interest['InterestName'] as String;
+                final isSelected = selectedInterests.contains(interestName);
+                
+                return Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: isSelected ? Color(0xFF1E5A96) : Colors.grey[300]!,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    color: isSelected 
+                        ? Color(0xFF1E5A96).withOpacity(0.1)
+                        : Colors.white,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            selectedInterests.remove(interestName);
+                          } else {
+                            selectedInterests.add(interestName);
+                          }
+                        });
+                      },
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.favorite_border,
+                            size: 24,
+                            color: isSelected 
+                                ? Color(0xFF1E5A96)
+                                : Colors.grey[400],
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              interestName,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected 
+                                    ? Color(0xFF1E5A96)
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+      ],
     );
   }
 

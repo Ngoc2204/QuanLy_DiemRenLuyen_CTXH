@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use App\Models\SinhVien; 
 use App\Models\BangDiemHocKy; 
 use App\Models\DiemRenLuyen; 
 use App\Models\DiemCTXH; 
+use App\Models\StudentInterest; 
 
 class SinhVienController extends Controller
 {
@@ -62,23 +64,40 @@ class SinhVienController extends Controller
         $mssv = $this->getMssv();
         $student = SinhVien::find($mssv);
 
+        // DEBUG: Log request data
+        \Illuminate\Support\Facades\Log::info('Profile Update Request', [
+            'MSSV' => $mssv,
+            'interests' => $request->input('interests'),
+            'all_inputs' => $request->all(),
+        ]);
+
         // Validate dữ liệu
         $validatedData = $request->validate([
             'Email' => 'required|email|max:100',
             'SDT' => 'nullable|string|max:15',
-            'SoThich' => 'nullable|string|max:255',
             'avatar' => 'nullable|image|max:2048',
+            'interests' => 'nullable|array',
+            'interests.*' => 'integer|exists:interests,InterestID',
         ]);
 
-        $student->update($validatedData);
+        // DEBUG: Log validated data
+        \Illuminate\Support\Facades\Log::info('Validation Passed', [
+            'validated_interests' => $validatedData['interests'],
+            'interest_count' => count($validatedData['interests']),
+        ]);
 
-        // Handle avatar upload and save to taikhoan.Avatar
+        // Update student info (Email, SDT)
+        $student->Email = $validatedData['Email'];
+        $student->SDT = $validatedData['SDT'] ?? null;
+        $student->save();
+
+        // Handle avatar upload
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
             $ext = $file->getClientOriginalExtension();
             $filename = Auth::user()->TenDangNhap . '.' . $ext;
 
-            // remove any previous avatar for this user stored in public/avatars
+            // remove any previous avatar for this user
             $existing = Storage::disk('public')->files('avatars');
             foreach ($existing as $f) {
                 if (preg_match('/^avatars\\/' . preg_quote(Auth::user()->TenDangNhap, '/') . '\\./', $f)) {
@@ -92,59 +111,23 @@ class SinhVienController extends Controller
             $user->save();
         }
 
+        // Save student interests to student_interests table
+        if (!empty($validatedData['interests'])) {
+            StudentInterest::where('MSSV', $mssv)->delete();
+            
+            foreach ($validatedData['interests'] as $interestId) {
+                try {
+                    DB::insert('INSERT INTO student_interests (MSSV, InterestID, InterestLevel) VALUES (?, ?, ?)', 
+                        [$mssv, $interestId, 3]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Interest Save Error', [
+                        'MSSV' => $mssv,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
         return redirect()->route('sinhvien.profile.show')->with('success', 'Cập nhật thông tin thành công!');
-    }
-
-    /**
-     * 3. Hiển thị trang Thông tin học tập (Chỉ bảng điểm)
-     */
-    public function showAcademics()
-    {
-        $mssv = $this->getMssv();
-        
-        // Lấy bảng điểm học kỳ
-        $diemHocKy = BangDiemHocKy::where('MSSV', $mssv)
-                                 ->orderBy('MaHocKy', 'desc')
-                                 ->get();
-        
-        // Trả về view với đường dẫn chính xác và chỉ truyền $diemHocKy
-        return view('sinhvien.thongtin_sinhvien.academics_show', [
-            'diemHocKy' => $diemHocKy,
-        ]);
-    }
-    
-    /**
-     * 4. Hiển thị trang Đề xuất tốt nghiệp
-     */
-    public function showGraduation()
-    {
-        $mssv = $this->getMssv();
-        $student = SinhVien::with('lop.khoa')->find($mssv); // Dùng with để lấy luôn thông tin lớp, khoa
-        
-        return view('sinhvien.thongtin_sinhvien.graduation_show', ['student' => $student]);
-    }
-
-    /**
-     * 4. Cập nhật thời gian tốt nghiệp dự kiến (Hàm mới)
-     */
-    public function updateGraduation(Request $request)
-    {
-        $mssv = $this->getMssv();
-        $student = SinhVien::find($mssv);
-
-        // Validate dữ liệu
-        // Cho phép 'nullable' (để trống) hoặc phải là định dạng date
-        $validatedData = $request->validate([
-            'ThoiGianTotNghiepDuKien' => 'nullable|date',
-        ]);
-
-        // Cập nhật CSDL
-        $student->update([
-            'ThoiGianTotNghiepDuKien' => $request->input('ThoiGianTotNghiepDuKien')
-        ]);
-
-        // Quay lại trang với thông báo
-        return redirect()->route('sinhvien.graduation.show')
-                         ->with('success', 'Đã cập nhật thời gian tốt nghiệp dự kiến!');
     }
 }

@@ -215,10 +215,10 @@
         }
     }
     
-    /* 3 cột trên desktop lớn */
+    /* 2 cột trên desktop lớn */
     @media (min-width: 992px) {
         .info-grid {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
         }
         /* Cho mục sở thích chiếm 2 cột */
         .info-grid .full-width {
@@ -385,13 +385,6 @@
                     </div>
                 </div>
 
-                <div class="info-item full-width">
-                    <label class="info-label"><i class="fa-solid fa-heart"></i>Sở thích</label>
-                    <div class="info-value">
-                        <?php echo $sinhvien->SoThich ? $sinhvien->SoThich : '<span class="empty">—</span>'; ?>
-
-                    </div>
-                </div>
             </div>
 
             <!-- Thông tin học vấn -->
@@ -417,9 +410,9 @@
                 </div>
 
                 <div class="info-item">
-                    <label class="info-label"><i class="fa-solid fa-calendar-check"></i>Tốt nghiệp dự kiến</label>
+                    <label class="info-label"><i class="fa-solid fa-calendar-days"></i>Năm nhập học</label>
                     <div class="info-value">
-                        <?php echo $sinhvien->ThoiGianTotNghiepDuKien ? \Carbon\Carbon::parse($sinhvien->ThoiGianTotNghiepDuKien)->format('m/Y') : '<span class="empty">—</span>'; ?>
+                        <?php echo $sinhvien->NamNhapHoc ?? '<span class="empty">—</span>'; ?>
 
                     </div>
                 </div>

@@ -24,10 +24,10 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
         @section('content')
         {{-- Header Card --}}
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); ">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="mb-1 text-white">
+                        <h5 class="mb-1 ">
                             @if($hoatdong_ctxh->LoaiHoatDong == 'Địa chỉ đỏ')
                             <i class="fa-solid fa-map-location-dot me-2"></i>
                             @else
@@ -35,7 +35,7 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
                             @endif
                             {{ $hoatdong_ctxh->TenHoatDong }}
                         </h5>
-                        <small class="text-white-50">Mã: {{ $hoatdong_ctxh->MaHoatDong }}</small>
+                        <small class="">Mã: {{ $hoatdong_ctxh->MaHoatDong }}</small>
                     </div>
                     <div>
                         @if($dangDienRa)
@@ -61,14 +61,7 @@ $dangDienRa = $hoatdong_ctxh->ThoiGianBatDau <= $now && $hoatdong_ctxh->ThoiGian
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-12">
-                                <div class="info-item">
-                                    <label class="info-label"><i class="fa-solid fa-tag me-2 text-muted"></i>Phân loại</label>
-                                    <p class="info-value">
-                                        <span class="badge bg-primary-subtle text-primary px-3 py-2">{{ $hoatdong_ctxh->LoaiHoatDong }}</span>
-                                    </p>
-                                </div>
-                            </div>
+                            
 
                             @if($hoatdong_ctxh->LoaiHoatDong == 'Địa chỉ đỏ')
                             <div class="col-md-6">

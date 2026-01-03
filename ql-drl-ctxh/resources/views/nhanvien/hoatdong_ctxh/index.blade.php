@@ -14,7 +14,7 @@ $breadcrumbs = [
 @section('content')
 <div class="card shadow-sm border-0">
     <div class="card-header bg-gradient d-flex justify-content-between align-items-center py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <h5 class="mb-0 text-white">
+        <h5 class="mb-0 ">
             <i class="fa-solid fa-hand-holding-heart me-2"></i>
             Danh sách Hoạt động Cộng đồng
         </h5>
@@ -344,7 +344,7 @@ $breadcrumbs = [
                 Hiển thị {{ $hoatDongs->firstItem() }} - {{ $hoatDongs->lastItem() }} trong tổng số {{ $hoatDongs->total() }} kết quả
             </div>
             <div>
-                {{ $hoatDongs->appends(request()->query())->links() }}
+                {{ $hoatDongs->appends(request()->query())->links('pagination.custom') }}
             </div>
         </div>
         @endif
@@ -367,5 +367,41 @@ $breadcrumbs = [
     .btn-group .btn:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
     .btn-group .btn:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
     .shadow-sm { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; }
+    
+    /* Pagination Styles */
+    .pagination {
+        gap: 0.25rem;
+    }
+    
+    .pagination .page-link {
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        color: #667eea;
+        padding: 0.5rem 0.75rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .pagination .page-link:hover {
+        background-color: #667eea;
+        color: white;
+        border-color: #667eea;
+        transform: translateY(-1px);
+        box-shadow: 0 0.25rem 0.5rem rgba(102, 126, 234, 0.2);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #667eea;
+        border-color: #667eea;
+        color: white;
+        box-shadow: 0 0.25rem 0.5rem rgba(102, 126, 234, 0.3);
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: #adb5bd;
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+    }
 </style>
 @endsection

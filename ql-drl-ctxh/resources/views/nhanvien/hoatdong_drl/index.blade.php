@@ -215,7 +215,7 @@ $tyLeLopDay = $tyLeLopDayCurrentPage ?? 0;
         @if($hoatDongs->hasPages())
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="text-muted small">Hiển thị {{ $hoatDongs->firstItem() }} - {{ $hoatDongs->lastItem() }} / {{ $hoatDongs->total() }}</div>
-            <div>{{ $hoatDongs->appends(request()->query())->links() }}</div>
+            <div>{{ $hoatDongs->appends(request()->query())->links('pagination.custom') }}</div>
         </div>
         @endif
     </div>

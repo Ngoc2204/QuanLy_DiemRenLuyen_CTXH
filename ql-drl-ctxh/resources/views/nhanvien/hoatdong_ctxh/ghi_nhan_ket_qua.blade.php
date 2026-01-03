@@ -526,17 +526,33 @@
                                 <td class="text-center">
                                     <input type="hidden" name="results[{{ $pivot->MaDangKy }}][MaDangKy]" value="{{ $pivot->MaDangKy }}">
                                     
+                                    @php
+                                        // Tự động xác định trạng thái dựa trên check-in/out
+                                        $currentStatus = $pivot->TrangThaiThamGia;
+                                        
+                                        // Nếu chưa có giá trị hoặc null, tự động set dựa trên check-in/out
+                                        if (empty($currentStatus) || $currentStatus == 'Chưa tổng kết') {
+                                            if ($pivot->CheckInAt && $pivot->CheckOutAt) {
+                                                $currentStatus = 'Đã tham gia';
+                                            } elseif (!$pivot->CheckInAt && !$pivot->CheckOutAt) {
+                                                $currentStatus = 'Chưa tổng kết';
+                                            } else {
+                                                $currentStatus = 'Chưa tổng kết';
+                                            }
+                                        }
+                                    @endphp
+                                    
                                     <select name="results[{{ $pivot->MaDangKy }}][TrangThaiThamGia]" 
                                             class="modern-select" 
                                             {{ $isDisabled ? 'disabled' : '' }}>
-                                        <option value="Đã tham gia" {{ $pivot->TrangThaiThamGia == 'Đã tham gia' ? 'selected' : '' }}>
+                                        <option value="Chưa tổng kết" {{ $currentStatus == 'Chưa tổng kết' ? 'selected' : '' }}>
+                                            ⏳ Chưa tổng kết
+                                        </option>
+                                        <option value="Đã tham gia" {{ $currentStatus == 'Đã tham gia' ? 'selected' : '' }}>
                                             ✓ Đã tham gia
                                         </option>
-                                        <option value="Vắng" {{ $pivot->TrangThaiThamGia == 'Vắng' ? 'selected' : '' }}>
+                                        <option value="Vắng" {{ $currentStatus == 'Vắng' ? 'selected' : '' }}>
                                             ✗ Vắng
-                                        </option>
-                                        <option value="Chưa tổng kết" {{ $pivot->TrangThaiThamGia == 'Chưa tổng kết' ? 'selected' : '' }}>
-                                            ⏳ Chưa tổng kết
                                         </option>
                                     </select>
                                     

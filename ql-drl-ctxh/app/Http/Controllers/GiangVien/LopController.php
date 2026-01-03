@@ -90,7 +90,7 @@ class LopController extends Controller
             $query->where('MaLop', $selectedLop);
         }
 
-        $sinhviens = $query->with('diemCtxh') // Tải điểm CTXH
+        $sinhviens = $query->with('diemctxh') // Tải điểm CTXH
             ->orderBy('MaLop')->orderBy('MSSV')
             ->paginate(70);
 

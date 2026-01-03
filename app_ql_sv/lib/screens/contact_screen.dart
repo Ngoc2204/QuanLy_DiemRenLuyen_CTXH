@@ -592,6 +592,7 @@ class _ContactScreenState extends State<ContactScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
@@ -606,7 +607,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -621,8 +622,10 @@ class _ContactScreenState extends State<ContactScreen> {
                     const SizedBox(height: 4),
                     Text(
                       item['value'],
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         color: Color(0xFF1E3A8A),
                         fontWeight: FontWeight.w600,
                       ),
@@ -630,8 +633,6 @@ class _ContactScreenState extends State<ContactScreen> {
                   ],
                 ),
               ),
-              if (item['action'] != null)
-                const Icon(Icons.open_in_new, color: Colors.grey, size: 20),
             ],
           ),
         ),

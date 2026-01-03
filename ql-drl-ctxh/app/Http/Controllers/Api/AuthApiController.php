@@ -37,8 +37,8 @@ class AuthApiController extends Controller
             ], 401);
         }
 
-        // Kiểm tra mật khẩu (tạm thời dùng plain text cho test)
-        if ($request->password !== $taikhoan->MatKhau) {
+        // Kiểm tra mật khẩu
+        if (!Hash::check($request->password, $taikhoan->MatKhau)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Thông tin đăng nhập không chính xác'

@@ -564,7 +564,7 @@
             <th>Match Score</th>
             <th>Ngày Bắt Đầu</th>
             <th>Địa Điểm</th>
-            <th class="text-center">Thao Tác</th>
+            
           </tr>
         </thead>
         <tbody>
@@ -593,23 +593,7 @@
               <td>
                 <small>{{ substr($activity->DiaDiem, 0, 30) }}{{ strlen($activity->DiaDiem) > 30 ? '...' : '' }}</small>
               </td>
-              <td class="text-center">
-                @if($rec->activity_type === 'drl')
-                  <form action="{{ route('sinhvien.dangky.drl', $activity->MaHoatDong) }}" method="POST" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </form>
-                @else
-                  <form action="{{ route('sinhvien.dangky.ctxh', $activity->MaHoatDong) }}" method="POST" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </form>
-                @endif
-              </td>
+              
             </tr>
             @endif
           @empty
@@ -644,7 +628,6 @@
             <th>Ngày tham gia</th>
             <th class="text-center">Điểm</th>
             <th class="text-center">Trạng thái</th>
-            <th class="text-center">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -675,11 +658,7 @@
                   </span>
                 @endif
               </td>
-              <td class="text-center">
-                <a href="#" class="btn-action" title="Xem chi tiết">
-                  <i class="fas fa-eye"></i>
-                </a>
-              </td>
+              
             </tr>
           @empty
             <tr>
@@ -709,11 +688,9 @@
           <tr>
             <th>STT</th>
             <th>Tên hoạt động</th>
-            <th>Loại hoạt động</th>
             <th>Ngày tham gia</th>
             <th class="text-center">Điểm</th>
             <th class="text-center">Trạng thái</th>
-            <th class="text-center">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -721,17 +698,7 @@
             <tr>
               <td class="fw-bold">{{ $index + 1 }}</td>
               <td>{{ $activity->hoatdong->TenHoatDong ?? 'N/A' }}</td>
-              <td>
-                @if($activity->hoatdong->LoaiHoatDong == 'Địa chỉ đỏ')
-                  <span class="badge badge-danger">{{ $activity->hoatdong->LoaiHoatDong }}</span>
-                @elseif($activity->hoatdong->LoaiHoatDong == 'Môi trường')
-                  <span class="badge badge-info">{{ $activity->hoatdong->LoaiHoatDong }}</span>
-                @else
-                  <span class="badge" style="background: rgba(108,117,125,0.15); color: #6c757d;">
-                    {{ $activity->hoatdong->LoaiHoatDong ?? 'Khác' }}
-                  </span>
-                @endif
-              </td>
+              
               <td>
                 {{ $activity->hoatdong->ThoiGianBatDau
                     ? date('d/m/Y', strtotime($activity->hoatdong->ThoiGianBatDau))
@@ -754,11 +721,7 @@
                   </span>
                 @endif
               </td>
-              <td class="text-center">
-                <a href="#" class="btn-action" title="Xem chi tiết">
-                  <i class="fas fa-eye"></i>
-                </a>
-              </td>
+             
             </tr>
           @empty
             <tr>

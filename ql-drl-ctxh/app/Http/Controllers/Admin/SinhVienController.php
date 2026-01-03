@@ -39,7 +39,7 @@ class SinhVienController extends Controller
             $query->where('sinhvien.MaLop', $request->MaLop);
         }
 
-        $sinhviens = $query->orderBy('sinhvien.MSSV')->paginate(15);
+        $sinhviens = $query->orderBy('sinhvien.MSSV')->paginate(10);
 
         // 📋 Dữ liệu phụ
         $khoas = Khoa::orderBy('TenKhoa')->get();
@@ -77,7 +77,7 @@ class SinhVienController extends Controller
             'Email' => 'nullable|email|max:100',
             'SDT' => 'nullable|string|max:15',
             'SoThich' => 'nullable|string|max:255',
-            'ThoiGianTotNghiepDuKien' => 'nullable|date',
+            'NamNhapHoc' => 'required|integer|min:1900|max:' . date('Y'),
             'MaLop' => 'required|exists:lop,MaLop',
         ]);
 
@@ -131,7 +131,7 @@ class SinhVienController extends Controller
             'Email' => 'nullable|email|max:100',
             'SDT' => 'nullable|string|max:15',
             'SoThich' => 'nullable|string|max:255',
-            'ThoiGianTotNghiepDuKien' => 'nullable|date',
+            'NamNhapHoc' => 'required|integer|min:1900|max:' . date('Y'),
             'MaLop' => 'required|exists:lop,MaLop',
         ]);
 

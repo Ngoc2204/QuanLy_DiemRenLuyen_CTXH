@@ -136,15 +136,27 @@ $breadcrumbs = [
                                         <span class="class-badge"><?php echo e($sv->MaLop); ?></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="score-badge <?php echo e($sv->TongDiem >= 80 ? 'score-high' : ($sv->TongDiem >= 60 ? 'score-medium' : ($sv->TongDiem >= 40 ? 'score-low' : 'score-critical'))); ?>">
-                                            <?php echo e($sv->TongDiem ?? 0); ?>
+                                        <?php
+                                            $diemDRL = $sv->diemRenLuyen->first();
+                                            $tongDiem = $diemDRL->TongDiem ?? 0;
+                                            
+                                            // Tính xếp loại từ điểm
+                                            if ($tongDiem >= 90) $xepLoai = 'Xuất Sắc';
+                                            elseif ($tongDiem >= 80) $xepLoai = 'Giỏi';
+                                            elseif ($tongDiem >= 70) $xepLoai = 'Khá';
+                                            elseif ($tongDiem >= 60) $xepLoai = 'Trung Bình';
+                                            elseif ($tongDiem >= 50) $xepLoai = 'Yếu';
+                                            else $xepLoai = 'Kém';
+                                        ?>
+                                        <span class="score-badge <?php echo e($tongDiem >= 80 ? 'score-high' : ($tongDiem >= 60 ? 'score-medium' : ($tongDiem >= 40 ? 'score-low' : 'score-critical'))); ?>">
+                                            <?php echo e($tongDiem); ?>
 
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <?php if($sv->XepLoai): ?>
-                                            <span class="xep-loai-badge xep-loai-<?php echo e(strtolower($sv->XepLoai)); ?>">
-                                                <?php echo e($sv->XepLoai); ?>
+                                        <?php if($xepLoai): ?>
+                                            <span class="xep-loai-badge xep-loai-<?php echo e(strtolower(str_replace(' ', '-', $xepLoai))); ?>">
+                                                <?php echo e($xepLoai); ?>
 
                                             </span>
                                         <?php else: ?>
@@ -458,6 +470,18 @@ body {
     transition: all 0.2s ease;
 }
 
+.xep-loai-xuất-sắc {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #78350f;
+    box-shadow: 0 0 0 1px #fcd34d;
+}
+
+.xep-loai-giỏi {
+    background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+    color: #166534;
+    box-shadow: 0 0 0 1px #86efac;
+}
+
 .xep-loai-tốt {
     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
     color: #065f46;
@@ -479,6 +503,12 @@ body {
 .xep-loai-yếu {
     background: linear-gradient(135deg, #fecdd3 0%, #fca5a5 100%);
     color: #7f1d1d;
+    box-shadow: 0 0 0 1px #f87171;
+}
+
+.xep-loai-kém {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
     box-shadow: 0 0 0 1px #f87171;
 }
 

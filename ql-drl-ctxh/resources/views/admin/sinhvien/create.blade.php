@@ -5,7 +5,7 @@
 
 @push('styles')
 <style>
-    /* VARIABLES (Giữ nguyên từ giao diện Khoa) */
+    
     :root {
         --primary: #6366f1;
         --primary-dark: #4f46e5;
@@ -745,18 +745,29 @@
 
                 </div>
 
-                {{-- Row: Thời gian tốt nghiệp dự kiến & Sở thích --}}
+                {{-- Row: Năm nhập học & Sở thích --}}
                 <div class="form-row-grid">
                     <div class="form-group-modern">
-                        <label for="ThoiGianTotNghiepDuKien" class="form-label-modern">
-                            <i class="fa-solid fa-calendar-check"></i>
-                            Thời gian tốt nghiệp dự kiến
+                        <label for="NamNhapHoc" class="form-label-modern">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            Năm nhập học
+                            <span class="required-mark">*</span>
                         </label>
                         <div class="input-wrapper">
-                            <input type="date" id="ThoiGianTotNghiepDuKien" name="ThoiGianTotNghiepDuKien"
-                                value="{{ old('ThoiGianTotNghiepDuKien') }}"
-                                class="form-control-modern @error('ThoiGianTotNghiepDuKien') is-invalid @enderror">
+                            <i class="input-icon fa-solid fa-graduation-cap"></i>
+                            <input type="number" id="NamNhapHoc" name="NamNhapHoc"
+                                value="{{ old('NamNhapHoc', date('Y')) }}"
+                                min="1900" max="{{ date('Y') }}"
+                                class="form-control-modern @error('NamNhapHoc') is-invalid @enderror"
+                                placeholder="Ví dụ: 2022, 2023, 2024"
+                                required>
+                            @error('NamNhapHoc')
+                            <i class="invalid-icon fa-solid fa-circle-exclamation"></i>
+                            @enderror
                         </div>
+                        @error('NamNhapHoc')
+                        <div class="error-message"><i class="fa-solid fa-circle-xmark"></i>{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="form-group-modern">

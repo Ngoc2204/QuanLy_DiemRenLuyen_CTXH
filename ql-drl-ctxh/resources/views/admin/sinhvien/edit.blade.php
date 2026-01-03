@@ -5,7 +5,7 @@
 
 @push('styles')
 <style>
-    /* SAO CHÉP TOÀN BỘ CSS TỪ FILE MẪU CỦA BẠN */
+    
     :root {
         --primary: #6366f1;
         --primary-dark: #4f46e5;
@@ -710,35 +710,30 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group-modern">
-                            <label for="ThoiGianTotNghiepDuKien" class="form-label-modern">
-                                <i class="fa-solid fa-calendar-check"></i>
-                                Thời gian tốt nghiệp dự kiến
-                            </label>
-                            <input type="date" 
-                                   id="ThoiGianTotNghiepDuKien"
-                                   name="ThoiGianTotNghiepDuKien"
-                                   value="{{ old('ThoiGianTotNghiepDuKien', $sinhvien->ThoiGianTotNghiepDuKien) }}"
-                                   class="form-control-modern">
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group-modern">
-                            <label for="SoThich" class="form-label-modern">
-                                <i class="fa-solid fa-heart"></i>
-                                Sở thích
+                            <label for="NamNhapHoc" class="form-label-modern">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Năm nhập học
+                                <span class="required-mark">*</span>
                             </label>
                             <div class="input-wrapper">
-                                <i class="input-icon fa-solid fa-pen"></i>
-                                <input type="text" 
-                                       id="SoThich" 
-                                       name="SoThich" 
-                                       value="{{ old('SoThich', $sinhvien->SoThich) }}"
-                                       class="form-control-modern" 
-                                       placeholder="Ví dụ: Đọc sách, chơi thể thao...">
+                                <i class="input-icon fa-solid fa-graduation-cap"></i>
+                                <input type="number" 
+                                       id="NamNhapHoc"
+                                       name="NamNhapHoc"
+                                       value="{{ old('NamNhapHoc', $sinhvien->NamNhapHoc) }}"
+                                       min="1900" max="{{ date('Y') }}"
+                                       class="form-control-modern @error('NamNhapHoc') is-invalid @enderror"
+                                       placeholder="Ví dụ: 2022, 2023, 2024"
+                                       required>
+                                @error('NamNhapHoc')
+                                <i class="invalid-icon fa-solid fa-circle-exclamation"></i>
+                                @enderror
                             </div>
+                            @error('NamNhapHoc')
+                            <div class="error-message"><i class="fa-solid fa-circle-xmark"></i>{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>

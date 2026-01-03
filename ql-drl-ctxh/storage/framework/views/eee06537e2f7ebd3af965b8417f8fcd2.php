@@ -900,22 +900,47 @@ unset($__errorArgs, $__bag); ?>
                 
                 <div class="form-row-grid">
                     <div class="form-group-modern">
-                        <label for="ThoiGianTotNghiepDuKien" class="form-label-modern">
-                            <i class="fa-solid fa-calendar-check"></i>
-                            Thời gian tốt nghiệp dự kiến
+                        <label for="NamNhapHoc" class="form-label-modern">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            Năm nhập học
+                            <span class="required-mark">*</span>
                         </label>
                         <div class="input-wrapper">
-                            <input type="date" id="ThoiGianTotNghiepDuKien" name="ThoiGianTotNghiepDuKien"
-                                value="<?php echo e(old('ThoiGianTotNghiepDuKien')); ?>"
-                                class="form-control-modern <?php $__errorArgs = ['ThoiGianTotNghiepDuKien'];
+                            <i class="input-icon fa-solid fa-graduation-cap"></i>
+                            <input type="number" id="NamNhapHoc" name="NamNhapHoc"
+                                value="<?php echo e(old('NamNhapHoc', date('Y'))); ?>"
+                                min="1900" max="<?php echo e(date('Y')); ?>"
+                                class="form-control-modern <?php $__errorArgs = ['NamNhapHoc'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>">
+unset($__errorArgs, $__bag); ?>"
+                                placeholder="Ví dụ: 2022, 2023, 2024"
+                                required>
+                            <?php $__errorArgs = ['NamNhapHoc'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <i class="invalid-icon fa-solid fa-circle-exclamation"></i>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
+                        <?php $__errorArgs = ['NamNhapHoc'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="error-message"><i class="fa-solid fa-circle-xmark"></i><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div class="form-group-modern">

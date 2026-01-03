@@ -1,6 +1,6 @@
-@extends('layouts.sinhvien')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
 
     <div class="grades-header">
         <div class="header-content">
@@ -14,7 +14,7 @@
 
     <!-- Main Content -->
     <div class="container">
-        @if($diemHocKy->isEmpty())
+        <?php if($diemHocKy->isEmpty()): ?>
             <!-- Empty State -->
             <div class="empty-state">
                 <div class="empty-icon">
@@ -23,7 +23,7 @@
                 <h3>Chưa có dữ liệu</h3>
                 <p>Bảng điểm của bạn sẽ được cập nhật sau khi kỳ thi kết thúc</p>
             </div>
-        @else
+        <?php else: ?>
             <!-- GPA Overview Card -->
             <div class="overview-cards">
                 <div class="overview-card">
@@ -32,7 +32,7 @@
                     </div>
                     <div class="card-info">
                         <p class="card-label">Tổng số học kỳ</p>
-                        <p class="card-value">{{ $diemHocKy->groupBy('MaHocKy')->count() }}</p>
+                        <p class="card-value"><?php echo e($diemHocKy->groupBy('MaHocKy')->count()); ?></p>
                     </div>
                 </div>
 
@@ -42,28 +42,28 @@
                     </div>
                     <div class="card-info">
                         <p class="card-label">Tổng số môn học</p>
-                        <p class="card-value">{{ $diemHocKy->count() }}</p>
+                        <p class="card-value"><?php echo e($diemHocKy->count()); ?></p>
                     </div>
                 </div>
             </div>
 
             <!-- Grades by Semester -->
-            @foreach($diemHocKy->groupBy('MaHocKy') as $maHocKy => $dsMonHoc)
+            <?php $__currentLoopData = $diemHocKy->groupBy('MaHocKy'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $maHocKy => $dsMonHoc): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="semester-card">
                     <!-- Semester Header -->
                     <div class="semester-header">
                         <div class="semester-title">
                             <i class="bi bi-calendar3"></i>
-                            <h3>Học kỳ {{ $maHocKy }}</h3>
+                            <h3>Học kỳ <?php echo e($maHocKy); ?></h3>
                         </div>
                         <div class="semester-stats">
                             <div class="stat-item">
                                 <span class="stat-label">Môn học:</span>
-                                <span class="stat-value">{{ $dsMonHoc->count() }}</span>
+                                <span class="stat-value"><?php echo e($dsMonHoc->count()); ?></span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Điểm TB:</span>
-                                <span class="stat-value">{{ number_format($dsMonHoc->avg('DiemTongKet'), 2) }}</span>
+                                <span class="stat-value"><?php echo e(number_format($dsMonHoc->avg('DiemTongKet'), 2)); ?></span>
                             </div>
                         </div>
                     </div>
@@ -82,48 +82,50 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($dsMonHoc as $mon)
-                                    @php
+                                <?php $__currentLoopData = $dsMonHoc; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $mon): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php
                                         $diemTK = $mon->DiemTongKet ?? 0;
                                         $gradeClass = '';
                                         if ($diemTK >= 8.5) $gradeClass = 'grade-excellent';
                                         elseif ($diemTK >= 7) $gradeClass = 'grade-good';
                                         elseif ($diemTK >= 5.5) $gradeClass = 'grade-pass';
                                         else $gradeClass = 'grade-fail';
-                                    @endphp
-                                    <tr class="grade-row {{ $gradeClass }}">
+                                    ?>
+                                    <tr class="grade-row <?php echo e($gradeClass); ?>">
                                         <td class="col-mamon">
-                                            <span class="badge-code">{{ $mon->MaMonHoc }}</span>
+                                            <span class="badge-code"><?php echo e($mon->MaMonHoc); ?></span>
                                         </td>
                                         <td class="col-tenmon">
                                             <div class="mon-info">
-                                                <span class="mon-name">{{ $mon->TenMonHoc }}</span>
+                                                <span class="mon-name"><?php echo e($mon->TenMonHoc); ?></span>
                                             </div>
                                         </td>
                                         <td class="col-diem">
-                                            <span class="diem-badge">{{ $mon->DiemQT ?? '-' }}</span>
+                                            <span class="diem-badge"><?php echo e($mon->DiemQT ?? '-'); ?></span>
                                         </td>
                                         <td class="col-diem">
-                                            <span class="diem-badge">{{ $mon->DiemThi ?? '-' }}</span>
+                                            <span class="diem-badge"><?php echo e($mon->DiemThi ?? '-'); ?></span>
                                         </td>
                                         <td class="col-diem">
-                                            <strong class="diem-tongket {{ $gradeClass }}">
-                                                {{ $diemTK }}
+                                            <strong class="diem-tongket <?php echo e($gradeClass); ?>">
+                                                <?php echo e($diemTK); ?>
+
                                             </strong>
                                         </td>
                                         <td class="col-xeploai">
-                                            <span class="xeploai-badge {{ strtolower(str_replace(' ', '-', $mon->XepLoai)) }}">
-                                                {{ $mon->XepLoai }}
+                                            <span class="xeploai-badge <?php echo e(strtolower(str_replace(' ', '-', $mon->XepLoai))); ?>">
+                                                <?php echo e($mon->XepLoai); ?>
+
                                             </span>
                                         </td>
                                     </tr>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            @endforeach
-        @endif
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        <?php endif; ?>
     </div>
 
 
@@ -546,4 +548,5 @@
         }
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.sinhvien', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\HT_QuanLy_DRL_CTXH\ql-drl-ctxh\resources\views/sinhvien/thongtin_sinhvien/academics_show.blade.php ENDPATH**/ ?>

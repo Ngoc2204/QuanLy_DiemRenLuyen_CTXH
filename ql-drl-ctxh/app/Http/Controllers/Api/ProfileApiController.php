@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class ProfileApiController extends Controller
 {
@@ -108,16 +109,16 @@ class ProfileApiController extends Controller
                 ], 404);
             }
 
-            // Kiểm tra mật khẩu hiện tại (assuming plain text password in database)
-            if ($taiKhoan->MatKhau !== $request->current_password) {
+            // Kiểm tra mật khẩu hiện tại
+            if (!Hash::check($request->current_password, $taiKhoan->MatKhau)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Mật khẩu hiện tại không đúng'
                 ], 400);
             }
 
-            // Cập nhật mật khẩu mới (plain text as per current system)
-            $taiKhoan->MatKhau = $request->new_password;
+            // Cập nhật mật khẩu mới (hash an toàn)
+            $taiKhoan->MatKhau = Hash::make($request->new_password);
             $taiKhoan->save();
 
             return response()->json([
@@ -157,6 +158,17 @@ class ProfileApiController extends Controller
             
             $diemCTXH = \App\Models\DiemCTXH::where('MSSV', $sinhVien->MSSV)->first();
 
+            // Lấy sở thích từ bảng student_interests
+            $studentInterests = DB::table('student_interests')
+                ->join('interests', 'student_interests.InterestID', '=', 'interests.InterestID')
+                ->where('student_interests.MSSV', $sinhVien->MSSV)
+                ->select('interests.InterestID', 'interests.InterestName', 'interests.Icon', 'student_interests.InterestLevel')
+                ->get();
+
+            // Format sở thích thành danh sách tên phục vụ mobile
+            $soThichList = $studentInterests->pluck('InterestName')->toArray();
+            $soThichString = implode(', ', $soThichList);
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -171,7 +183,8 @@ class ProfileApiController extends Controller
                     'NgaySinh' => $sinhVien->NgaySinh,
                     'GioiTinh' => $sinhVien->GioiTinh,
                     'ThoiGianTotNghiepDuKien' => $sinhVien->ThoiGianTotNghiepDuKien,
-                    'SoThich' => $sinhVien->SoThich,
+                    'SoThich' => $soThichString,
+                    'StudentInterests' => $studentInterests,
                     'DiemRL' => $diemRL ? $diemRL->TongDiem : 0,
                     'XepLoaiRL' => $diemRL ? $diemRL->XepLoai : 'Chưa có',
                     'DiemCTXH' => $diemCTXH ? $diemCTXH->TongDiem : 0,
@@ -192,7 +205,7 @@ class ProfileApiController extends Controller
             'Email' => 'required|email|max:255',
             'SDT' => 'nullable|string|max:15',
             'ThoiGianTotNghiepDuKien' => 'nullable|date',
-            'SoThich' => 'nullable|string|max:255',
+            'SoThich' => 'nullable|string',
         ], [
             'Email.required' => 'Vui lòng nhập email.',
             'Email.email' => 'Email không hợp lệ.',
@@ -218,13 +231,43 @@ class ProfileApiController extends Controller
                 ], 404);
             }
 
-            // Cập nhật thông tin sinh viên - chỉ các trường được phép chỉnh sửa
+            // Cập nhật thông tin sinh viên cơ bản
             $sinhVien->update([
                 'Email' => $request->Email,
                 'SDT' => $request->SDT,
                 'ThoiGianTotNghiepDuKien' => $request->ThoiGianTotNghiepDuKien,
-                'SoThich' => $request->SoThich,
             ]);
+
+            // Cập nhật sở thích từ danh sách tên sở thích
+            if ($request->has('SoThich') && !empty($request->SoThich)) {
+                // Parse danh sách sở thích từ chuỗi
+                $interestNames = array_filter(array_map('trim', explode(',', $request->SoThich)));
+                
+                // Lấy ID của các sở thích từ tên
+                $interests = DB::table('interests')
+                    ->whereIn('InterestName', $interestNames)
+                    ->get(['InterestID', 'InterestName']);
+                
+                // Xóa sở thích cũ
+                DB::table('student_interests')
+                    ->where('MSSV', $sinhVien->MSSV)
+                    ->delete();
+                
+                // Thêm sở thích mới
+                foreach ($interests as $interest) {
+                    DB::table('student_interests')->insert([
+                        'MSSV' => $sinhVien->MSSV,
+                        'InterestID' => $interest->InterestID,
+                        'InterestLevel' => 3, // Mức độ mặc định
+                        'UpdatedAt' => now(),
+                    ]);
+                }
+            } else {
+                // Xóa tất cả sở thích nếu không gửi dữ liệu
+                DB::table('student_interests')
+                    ->where('MSSV', $sinhVien->MSSV)
+                    ->delete();
+            }
 
             return response()->json([
                 'success' => true,
@@ -233,7 +276,7 @@ class ProfileApiController extends Controller
                     'Email' => $sinhVien->Email,
                     'SDT' => $sinhVien->SDT,
                     'ThoiGianTotNghiepDuKien' => $sinhVien->ThoiGianTotNghiepDuKien,
-                    'SoThich' => $sinhVien->SoThich,
+                    'SoThich' => $request->SoThich,
                 ]
             ]);
 
@@ -305,6 +348,45 @@ class ProfileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Không thể gửi phản hồi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getInterests(Request $request)
+    {
+        try {
+            // Lấy toàn bộ danh sách sở thích
+            $interests = DB::table('interests')
+                ->select('InterestID', 'InterestName', 'Icon', 'Description')
+                ->orderBy('InterestID')
+                ->get();
+
+            // Nếu user đã login, lấy thêm thông tin sở thích đã chọn
+            $selectedInterestIds = [];
+            if ($request->user()) {
+                $user = $request->user();
+                $sinhVien = $user->sinhVien;
+                
+                if ($sinhVien) {
+                    $selectedInterestIds = DB::table('student_interests')
+                        ->where('MSSV', $sinhVien->MSSV)
+                        ->pluck('InterestID')
+                        ->toArray();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'interests' => $interests,
+                    'selected' => $selectedInterestIds,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể lấy danh sách sở thích: ' . $e->getMessage()
             ], 500);
         }
     }

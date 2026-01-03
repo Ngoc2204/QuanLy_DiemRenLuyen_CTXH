@@ -269,6 +269,67 @@ class ActivityNotificationController extends Controller
             return 'Hoạt động này đã đủ số lượng.';
         }
 
+        // 3. === KIỂM TRA PHÂN BỔ THEO KHOA ===
+        $sinhVien = Auth::user()->sinhVien;
+        if ($sinhVien) {
+            $departmentError = $this->checkDepartmentAllocation($sinhVien, $activity->MaHoatDong);
+            if ($departmentError) {
+                return $departmentError;
+            }
+        }
+
         return null; // Hợp lệ
+    }
+
+    /**
+     * Kiểm tra xem khoa của sinh viên có còn slot cho hoạt động DRL có GV phụ trách không
+     * 
+     * Logic:
+     * - CTXH: KHÔNG kiểm tra (cho phép tất cả khoa)
+     * - DRL KHÔNG có GV: KHÔNG kiểm tra (cho phép tất cả khoa)
+     * - DRL CÓ GV: CÓ kiểm tra phân bổ theo khoa
+     */
+    private function checkDepartmentAllocation($sinhVien, $maHoatDong): ?string
+    {
+        // Lấy hoạt động để kiểm tra loại và GV
+        $hoatDong = HoatDongDRL::find($maHoatDong);
+        
+        // Nếu không phải DRL hoặc DRL không có GV phụ trách → không kiểm tra
+        if (!$hoatDong || !$hoatDong->MaGV) {
+            return null; // OK - cho phép tất cả khoa
+        }
+
+        // === DRL CÓ GV: KIỂM TRA PHÂN BỔ ===
+        
+        $maKhoa = $sinhVien->lop?->MaKhoa;
+        
+        if (!$maKhoa) {
+            return 'Không thể xác định khoa của sinh viên.';
+        }
+
+        // Kiểm tra xem hoạt động này có phân bổ cho khoa này không
+        $allocation = \App\Models\PhanBoSoLuong::where('MaHoatDong', $maHoatDong)
+            ->where('MaKhoa', $maKhoa)
+            ->first();
+
+        // Nếu không có phân bổ cho khoa này, từ chối đăng ký
+        if (!$allocation) {
+            return 'Khoa của bạn không được phân bổ slot cho hoạt động này.';
+        }
+
+        // Kiểm tra xem slot khoa còn không
+        $registeredCount = DB::table('dangkyhoatdongdrl')
+            ->join('sinhvien', 'dangkyhoatdongdrl.MSSV', '=', 'sinhvien.MSSV')
+            ->join('lop', 'sinhvien.MaLop', '=', 'lop.MaLop')
+            ->where('dangkyhoatdongdrl.MaHoatDong', $maHoatDong)
+            ->where('lop.MaKhoa', $maKhoa)
+            ->count();
+
+        // Kiểm tra xem đã vượt quá slot không
+        if ($registeredCount >= $allocation->SoLuongPhanBo) {
+            return "Slot của khoa {$maKhoa} cho hoạt động này đã đầy ({$allocation->SoLuongPhanBo}/{$allocation->SoLuongPhanBo}).";
+        }
+
+        return null; // OK
     }
 }

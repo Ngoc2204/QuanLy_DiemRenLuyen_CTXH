@@ -63,10 +63,10 @@ class DiemRenLuyenController extends Controller
 
             $tongDiemDaLuu = $diemRenLuyen->TongDiem;
             
-            // 5. Lấy TẤT CẢ đăng ký đã được duyệt trong học kỳ này (Dù đã/chưa tham gia)
+            // 5. Lấy TẤT CẢ đăng ký trong học kỳ này (tất cả trạng thái)
             $cacDangKyTrongKy = DangKyHoatDongDrl::with('hoatdong.quydinh')
                 ->where('MSSV', $mssv)
-                ->where('TrangThaiDangKy', 'Đã duyệt') 
+                // Bỏ filter TrangThaiDangKy để lấy tất cả (Chờ duyệt, Đã duyệt, Từ chối)
                 ->whereHas('hoatdong', function ($query) use ($currentHocKy) {
                     $query->where('MaHocKy', $currentHocKy->MaHocKy);
                 })
@@ -75,7 +75,12 @@ class DiemRenLuyenController extends Controller
             // Tính điểm tự động để phát hiện điều chỉnh thủ công
             $diemCongTuHoatDong = 0;
             foreach ($cacDangKyTrongKy as $dangKy) {
-                if ($dangKy->TrangThaiThamGia === 'Đã tham gia' && $dangKy->hoatdong && $dangKy->hoatdong->quydinh) {
+                // Chỉ tính điểm nếu: (Đã duyệt OR Đã xác nhận) AND Đã tham gia
+                $trangThaiHopLe = in_array($dangKy->TrangThaiDangKy, ['Đã duyệt', 'Đã xác nhận']);
+                if ($trangThaiHopLe && 
+                    $dangKy->TrangThaiThamGia === 'Đã tham gia' && 
+                    $dangKy->hoatdong && 
+                    $dangKy->hoatdong->quydinh) {
                     $diemCongTuHoatDong += $dangKy->hoatdong->quydinh->DiemNhan;
                 }
             }
@@ -128,13 +133,25 @@ class DiemRenLuyenController extends Controller
             // 9.3. Thêm các Hoạt Động (có/không điểm)
             foreach ($cacDangKyTrongKy as $dangKy) {
                 $diemNhan = optional(optional($dangKy->hoatdong)->quydinh)->DiemNhan ?? 0;
+                
+                // Xác định trạng thái hiển thị
+                $trangThaiHienThi = 'Chưa đăng ký';
+                if ($dangKy->TrangThaiDangKy === 'Chờ duyệt') {
+                    $trangThaiHienThi = 'Chờ duyệt';
+                } elseif ($dangKy->TrangThaiDangKy === 'Từ chối') {
+                    $trangThaiHienThi = 'Từ chối';
+                } elseif ($dangKy->TrangThaiDangKy === 'Đã duyệt') {
+                    $trangThaiHienThi = $dangKy->TrangThaiThamGia; // 'Đã tham gia' hoặc 'Chưa tham gia'
+                }
+                
                 $cacMucAnhHuongDenDiem->push((object)[
                     'loai' => 'hoat_dong',
                     'ten' => $dangKy->hoatdong->TenHoatDong ?? 'Không rõ tên',
                     'ma' => $dangKy->hoatdong->MaHoatDong ?? 'N/A',
-                    'diem' => ($dangKy->TrangThaiThamGia === 'Đã tham gia') ? $diemNhan : 0, // Chỉ tính điểm nếu đã tham gia
+                    // Chỉ tính điểm nếu Đã duyệt AND Đã tham gia
+                    'diem' => ($dangKy->TrangThaiDangKy === 'Đã duyệt' && $dangKy->TrangThaiThamGia === 'Đã tham gia') ? $diemNhan : 0,
                     'ngay' => $dangKy->CheckOutAt ? \Carbon\Carbon::parse($dangKy->CheckOutAt)->format('d/m/Y') : (\Carbon\Carbon::parse($dangKy->NgayDangKy)->format('d/m/Y') ?? 'N/A'),
-                    'trang_thai' => $dangKy->TrangThaiThamGia,
+                    'trang_thai' => $trangThaiHienThi,
                 ]);
             }
         }

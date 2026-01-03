@@ -537,12 +537,7 @@
                 <img src="{{ asset('images/sv_logo_dashboard.png') }}" alt="HUIT Portal" class="logo-img">
             </div>
 
-            <div class="search-bar">
-                <form action="#" method="get">
-                    <input type="text" name="q" placeholder="Tìm kiếm...">
-                    <button type="submit"><i class="fa fa-search"></i></button>
-                </form>
-            </div>
+            
 
             <div class="header-right">
                 <a href="{{ route('sinhvien.home') }}" class="nav-link">
@@ -620,8 +615,6 @@
                 <ul class="menu-child">
                     <li><a href="{{ route('sinhvien.profile.show') }}">Thông tin sinh viên</a></li>
                     <li><a href="{{ route('sinhvien.profile.edit') }}">Chỉnh sửa thông tin</a></li>
-                    <li><a href="{{ route('sinhvien.academics.show') }}">Thông tin học tập</a></li>
-                    <li><a href="{{ route('sinhvien.graduation.show') }}">Đề xuất tốt nghiệp</a></li>
                 </ul>
             </li>
 
@@ -633,7 +626,7 @@
                 </div>
                 <ul class="menu-child">
                     <li><a href="{{ route('sinhvien.diem_ren_luyen') }}">Tổng điểm rèn luyện theo kỳ</a></li>
-                    <li><a href="#">Trạng thái hoạt động đã đăng ký</a></li>
+                    
                 </ul>
             </li>
 
@@ -644,8 +637,7 @@
                     <i class="fa-solid fa-chevron-down arrow"></i>
                 </div>
                 <ul class="menu-child">
-                    <li><a href="{{ route('sinhvien.diem_cong_tac_xa_hoi') }}">Kết quả tham gia</a></li>
-                    <li><a href="#">Trạng thái hoạt động đã đăng ký</a></li>
+                    <li><a href="{{ route('sinhvien.diem_cong_tac_xa_hoi') }}"<li><a href="#">Trạng thái hoạt động đã đăng ký</a></li>
 
                 </ul>
             </li>

@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'check-student-interests' => \App\Http\Middleware\CheckStudentInterests::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -214,6 +214,12 @@ Route::middleware(['auth'])->prefix('nhanvien')->as('nhanvien.')->group(function
 Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function () {
 
     Route::get('/', [SinhVienDashboardController::class, 'dashboard'])->name('home');
+    
+    // === ONBOARDING ROUTES - Mandatory Interest Selection ===
+    Route::get('/onboarding/interests', [App\Http\Controllers\SinhVien\OnboardingController::class, 'showInterestSelection'])->name('onboarding.interests');
+    Route::post('/onboarding/interests/store', [App\Http\Controllers\SinhVien\OnboardingController::class, 'storeInterestSelection'])->name('onboarding.interests.store');
+    Route::post('/onboarding/skip', [App\Http\Controllers\SinhVien\OnboardingController::class, 'skipInterestSelection'])->name('onboarding.skip');
+    
     // ...
     // Route để xử lý quét QR
     Route::get('scan/{token}', [SinhVienDiemDanhController::class, 'handleScan'])
@@ -251,18 +257,10 @@ Route::middleware(['auth'])->prefix('sinhvien')->as('sinhvien.')->group(function
     // 2. Chỉnh sửa thông tin
     Route::get('/chinh-sua', [SinhVienController::class, 'editProfile'])->name('profile.edit');
     Route::put('/chinh-sua', [SinhVienController::class, 'updateProfile'])->name('profile.update');
-    
-    // 3. Thông tin học tập
-    Route::get('/hoc-tap', [SinhVienController::class, 'showAcademics'])->name('academics.show');
-    
-    // 4. Đề xuất tốt nghiệp (Giả định đây là một trang thông tin)
-    // Route GET (Hiển thị trang)
-    Route::get('/tot-nghiep', [SinhVienController::class, 'showGraduation'])->name('graduation.show');
-    // Route POST (Cập nhật ngày)
-    Route::post('/tot-nghiep', [SinhVienController::class, 'updateGraduation'])->name('graduation.update');
 
     // Thông báo
     Route::get('/tin-tuc', [ThongBaoController::class, 'index'])->name('tintuc.index');
+    Route::get('/tin-tuc/{id}', [ThongBaoController::class, 'show'])->name('tintuc.show');
 
     // Hoạt động được đề xuất (Recommendation)
     Route::get('/de-xuat-hoat-dong', [RecommendedActivitiesController::class, 'index'])

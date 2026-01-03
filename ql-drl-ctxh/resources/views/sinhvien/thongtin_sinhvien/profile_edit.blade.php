@@ -476,6 +476,82 @@
         background: #f0f4ff;
     }
 
+    /* Interests Selection */
+    .interests-selection-container {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 2px solid #e5e7eb;
+    }
+
+    .interests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1rem;
+    }
+
+    .interest-item {
+        position: relative;
+    }
+
+    .interest-checkbox {
+        display: none;
+    }
+
+    .interest-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.625rem;
+        padding: 1.25rem 1rem;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+        font-weight: 600;
+        color: #6b7280;
+        min-height: 120px;
+    }
+
+    .interest-label i {
+        font-size: 2rem;
+        color: #9ca3af;
+        transition: all 0.3s ease;
+    }
+
+    .interest-label span {
+        font-size: 0.875rem;
+        display: block;
+        max-width: 100%;
+        word-break: break-word;
+    }
+
+    .interest-checkbox:checked + .interest-label {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        transform: translateY(-4px) scale(1.02);
+    }
+
+    .interest-checkbox:checked + .interest-label i {
+        color: white;
+        transform: scale(1.2) rotate(10deg);
+    }
+
+    .interest-label:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .interest-checkbox:checked + .interest-label:hover {
+        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
+    }
+
     /* Action Buttons */
     .form-actions {
         display: flex;
@@ -717,6 +793,18 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group-custom">
+                                <label class="form-label-custom">
+                                    <i class="bi bi-calendar-days"></i>
+                                    Năm nhập học
+                                </label>
+                                <div class="input-readonly">
+                                    <span>{{ $student->NamNhapHoc }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -781,23 +869,47 @@
                             </div>
                         </div>
 
+                        <!-- Student Interests Selection -->
                         <div class="col-12">
                             <div class="form-group-custom">
-                                <label for="SoThich" class="form-label-custom">
-                                    <i class="bi bi-heart"></i>
-                                    Sở thích
+                                <label class="form-label-custom">
+                                    <i class="bi bi-star-fill"></i>
+                                    Chọn sở thích của bạn
                                 </label>
-                                <div class="textarea-wrapper">
-                                    <textarea id="SoThich"
-                                        name="SoThich"
-                                        class="form-control-custom textarea-custom @error('SoThich') is-invalid @enderror"
-                                        rows="4"
-                                        placeholder="Chia sẻ về sở thích, đam mê của bạn...">{{ old('SoThich', $student->SoThich) }}</textarea>
-                                    <div class="textarea-icon">
-                                        <i class="bi bi-heart"></i>
+                                <div class="interests-selection-container">
+                                    @php
+                                        $studentInterests = \App\Models\StudentInterest::where('MSSV', $student->MSSV)
+                                            ->pluck('InterestID')
+                                            ->toArray();
+                                        $allInterests = \Illuminate\Support\Facades\DB::table('interests')->orderBy('InterestName')->get();
+                                    @endphp
+
+                                    <div class="interests-grid">
+                                        @forelse($allInterests as $interest)
+                                        <div class="interest-item">
+                                            <input type="checkbox" 
+                                                   id="interest_{{ $interest->InterestID }}" 
+                                                   name="interests[]" 
+                                                   value="{{ $interest->InterestID }}"
+                                                   class="interest-checkbox"
+                                                   {{ in_array($interest->InterestID, $studentInterests) ? 'checked' : '' }}>
+                                            <label for="interest_{{ $interest->InterestID }}" 
+                                                   class="interest-label"
+                                                   onclick="document.getElementById('interest_{{ $interest->InterestID }}').click(); return false;">
+                                                @if($interest->Icon)
+                                                    <i class="{{ $interest->Icon }}"></i>
+                                                @else
+                                                    <i class="bi bi-heart-fill"></i>
+                                                @endif
+                                                <span>{{ $interest->InterestName }}</span>
+                                            </label>
+                                        </div>
+                                        @empty
+                                        <p class="text-muted">Không có sở thích nào</p>
+                                        @endforelse
                                     </div>
                                 </div>
-                                @error('SoThich')
+                                @error('interests')
                                 <span class="error-message">{{ $message }}</span>
                                 @enderror
                             </div>
@@ -879,6 +991,68 @@ document.addEventListener('DOMContentLoaded', function() {
     const avatarInput = document.getElementById('studentAvatarInput');
     const avatarPreview = document.getElementById('avatarPreview');
     const fileInfo = document.getElementById('studentFileInfo');
+    const profileForm = document.getElementById('studentProfileForm');
+
+    console.log('✅ Script Loaded');
+
+    // ✅ FIX 1: Make interest labels clickable to toggle checkboxes
+    const interestLabels = document.querySelectorAll('.interest-label');
+    console.log(`Found ${interestLabels.length} interest labels`);
+    
+    interestLabels.forEach(label => {
+        label.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Get checkbox ID from label's 'for' attribute (NOT previousElementSibling)
+            const checkboxId = this.getAttribute('for');
+            const checkbox = document.getElementById(checkboxId);
+            
+            console.log('Label clicked. Checkbox ID:', checkboxId, 'Found:', !!checkbox);
+            
+            if (checkbox && checkbox.type === 'checkbox') {
+                checkbox.checked = !checkbox.checked;
+                console.log(`✓ Interest ${checkbox.value} toggled:`, checkbox.checked);
+                
+                // Trigger change event to ensure state is updated
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        
+        // Also add keyboard support
+        label.setAttribute('role', 'button');
+        label.setAttribute('tabindex', '0');
+        label.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+    });
+
+    // ✅ FIX 2: Form submission validation - DISABLED FOR DEBUG
+    // if (profileForm) {
+    //     profileForm.addEventListener('submit', function(e) {
+    //         const checkedInterests = document.querySelectorAll('input[name="interests[]"]:checked');
+    //         const formData = new FormData(this);
+    //         
+    //         console.log('=== FORM SUBMIT DEBUG ===');
+    //         console.log('Checked interests count:', checkedInterests.length);
+    //         console.log('Checked values:', Array.from(checkedInterests).map(el => el.value));
+    //         console.log('FormData interests:', formData.getAll('interests[]'));
+    //         console.log('FormData email:', formData.get('Email'));
+    //         console.log('========================');
+    //         
+    //         if (checkedInterests.length === 0) {
+    //             e.preventDefault();
+    //             alert('❌ Vui lòng chọn ít nhất một sở thích của bạn!');
+    //             document.querySelector('.interests-selection-container').scrollIntoView({ behavior: 'smooth' });
+    //             return false;
+    //         }
+    //         
+    //         console.log('✓ Form validation passed, submitting...');
+    //     });
+    // }
 
     if (avatarInput) {
         avatarInput.addEventListener('change', function(e) {
@@ -910,6 +1084,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const buttons = document.querySelectorAll('.btn-save, .btn-cancel');
     buttons.forEach(button => {
         button.addEventListener('click', function(e) {
+            if (this.classList.contains('btn-cancel')) return;
+            
             const ripple = document.createElement('span');
             const rect = this.getBoundingClientRect();
             const size = Math.max(rect.width, rect.height);
@@ -928,16 +1104,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Add floating animation keyframes
+// Add animations
 const style = document.createElement('style');
 style.textContent = `
     @keyframes float {
-        0%, 100% {
-            transform: translateY(0px);
-        }
-        50% {
-            transform: translateY(-10px);
-        }
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
     }
 
     .ripple-effect {

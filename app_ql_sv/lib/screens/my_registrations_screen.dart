@@ -166,8 +166,10 @@ class _MyRegistrationsScreenState extends State<MyRegistrationsScreen>
   Widget _buildRegistrationCard(Map<String, dynamic> registration, String type) {
     final activity = registration['hoatdong'] as Map<String, dynamic>? ?? {};
     final status = registration['trang_thai_dang_ky'] ?? 'Unknown';
-    final points = activity['diem_rl'] ?? activity['diem_ctxh'] ?? 0;
-    final maDangKy = registration['ma_dang_ky'] ?? '';
+    final pointsRaw = activity['diem_rl'] ?? activity['diem_ctxh'] ?? 0;
+    final points = pointsRaw is int ? pointsRaw : int.tryParse(pointsRaw.toString()) ?? 0;
+    final maDangKyRaw = registration['ma_dang_ky'];
+    final maDangKy = maDangKyRaw is int ? maDangKyRaw.toString() : (maDangKyRaw ?? '').toString();
     final canCancel = registration['can_cancel'] ?? false;
 
     return Card(

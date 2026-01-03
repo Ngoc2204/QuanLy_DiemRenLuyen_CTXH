@@ -34,18 +34,33 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         final recommendations = result['data'] as List? ?? [];
         setState(() {
           _recommendations = List<Map<String, dynamic>>.from(
-            recommendations.map((item) => {
-              'id': item['id'] ?? '',
-              'ma_hoat_dong': item['MaHoatDong'] ?? item['ma_hoat_dong'] ?? '',
-              'ten': item['ten'] ?? item['activity']?['ten'] ?? 'N/A',
-              'type': item['activity_type'] ?? 'DRL',
-              'recommendation_score': (item['recommendation_score'] ?? 0).toDouble(),
-              'recommendation_reason': item['recommendation_reason'] ?? 'Hoạt động được gợi ý',
-              'ngay_to_chuc': item['activity']?['ngay_to_chuc'] ?? item['ngay_to_chuc'] ?? '',
-              'dia_diem': item['activity']?['dia_diem'] ?? item['dia_diem'] ?? 'Chưa xác định',
-              'diem_rl': item['activity']?['diem_rl'] ?? item['diem_rl'] ?? 0,
-              'diem_ctxh': item['activity']?['diem_ctxh'] ?? item['diem_ctxh'] ?? 0,
-              'mo_ta': item['activity']?['mo_ta'] ?? item['mo_ta'] ?? '',
+            recommendations.map((item) {
+              final activity = item['activity'] as Map<String, dynamic>? ?? {};
+              
+              // Determine activity type from multiple sources
+              final activityType = (item['activity_type'] ?? activity['type'] ?? 'DRL').toString().toUpperCase();
+              
+              // Get score - backend may use 'diem' or 'diem_rl'/'diem_ctxh'
+              int score = 0;
+              if (activityType == 'DRL') {
+                score = (activity['diem_rl'] ?? activity['diem'] ?? 0) as int;
+              } else if (activityType == 'CTXH') {
+                score = (activity['diem_ctxh'] ?? activity['diem'] ?? 0) as int;
+              }
+              
+              return {
+                'id': item['id'] ?? '',
+                'ma_hoat_dong': item['MaHoatDong'] ?? item['ma_hoat_dong'] ?? '',
+                'ten': item['ten'] ?? activity['ten'] ?? 'N/A',
+                'type': activityType,
+                'recommendation_score': (item['recommendation_score'] ?? 0).toDouble(),
+                'recommendation_reason': item['recommendation_reason'] ?? 'Hoạt động được gợi ý',
+                'ngay_to_chuc': activity['ngay_to_chuc'] ?? item['ngay_to_chuc'] ?? '',
+                'dia_diem': activity['dia_diem'] ?? item['dia_diem'] ?? 'Chưa xác định',
+                'diem_rl': activityType == 'DRL' ? score : 0,
+                'diem_ctxh': activityType == 'CTXH' ? score : 0,
+                'mo_ta': activity['mo_ta'] ?? item['mo_ta'] ?? '',
+              };
             }),
           );
           _isLoading = false;
@@ -156,7 +171,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                       itemBuilder: (context, index) {
                         final rec = _recommendations[index];
                         final score = rec['recommendation_score'] as double? ?? 0.0;
-                        final scorePercent = (score / 100 * 100).toStringAsFixed(0);
+                        final scorePercent = score.toStringAsFixed(0);
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -257,8 +272,8 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                                       Icons.emoji_events,
                                       'Điểm',
                                       rec['type'].toString().toUpperCase() == 'DRL'
-                                          ? '${rec['diem_rl'] ?? 0} RènLuyện'
-                                          : '${rec['diem_ctxh'] ?? 0} CTXH',
+                                          ? '${rec['diem_rl'] ?? 0} Rèn Luyện'
+                                          : '${rec['diem_ctxh'] ?? 0} Công Tác Xã Hội',
                                     ),
                                   ],
                                 ),

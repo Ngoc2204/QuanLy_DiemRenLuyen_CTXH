@@ -70,8 +70,8 @@ $breadcrumbs = [
         </div>
         
         @if($hoatDongs->hasPages())
-        <div class="pagination-wrapper">
-            {{ $hoatDongs->appends(request()->query())->links() }}
+        <div class="pagination-wrapper" style="margin-top: 1.5rem; padding: 1rem; display: flex; justify-content: flex-end;">
+            {{ $hoatDongs->appends(request()->query())->links('pagination.custom') }}
         </div>
         @endif
     </div>

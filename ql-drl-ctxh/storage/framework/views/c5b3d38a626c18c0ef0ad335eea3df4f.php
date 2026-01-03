@@ -567,7 +567,7 @@
             <th>Match Score</th>
             <th>Ngày Bắt Đầu</th>
             <th>Địa Điểm</th>
-            <th class="text-center">Thao Tác</th>
+            
           </tr>
         </thead>
         <tbody>
@@ -597,23 +597,7 @@
               <td>
                 <small><?php echo e(substr($activity->DiaDiem, 0, 30)); ?><?php echo e(strlen($activity->DiaDiem) > 30 ? '...' : ''); ?></small>
               </td>
-              <td class="text-center">
-                <?php if($rec->activity_type === 'drl'): ?>
-                  <form action="<?php echo e(route('sinhvien.dangky.drl', $activity->MaHoatDong)); ?>" method="POST" style="display: inline;">
-                    <?php echo csrf_field(); ?>
-                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </form>
-                <?php else: ?>
-                  <form action="<?php echo e(route('sinhvien.dangky.ctxh', $activity->MaHoatDong)); ?>" method="POST" style="display: inline;">
-                    <?php echo csrf_field(); ?>
-                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng ký">
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </form>
-                <?php endif; ?>
-              </td>
+              
             </tr>
             <?php endif; ?>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
@@ -648,7 +632,6 @@
             <th>Ngày tham gia</th>
             <th class="text-center">Điểm</th>
             <th class="text-center">Trạng thái</th>
-            <th class="text-center">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -683,11 +666,7 @@
                   </span>
                 <?php endif; ?>
               </td>
-              <td class="text-center">
-                <a href="#" class="btn-action" title="Xem chi tiết">
-                  <i class="fas fa-eye"></i>
-                </a>
-              </td>
+              
             </tr>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <tr>
@@ -717,11 +696,9 @@
           <tr>
             <th>STT</th>
             <th>Tên hoạt động</th>
-            <th>Loại hoạt động</th>
             <th>Ngày tham gia</th>
             <th class="text-center">Điểm</th>
             <th class="text-center">Trạng thái</th>
-            <th class="text-center">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -729,18 +706,7 @@
             <tr>
               <td class="fw-bold"><?php echo e($index + 1); ?></td>
               <td><?php echo e($activity->hoatdong->TenHoatDong ?? 'N/A'); ?></td>
-              <td>
-                <?php if($activity->hoatdong->LoaiHoatDong == 'Địa chỉ đỏ'): ?>
-                  <span class="badge badge-danger"><?php echo e($activity->hoatdong->LoaiHoatDong); ?></span>
-                <?php elseif($activity->hoatdong->LoaiHoatDong == 'Môi trường'): ?>
-                  <span class="badge badge-info"><?php echo e($activity->hoatdong->LoaiHoatDong); ?></span>
-                <?php else: ?>
-                  <span class="badge" style="background: rgba(108,117,125,0.15); color: #6c757d;">
-                    <?php echo e($activity->hoatdong->LoaiHoatDong ?? 'Khác'); ?>
-
-                  </span>
-                <?php endif; ?>
-              </td>
+              
               <td>
                 <?php echo e($activity->hoatdong->ThoiGianBatDau
                     ? date('d/m/Y', strtotime($activity->hoatdong->ThoiGianBatDau))
@@ -767,11 +733,7 @@
                   </span>
                 <?php endif; ?>
               </td>
-              <td class="text-center">
-                <a href="#" class="btn-action" title="Xem chi tiết">
-                  <i class="fas fa-eye"></i>
-                </a>
-              </td>
+             
             </tr>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <tr>

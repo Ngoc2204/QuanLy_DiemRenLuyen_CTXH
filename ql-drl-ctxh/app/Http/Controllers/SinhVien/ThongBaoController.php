@@ -38,7 +38,7 @@ class ThongBaoController extends Controller
             $allThongBao->push((object)[
                 'Loai' => 'DRL',
                 'Ma' => 'DK-' . $dk->MaDangKy,
-                'TieuDe' => ($status == 'Đã duyệt' ? 'Đăng ký thành công:' : 'Đăng ký bị từ chối:') . ' ' . optional(optional($dk->hoatdong)->quydinh)->TenHoatDong, // Giả sử HoatDong có quan hệ quydinh
+                'TieuDe' => ($status == 'Đã duyệt' ? 'Đăng ký thành công:' : 'Đăng ký bị từ chối:') . ' ' . optional($dk->hoatdong)->TenHoatDong,
                 'NoiDung' => $status == 'Đã duyệt' ? 
                              'Đơn đăng ký hoạt động đã được chấp thuận. Bạn cần tham gia hoạt động để được cộng điểm.' :
                              'Đơn đăng ký bị từ chối. Lý do: ' . ($dk->PhanHoi ?? 'Không rõ lý do.'),
@@ -60,7 +60,7 @@ class ThongBaoController extends Controller
             $allThongBao->push((object)[
                 'Loai' => 'CTXH',
                 'Ma' => 'DK-CTXH-' . $dk->MaDangKy,
-                'TieuDe' => ($status == 'Đã duyệt' ? 'Đăng ký thành công:' : 'Đăng ký bị từ chối:') . ' ' . optional(optional($dk->hoatdong)->quydinh)->TenHoatDong, // Giả sử HoatDong có quan hệ quydinh
+                'TieuDe' => ($status == 'Đã duyệt' ? 'Đăng ký thành công:' : 'Đăng ký bị từ chối:') . ' ' . optional($dk->hoatdong)->TenHoatDong,
                 'NoiDung' => $status == 'Đã duyệt' ? 
                              'Đơn đăng ký công tác xã hội đã được chấp thuận.' :
                              'Đơn đăng ký bị từ chối. Lý do: ' . ($dk->PhanHoi ?? 'Không rõ lý do.'),
@@ -167,5 +167,93 @@ class ThongBaoController extends Controller
             'thongBaos' => $paginatedThongBao,
             'pageTitle' => 'Thông Báo & Lịch Sử Cá Nhân', // Dùng cho tiêu đề
         ]);
+    }
+
+    /**
+     * Hiển thị chi tiết một thông báo
+     */
+    public function show($id)
+    {
+        $mssv = Auth::user()->TenDangNhap;
+        $now = Carbon::now();
+        $allThongBao = collect([]);
+
+        // Tạo toàn bộ thông báo như trong index
+        // 1. Đăng ký DRL
+        $dangKyDrl = DangKyHoatDongDrl::with('hoatdong')
+            ->where('MSSV', $mssv)
+            ->whereIn('TrangThaiDangKy', ['Đã duyệt', 'Bị từ chối'])
+            ->get();
+            
+        foreach ($dangKyDrl as $dk) {
+            $status = $dk->TrangThaiDangKy;
+            $allThongBao->push((object)[
+                'id' => 'DK-' . $dk->MaDangKy,
+                'Loai' => 'DRL',
+                'Ma' => 'DK-' . $dk->MaDangKy,
+                'TieuDe' => ($status == 'Đã duyệt' ? 'Đăng ký thành công:' : 'Đăng ký bị từ chối:') . ' ' . optional($dk->hoatdong)->TenHoatDong,
+                'NoiDung' => $status == 'Đã duyệt' ? 
+                             'Đơn đăng ký hoạt động đã được chấp thuận. Bạn cần tham gia hoạt động để được cộng điểm.' :
+                             'Đơn đăng ký bị từ chối. Lý do: ' . ($dk->PhanHoi ?? 'Không rõ lý do.'),
+                'ThoiGian' => $dk->updated_at,
+                'Action' => 'Xem chi tiết đăng ký',
+                'TrangThai' => $status,
+                'data' => $dk
+            ]);
+        }
+
+        // 2. Đăng ký CTXH
+        $dangKyCtxh = DangKyHoatDongCtxh::with('hoatdong')
+            ->where('MSSV', $mssv)
+            ->whereIn('TrangThaiDangKy', ['Đã duyệt', 'Bị từ chối'])
+            ->get();
+
+        foreach ($dangKyCtxh as $dk) {
+            $status = $dk->TrangThaiDangKy;
+            $allThongBao->push((object)[
+                'id' => 'DK-CTXH-' . $dk->MaDangKy,
+                'Loai' => 'CTXH',
+                'Ma' => 'DK-CTXH-' . $dk->MaDangKy,
+                'TieuDe' => ($status == 'Đã duyệt' ? 'Đăng ký thành công:' : 'Đăng ký bị từ chối:') . ' ' . optional($dk->hoatdong)->TenHoatDong,
+                'NoiDung' => $status == 'Đã duyệt' ? 
+                             'Đơn đăng ký công tác xã hội đã được chấp thuận.' :
+                             'Đơn đăng ký bị từ chối. Lý do: ' . ($dk->PhanHoi ?? 'Không rõ lý do.'),
+                'ThoiGian' => $dk->updated_at,
+                'Action' => 'Xem chi tiết đăng ký',
+                'TrangThai' => $status,
+                'data' => $dk
+            ]);
+        }
+
+        // 3. Điểm RDL
+        $diemRenLuyen = DiemRenLuyen::where('MSSV', $mssv)
+            ->with('hocky') 
+            ->whereDate('NgayCapNhat', '>=', $now->subDays(30))
+            ->get();
+            
+        foreach ($diemRenLuyen as $dr) {
+            if ($dr->TongDiem != 70) {
+                 $allThongBao->push((object)[
+                    'id' => 'DRL-' . $dr->MaDiemRenLuyen,
+                    'Loai' => 'DIEM',
+                    'Ma' => 'DRL-' . $dr->MaDiemRenLuyen,
+                    'TieuDe' => 'Cập nhật Điểm Rèn Luyện Học kỳ: ' . optional($dr->hocky)->TenHocKy,
+                    'NoiDung' => "Điểm rèn luyện của bạn đã được chốt/cập nhật là **{$dr->TongDiem} điểm**, Xếp loại **{$dr->XepLoai}**.",
+                    'ThoiGian' => $dr->NgayCapNhat,
+                    'Action' => 'Xem chi tiết DRL',
+                    'TrangThai' => 'Đã chốt',
+                    'data' => $dr
+                ]);
+            }
+        }
+
+        // Tìm thông báo theo id
+        $thongBao = $allThongBao->firstWhere('id', $id);
+
+        if (!$thongBao) {
+            abort(404, 'Không tìm thấy thông báo');
+        }
+
+        return view('sinhvien.tintuc.show', compact('thongBao'));
     }
 }

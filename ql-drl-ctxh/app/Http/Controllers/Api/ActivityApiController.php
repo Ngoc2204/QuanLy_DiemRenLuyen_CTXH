@@ -25,6 +25,7 @@ class ActivityApiController extends Controller
             
             // Lấy hoạt động DRL và CTXH có sẵn (chưa hết hạn đăng ký)
             $drlActivities = HoatDongDRL::with(['quydinh'])
+                ->withCount('dangky')
                 ->where(function($query) {
                     $query->where('ThoiHanHuy', '>=', now())
                           ->orWhereNull('ThoiHanHuy');
@@ -42,12 +43,14 @@ class ActivityApiController extends Controller
                         'thoi_han_huy' => $activity->ThoiHanHuy,
                         'dia_diem' => $activity->DiaDiem,
                         'so_luong_toi_da' => $activity->SoLuong,
+                        'so_luong_da_dang_ky' => $activity->dangky_count ?? 0,
                         'diem_rl' => $activity->quydinh->DiemNhan ?? 0,
                         'type' => 'DRL'
                     ];
                 });
 
             $ctxhActivities = HoatDongCTXH::with(['quydinh'])
+                ->withCount('dangky')
                 ->where(function($query) {
                     $query->where('ThoiHanHuy', '>=', now())
                           ->orWhereNull('ThoiHanHuy');
@@ -65,6 +68,7 @@ class ActivityApiController extends Controller
                         'thoi_han_huy' => $activity->ThoiHanHuy,
                         'dia_diem' => $activity->DiaDiem,
                         'so_luong_toi_da' => $activity->SoLuong,
+                        'so_luong_da_dang_ky' => $activity->dangky_count ?? 0,
                         'diem_ctxh' => $activity->quydinh->DiemNhan ?? 0,
                         'type' => 'CTXH'
                     ];
@@ -201,6 +205,15 @@ class ActivityApiController extends Controller
                 ], 400);
             }
 
+            // === KIỂM TRA PHÂN BỔ THEO KHOA ===
+            $departmentCheckError = $this->checkDepartmentAllocation($sinhVien, $id, 'DRL');
+            if ($departmentCheckError) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $departmentCheckError
+                ], 400);
+            }
+
             // Tạo đăng ký mới
             $dangKy = DangKyHoatDongDRL::create([
                 'MSSV' => $sinhVien->MSSV,
@@ -276,6 +289,15 @@ class ActivityApiController extends Controller
                 ], 400);
             }
 
+            // === KIỂM TRA PHÂN BỔ THEO KHOA ===
+            $departmentCheckError = $this->checkDepartmentAllocation($sinhVien, $id, 'CTXH');
+            if ($departmentCheckError) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $departmentCheckError
+                ], 400);
+            }
+
             // Get fee if any
             $giaTien = $hoatDong->diaDiem?->GiaTien ?? 0;
             
@@ -347,6 +369,7 @@ class ActivityApiController extends Controller
                     
                     return [
                         'ma_dang_ky' => $reg->MaDangKy,
+                        'ma_hoat_dong' => $activity->MaHoatDong,
                         'hoatdong' => [
                             'ten' => $activity->TenHoatDong,
                             'ngay_to_chuc' => $activity->ThoiGianBatDau,
@@ -370,6 +393,7 @@ class ActivityApiController extends Controller
                     
                     return [
                         'ma_dang_ky' => $reg->MaDangKy,
+                        'ma_hoat_dong' => $activity->MaHoatDong,
                         'hoatdong' => [
                             'ten' => $activity->TenHoatDong,
                             'ngay_to_chuc' => $activity->ThoiGianBatDau,
@@ -835,7 +859,7 @@ class ActivityApiController extends Controller
     public function cancelRegistrationDRL($maDangKy)
     {
         try {
-            $user = auth('api')->user();
+            $user = auth('sanctum')->user();
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -909,7 +933,7 @@ class ActivityApiController extends Controller
     public function cancelRegistrationCTXH($maDangKy)
     {
         try {
-            $user = auth('api')->user();
+            $user = auth('sanctum')->user();
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -989,8 +1013,8 @@ class ActivityApiController extends Controller
                 ], 401);
             }
 
-            // Get user MSSV from SinhVien table
-            $sinhVien = SinhVien::where('Email', $user->email)->first();
+            // Get user MSSV from relationship
+            $sinhVien = $user->sinhVien;
             if (!$sinhVien) {
                 return response()->json([
                     'success' => true,
@@ -1005,10 +1029,72 @@ class ActivityApiController extends Controller
                 ->limit(10)
                 ->get();
 
+            // If no recommendations in database, get latest activities as fallback
             if ($recommendations->isEmpty()) {
+                // Get latest DRL activities
+                $drlActivities = HoatDongDRL::with(['quydinh'])
+                    ->orderBy('ThoiGianBatDau', 'desc')
+                    ->limit(5)
+                    ->get();
+                
+                // Get latest CTXH activities
+                $ctxhActivities = HoatDongCTXH::with(['quydinh'])
+                    ->orderBy('ThoiGianBatDau', 'desc')
+                    ->limit(5)
+                    ->get();
+                
+                $fallbackRecs = [];
+                $scoreBase = 85;
+                
+                // Format DRL activities
+                foreach ($drlActivities as $idx => $activity) {
+                    $fallbackRecs[] = [
+                        'id' => rand(1000, 9999),
+                        'recommendation_score' => max(70, $scoreBase - ($idx * 2)),
+                        'recommendation_reason' => 'Hoạt động được gợi ý cho bạn',
+                        'activity_type' => 'DRL',
+                        'MaHoatDong' => $activity->MaHoatDong,
+                        'activity' => [
+                            'id' => $activity->MaHoatDong,
+                            'ten' => $activity->TenHoatDong,
+                            'mo_ta' => $activity->MoTa,
+                            'ngay_to_chuc' => $activity->ThoiGianBatDau,
+                            'dia_diem' => $activity->DiaDiem,
+                            'so_luong_toi_da' => $activity->SoLuong,
+                            'so_luong_da_dang_ky' => $activity->dangky()->count() ?? 0,
+                            'diem_rl' => $activity->quydinh->DiemNhan ?? 0,
+                            'diem_ctxh' => 0,
+                            'type' => 'DRL'
+                        ]
+                    ];
+                }
+                
+                // Format CTXH activities
+                foreach ($ctxhActivities as $idx => $activity) {
+                    $fallbackRecs[] = [
+                        'id' => rand(1000, 9999),
+                        'recommendation_score' => max(70, $scoreBase - ($idx * 2)),
+                        'recommendation_reason' => 'Hoạt động được gợi ý cho bạn',
+                        'activity_type' => 'CTXH',
+                        'MaHoatDong' => $activity->MaHoatDong,
+                        'activity' => [
+                            'id' => $activity->MaHoatDong,
+                            'ten' => $activity->TenHoatDong,
+                            'mo_ta' => $activity->MoTa,
+                            'ngay_to_chuc' => $activity->ThoiGianBatDau,
+                            'dia_diem' => $activity->DiaDiem,
+                            'so_luong_toi_da' => $activity->SoLuong,
+                            'so_luong_da_dang_ky' => $activity->dangky()->count() ?? 0,
+                            'diem_rl' => 0,
+                            'diem_ctxh' => $activity->quydinh->DiemNhan ?? 0,
+                            'type' => 'CTXH'
+                        ]
+                    ];
+                }
+                
                 return response()->json([
                     'success' => true,
-                    'data' => []
+                    'data' => collect($fallbackRecs)->sortByDesc('recommendation_score')->values()
                 ]);
             }
 
@@ -1042,6 +1128,7 @@ class ActivityApiController extends Controller
                         'ngay_to_chuc' => $activity->ThoiGianBatDau,
                         'dia_diem' => $activity->DiaDiem,
                         'so_luong_toi_da' => $activity->SoLuong,
+                        'so_luong_da_dang_ky' => $activity->dangky()->count() ?? 0,
                         'diem' => $activity->quydinh->DiemNhan ?? 0,
                         'type' => strtoupper($rec->activity_type)
                     ]
@@ -1059,5 +1146,67 @@ class ActivityApiController extends Controller
                 'message' => 'Không thể lấy gợi ý hoạt động: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Kiểm tra xem khoa của sinh viên có còn slot cho hoạt động DRL có GV phụ trách không
+     * 
+     * Logic:
+     * - CTXH: KHÔNG kiểm tra (cho phép tất cả khoa)
+     * - DRL KHÔNG có GV: KHÔNG kiểm tra (cho phép tất cả khoa)
+     * - DRL CÓ GV: CÓ kiểm tra phân bổ theo khoa
+     * 
+     * @param SinhVien $sinhVien Sinh viên đăng ký
+     * @param string $maHoatDong Mã hoạt động
+     * @param string $type Loại hoạt động ('DRL' hoặc 'CTXH')
+     * @return string|null Thông báo lỗi nếu không đủ điều kiện, null nếu hợp lệ
+     */
+    private function checkDepartmentAllocation($sinhVien, $maHoatDong, $type = 'DRL')
+    {
+        // CTXH không kiểm tra phân bổ
+        if ($type === 'CTXH') {
+            return null; // OK - cho phép tất cả khoa
+        }
+
+        // Kiểm tra hoạt động DRL có GV phụ trách không
+        $hoatDong = HoatDongDRL::find($maHoatDong);
+        if (!$hoatDong || !$hoatDong->MaGV) {
+            return null; // OK - DRL không có GV thì không kiểm tra phân bổ
+        }
+
+        // === DRL CÓ GV: KIỂM TRA PHÂN BỔ ===
+        
+        // Lấy khoa của sinh viên qua lớp
+        $maKhoa = $sinhVien->lop?->MaKhoa;
+        
+        if (!$maKhoa) {
+            return 'Không thể xác định khoa của sinh viên.';
+        }
+
+        // Kiểm tra xem hoạt động này có phân bổ cho khoa này không
+        $allocation = \App\Models\PhanBoSoLuong::where('MaHoatDong', $maHoatDong)
+            ->where('MaKhoa', $maKhoa)
+            ->first();
+
+        // Nếu không có phân bổ cho khoa này, từ chối đăng ký
+        if (!$allocation) {
+            return 'Khoa của bạn không được phân bổ slot cho hoạt động này.';
+        }
+
+        // Kiểm tra xem slot khoa còn không
+        // Đếm số lượng sinh viên từ khoa này đã đăng ký
+        $registeredCount = DB::table('dangkyhoatdongdrl')
+            ->join('sinhvien', 'dangkyhoatdongdrl.MSSV', '=', 'sinhvien.MSSV')
+            ->join('lop', 'sinhvien.MaLop', '=', 'lop.MaLop')
+            ->where('dangkyhoatdongdrl.MaHoatDong', $maHoatDong)
+            ->where('lop.MaKhoa', $maKhoa)
+            ->count();
+
+        // Kiểm tra xem đã vượt quá slot không
+        if ($registeredCount >= $allocation->SoLuongPhanBo) {
+            return "Slot của khoa {$maKhoa} cho hoạt động này đã đầy ({$allocation->SoLuongPhanBo}/{$allocation->SoLuongPhanBo}).";
+        }
+
+        return null; // OK
     }
 }

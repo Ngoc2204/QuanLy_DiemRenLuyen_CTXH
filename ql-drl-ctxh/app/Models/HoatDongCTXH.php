@@ -61,7 +61,7 @@ class HoatDongCTXH extends Model
     public function sinhVienDangKy() // <- Sửa lại tên hàm này (chữ 's' viết thường)
     {
         return $this->belongsToMany(SinhVien::class, 'dangkyhoatdongctxh', 'MaHoatDong', 'MSSV')
-            ->withPivot('NgayDangKy', 'TrangThaiDangKy'); // Lấy thêm cột từ bảng trung gian nếu cần
+            ->withPivot('MaDangKy', 'NgayDangKy', 'TrangThaiDangKy', 'TrangThaiThamGia', 'CheckInAt', 'CheckOutAt'); // Lấy thêm cột từ bảng trung gian nếu cần
     }
 
     public function dotDiaChiDo()

@@ -42,7 +42,7 @@ class KMeansRecommendCommand extends Command
         // Phase 1: Xây dựng Feature Vectors
         $this->info('📊 Phase 1: Xây dựng Feature Vectors...');
         $vectors = $service->buildFeatureVectors();
-        $this->info("✅ Đã xây dựng " . count($vectors) . " vectors (mỗi vector có 15 chiều)");
+        $this->info("✅ Đã xây dựng " . count($vectors) . " vectors (mỗi vector có 30 chiều: 10 explicit + 10 implicit + 2 behavioral + 1 performance + N faculty + 1 year)");
 
         // Phase 2: Chạy K-Means
         if ($runClustering || !$runClustering) { // Mặc định chạy

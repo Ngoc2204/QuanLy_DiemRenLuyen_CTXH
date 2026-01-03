@@ -5,8 +5,7 @@ namespace App\Http\Controllers\SinhVien;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-// BẠN NÊN SỬ DỤNG HASH, NHƯNG HỆ THỐNG CỦA BẠN ĐANG DÙNG PLAIN TEXT
-// use Illuminate\Support\Facades\Hash; 
+use Illuminate\Support\Facades\Hash; 
 
 class PasswordController extends Controller
 {
@@ -37,21 +36,12 @@ class PasswordController extends Controller
         $user = Auth::user(); // Đây là model TaiKhoan
 
         // 2. Kiểm tra mật khẩu cũ
-        // !! CẢNH BÁO BẢO MẬT: Đang so sánh plain-text.
-        if ($request->current_password !== $user->MatKhau) {
-            // Nếu dùng HASH (đúng), bạn nên dùng:
-            // if (!Hash::check($request->current_password, $user->MatKhau)) {
-            
+        if (!Hash::check($request->current_password, $user->MatKhau)) {
             return back()->withErrors(['current_password' => 'Mật khẩu hiện tại không chính xác.']);
         }
 
-        // 3. Cập nhật mật khẩu mới
-        // !! CẢNH BÁO BẢO MẬT: Đang lưu plain-text.
-        $user->MatKhau = $request->new_password;
-        
-        // Nếu dùng HASH (đúng), bạn nên dùng:
-        // $user->MatKhau = Hash::make($request->new_password);
-        
+        // 3. Cập nhật mật khẩu mới (hash an toàn)
+        $user->MatKhau = Hash::make($request->new_password);
         $user->save();
 
         // 4. Trả về thông báo thành công

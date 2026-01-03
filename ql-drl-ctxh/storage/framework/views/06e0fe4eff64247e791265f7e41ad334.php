@@ -18,9 +18,9 @@ $breadcrumbs = [
             <div class="header-section">
                 <div class="header-content">
                     <h1 class="header-title">
-                        <i class="fa-solid fa-chart-simple me-3"></i>Điểm Hoạt Động Xã Hội
+                        <i class="fa-solid fa-chart-simple me-3"></i>Điểm Công Tác Xã Hội
                     </h1>
-                    <p class="header-subtitle">Quản lý và theo dõi điểm hoạt động xã hội của sinh viên</p>
+                    <p class="header-subtitle">Quản lý và theo dõi điểm công tác xã hội của sinh viên</p>
                 </div>
                 <div class="header-stats">
                     <div class="stat-box">
@@ -113,8 +113,11 @@ $breadcrumbs = [
                                         <span class="class-badge"><?php echo e($sv->MaLop); ?></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="score-badge <?php echo e($sv->TongDiem >= 80 ? 'score-high' : ($sv->TongDiem >= 60 ? 'score-medium' : 'score-low')); ?>">
-                                            <?php echo e($sv->TongDiem ?? 0); ?>
+                                        <?php
+                                            $tongDiem = $sv->diemCtxh->TongDiem ?? 0;
+                                        ?>
+                                        <span class="score-badge <?php echo e($tongDiem >= 80 ? 'score-high' : ($tongDiem >= 60 ? 'score-medium' : 'score-low')); ?>">
+                                            <?php echo e($tongDiem); ?>
 
                                         </span>
                                     </td>

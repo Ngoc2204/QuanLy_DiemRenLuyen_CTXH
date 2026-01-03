@@ -140,8 +140,8 @@
                                                 <i class="bi bi-calendar-check"></i>
                                             </div>
                                             <div class="info-content">
-                                                <span class="info-label">Dự kiến tốt nghiệp</span>
-                                                <span class="info-text"><?php echo e($student->ThoiGianTotNghiepDuKien); ?></span>
+                                                <span class="info-label">Năm nhập học</span>
+                                                <span class="info-text"><?php echo e($student->NamNhapHoc); ?></span>
                                             </div>
                                         </div>
                                     </div>
@@ -156,12 +156,33 @@
                                         Sở thích & Đam mê
                                     </h3>
                                     
-                                    <div class="hobby-card">
-                                        <div class="hobby-icon">
-                                            <i class="bi bi-heart-fill"></i>
+                                    <?php
+                                        $studentInterests = \App\Models\StudentInterest::where('MSSV', $student->MSSV)
+                                            ->with('interest')
+                                            ->get();
+                                    ?>
+
+                                    <?php if($studentInterests->count() > 0): ?>
+                                        <div class="interests-display">
+                                            <?php $__currentLoopData = $studentInterests; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $si): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <div class="interest-badge">
+                                                    <?php if($si->interest && $si->interest->Icon): ?>
+                                                        <i class="<?php echo e($si->interest->Icon); ?>"></i>
+                                                    <?php else: ?>
+                                                        <i class="bi bi-heart-fill"></i>
+                                                    <?php endif; ?>
+                                                    <span><?php echo e($si->interest->InterestName ?? 'N/A'); ?></span>
+                                                </div>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </div>
-                                        <p class="hobby-text"><?php echo e($student->SoThich); ?></p>
-                                    </div>
+                                    <?php else: ?>
+                                        <div class="hobby-card">
+                                            <div class="hobby-icon">
+                                                <i class="bi bi-emoji-smile"></i>
+                                            </div>
+                                            <p class="hobby-text">Chưa chọn sở thích</p>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -489,6 +510,45 @@
         margin: 0;
         line-height: 1.7;
     }
+
+    /* Interests Display */
+    .interests-display {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+        border-radius: 16px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .interest-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1.25rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .interest-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .interest-badge i {
+        font-size: 1.75rem;
+        color: white;
+    }
+
 
     /* Responsive */
     @media (max-width: 992px) {

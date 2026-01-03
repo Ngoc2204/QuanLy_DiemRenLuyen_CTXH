@@ -104,6 +104,81 @@
         background: linear-gradient(135deg, var(--accent) 0%, #ff6b9d 100%);
         box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
     }
+
+    /* Styles cho phân trang */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .pagination .page-item {
+        list-style: none;
+    }
+
+    .pagination .page-link {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+        padding: 0.5rem 0.75rem;
+        margin: 0;
+        font-weight: 600;
+        line-height: 1.25;
+        color: #667eea;
+        background-color: #fff;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .pagination .page-link:hover {
+        color: #667eea;
+        background-color: rgba(102, 126, 234, 0.08);
+        border-color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .pagination .page-item.active .page-link {
+        z-index: 3;
+        color: #fff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #cbd5e1;
+        pointer-events: none;
+        background-color: #f3f4f6;
+        border-color: #e5e7eb;
+        opacity: 0.5;
+    }
+
+    .pagination .page-link:focus {
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    /* Thêm info text */
+    .pagination-info {
+        text-align: center;
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
 </style>
 @endpush
 
@@ -182,16 +257,15 @@
 
                 <div class="thongbao-content">
                     <p>{!! nl2br(e($thongBao->NoiDung)) !!}</p>
-                    <a href="#" class="btn btn-sm btn-outline-primary mt-2">
-                        <i class="fas fa-eye me-1"></i> {{ $thongBao->Action }}
-                    </a>
                 </div>
             </div>
         @endforeach
 
+
+
         {{-- Hiển thị link phân trang --}}
-        <div class="d-flex justify-content-center mt-4">
-            {{ $thongBaos->links() }}
+        <div class="d-flex justify-content-center">
+            {{ $thongBaos->links('pagination::bootstrap-5') }}
         </div>
     @endif
 

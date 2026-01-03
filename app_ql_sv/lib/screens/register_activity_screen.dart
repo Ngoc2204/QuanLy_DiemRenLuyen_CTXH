@@ -34,11 +34,11 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
         '/activities',
         needAuth: true,
       );
-      // Load user registrations - Skip for now
-      // final registrationsResponse = await ApiService.get(
-      //   '/my-registrations',
-      //   needAuth: true,
-      // );
+      // Load user registrations
+      final registrationsResponse = await ApiService.get(
+        '/my-registrations',
+        needAuth: true,
+      );
 
       List<Map<String, dynamic>> allActivities = [];
 
@@ -50,9 +50,9 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
         print('Activities Data: $activitiesData');
         if (activitiesData['success'] == true) {
           final activities = activitiesData['data'] as List;
-          print('Found ${activities.length} activities');
           allActivities =
               activities.map((activity) {
+                final soLuongDaDangKy = activity['so_luong_da_dang_ky'] ?? 0;
                 return {
                   'id': activity['id'],
                   'title': activity['ten'],
@@ -76,7 +76,7 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
                   'type': activity['type'],
                   'maxParticipants':
                       activity['so_luong_toi_da']?.toString() ?? '0',
-                  'participants': '0', // Will be calculated
+                  'participants': soLuongDaDangKy.toString(),
                   'cancelDeadline': _formatRegistrationDeadline(
                     activity['thoi_han_huy'],
                   ),
@@ -91,40 +91,53 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
         );
       }
 
-      // Load user registrations to check which activities are already registered - Skip for now
-      Set<String> registeredActivityIds = {};
-      // if (registrationsResponse.statusCode == 200) {
-      //   final registrationsData = ApiService.parseResponse(
-      //     registrationsResponse,
-      //   );
-      //   if (registrationsData['success'] == true) {
-      //     final registrations = registrationsData['data'];
-      //
-      //     if (registrations['drl_registrations'] != null) {
-      //       for (var reg in registrations['drl_registrations']) {
-      //         registeredActivityIds.add(reg['ma_hoat_dong']);
-      //       }
-      //     }
-      //
-      //     if (registrations['ctxh_registrations'] != null) {
-      //       for (var reg in registrations['ctxh_registrations']) {
-      //         registeredActivityIds.add(reg['ma_hoat_dong']);
-      //       }
-      //     }
-      //   }
-      // }
-
-      // Update registration status - All false for now
-      for (var activity in allActivities) {
-        activity['isRegistered'] =
-            false; // registeredActivityIds.contains(activity['id']);
+      // Load user registrations to check which activities are already registered
+      List<Map<String, dynamic>> userRegistrations = [];
+      if (registrationsResponse.statusCode == 200) {
+        final registrationsData = ApiService.parseResponse(
+          registrationsResponse,
+        );
+        print('My registrations: $registrationsData');
+        if (registrationsData['success'] == true) {
+          final data = registrationsData['data'] as Map<String, dynamic>? ?? {};
+          
+          // Extract DRL registrations
+          final drlRegs = (data['drl_registrations'] as List?) ?? [];
+          for (var reg in drlRegs) {
+            userRegistrations.add({
+              'ma_hoat_dong': reg['ma_hoat_dong'],
+              'ma_dang_ky': reg['ma_dang_ky'],
+              'type': 'DRL'
+            });
+          }
+          
+          // Extract CTXH registrations
+          final ctxhRegs = (data['ctxh_registrations'] as List?) ?? [];
+          for (var reg in ctxhRegs) {
+            userRegistrations.add({
+              'ma_hoat_dong': reg['ma_hoat_dong'],
+              'ma_dang_ky': reg['ma_dang_ky'],
+              'type': 'CTXH'
+            });
+          }
+          
+          print('Found ${userRegistrations.length} registrations (DRL: ${drlRegs.length}, CTXH: ${ctxhRegs.length})');
+          for (var reg in userRegistrations) {
+            print('Registered activity: ${reg['ma_hoat_dong']}');
+          }
+        }
       }
 
       if (!mounted) return;
       setState(() {
-        _availableActivities = allActivities;
+        _availableActivities = allActivities.map((activity) {
+          // Check if this activity is in user's registrations
+          activity['isRegistered'] = userRegistrations.any(
+            (reg) => reg['ma_hoat_dong'] == activity['id'],
+          );
+          return activity;
+        }).toList();
       });
-      print('Updated UI with ${allActivities.length} activities');
     } catch (e) {
       _showErrorMessage('Có lỗi xảy ra khi tải dữ liệu: $e');
     } finally {
@@ -427,7 +440,14 @@ class _RegisterActivityScreenState extends State<RegisterActivityScreen> {
         } else {
           _showErrorMessage(data['message'] ?? 'Có lỗi xảy ra khi đăng ký');
         }
+      } else if (response.statusCode == 400) {
+        // Handle 400 Bad Request - business logic error
+        final errorData = ApiService.parseResponse(response);
+        _showErrorMessage(
+          errorData['message'] ?? 'Không thể đăng ký hoạt động',
+        );
       } else {
+        // Handle other errors (500, etc)
         final errorData = ApiService.parseResponse(response);
         _showErrorMessage(
           errorData['message'] ?? 'Không thể đăng ký hoạt động',

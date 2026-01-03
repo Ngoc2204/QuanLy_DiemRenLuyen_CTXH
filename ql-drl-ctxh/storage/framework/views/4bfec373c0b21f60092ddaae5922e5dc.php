@@ -1,6 +1,6 @@
-@extends('layouts.sinhvien')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
 
     <div class="graduation-header">
         <div class="header-content">
@@ -28,7 +28,7 @@
                             <i class="bi bi-person"></i>
                             Họ và Tên
                         </span>
-                        <p class="info-value">{{ $student->HoTen }}</p>
+                        <p class="info-value"><?php echo e($student->HoTen); ?></p>
                     </div>
 
                     <div class="info-item">
@@ -36,7 +36,7 @@
                             <i class="bi bi-hash"></i>
                             Mã Sinh Viên
                         </span>
-                        <p class="info-value">{{ $student->MSSV }}</p>
+                        <p class="info-value"><?php echo e($student->MSSV); ?></p>
                     </div>
 
                     <div class="info-item">
@@ -44,7 +44,7 @@
                             <i class="bi bi-building"></i>
                             Lớp
                         </span>
-                        <p class="info-value">{{ $student->lop->TenLop ?? $student->MaLop }}</p>
+                        <p class="info-value"><?php echo e($student->lop->TenLop ?? $student->MaLop); ?></p>
                     </div>
 
                     <div class="info-item">
@@ -52,7 +52,7 @@
                             <i class="bi bi-briefcase"></i>
                             Khoa
                         </span>
-                        <p class="info-value">{{ $student->lop->khoa->TenKhoa ?? 'N/A' }}</p>
+                        <p class="info-value"><?php echo e($student->lop->khoa->TenKhoa ?? 'N/A'); ?></p>
                     </div>
                 </div>
             </div>
@@ -67,23 +67,23 @@
 
             <div class="card-body">
                 <!-- Success Alert -->
-                @if(session('success'))
+                <?php if(session('success')): ?>
                     <div class="alert alert-success">
                         <div class="alert-icon">
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
                         <div class="alert-content">
                             <h5>Thành công!</h5>
-                            <p>{{ session('success') }}</p>
+                            <p><?php echo e(session('success')); ?></p>
                         </div>
                         <button type="button" class="alert-close" data-bs-dismiss="alert">
                             <i class="bi bi-x"></i>
                         </button>
                     </div>
-                @endif
+                <?php endif; ?>
 
                 <!-- Error Alert -->
-                @if ($errors->any())
+                <?php if($errors->any()): ?>
                     <div class="alert alert-danger">
                         <div class="alert-icon">
                             <i class="bi bi-exclamation-circle-fill"></i>
@@ -91,16 +91,16 @@
                         <div class="alert-content">
                             <h5>Có lỗi xảy ra!</h5>
                             <ul class="alert-list">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
+                                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <li><?php echo e($error); ?></li>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </ul>
                         </div>
                         <button type="button" class="alert-close" data-bs-dismiss="alert">
                             <i class="bi bi-x"></i>
                         </button>
                     </div>
-                @endif
+                <?php endif; ?>
 
                 <!-- Info Message -->
                 <div class="info-message">
@@ -109,8 +109,8 @@
                 </div>
 
                 <!-- Form -->
-                <form action="{{ route('sinhvien.graduation.update') }}" method="POST" class="graduation-form">
-                    @csrf
+                <form action="<?php echo e(route('sinhvien.graduation.update')); ?>" method="POST" class="graduation-form">
+                    <?php echo csrf_field(); ?>
 
                     <div class="form-group">
                         <label for="ThoiGianTotNghiepDuKien" class="form-label">
@@ -122,27 +122,41 @@
                         <div class="date-input-wrapper">
                             <input 
                                 type="date" 
-                                class="form-control-custom @error('ThoiGianTotNghiepDuKien') is-invalid @enderror"
+                                class="form-control-custom <?php $__errorArgs = ['ThoiGianTotNghiepDuKien'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                 id="ThoiGianTotNghiepDuKien" 
                                 name="ThoiGianTotNghiepDuKien"
-                                value="{{ old('ThoiGianTotNghiepDuKien', $student->ThoiGianTotNghiepDuKien) }}"
-                                min="{{ date('Y-m-d') }}"
+                                value="<?php echo e(old('ThoiGianTotNghiepDuKien', $student->ThoiGianTotNghiepDuKien)); ?>"
+                                min="<?php echo e(date('Y-m-d')); ?>"
                                 required>
                             <div class="input-icon">
                                 <i class="bi bi-calendar3"></i>
                             </div>
                         </div>
 
-                        @error('ThoiGianTotNghiepDuKien')
-                            <span class="error-message">{{ $message }}</span>
-                        @enderror
+                        <?php $__errorArgs = ['ThoiGianTotNghiepDuKien'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <span class="error-message"><?php echo e($message); ?></span>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
 
-                        @if($student->ThoiGianTotNghiepDuKien)
+                        <?php if($student->ThoiGianTotNghiepDuKien): ?>
                             <div class="selected-date-info">
                                 <i class="bi bi-check-circle"></i>
-                                <span>Ngày được chọn: <strong>{{ \Carbon\Carbon::parse($student->ThoiGianTotNghiepDuKien)->format('d/m/Y') }}</strong></span>
+                                <span>Ngày được chọn: <strong><?php echo e(\Carbon\Carbon::parse($student->ThoiGianTotNghiepDuKien)->format('d/m/Y')); ?></strong></span>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
 
                     <!-- Action Buttons -->
@@ -670,4 +684,5 @@
         }
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.sinhvien', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\HT_QuanLy_DRL_CTXH\ql-drl-ctxh\resources\views/sinhvien/thongtin_sinhvien/graduation_show.blade.php ENDPATH**/ ?>

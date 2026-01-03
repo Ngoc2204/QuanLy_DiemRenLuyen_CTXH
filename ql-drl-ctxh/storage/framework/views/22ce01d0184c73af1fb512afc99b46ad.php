@@ -22,15 +22,15 @@ $tyLeDangKy = $hoatdong_drl->SoLuong > 0 ? round(($hoatdong_drl->sinhVienDangKy-
 <?php $__env->startSection('content'); ?>
 
 <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h5 class="mb-1 text-white">
+                <h5 class="mb-1">
                     <i class="fa-solid fa-star me-2"></i>
                     <?php echo e($hoatdong_drl->TenHoatDong); ?>
 
                 </h5>
-                <small class="text-white-50">Mã: <?php echo e($hoatdong_drl->MaHoatDong); ?></small>
+                <small >Mã: <?php echo e($hoatdong_drl->MaHoatDong); ?></small>
             </div>
             <div>
                 <?php if($dangDienRa): ?>

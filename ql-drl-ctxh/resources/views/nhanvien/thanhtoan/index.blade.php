@@ -462,7 +462,7 @@
                         <td>
                             @if($sinhVien)
                             <div class="student-info">
-                                <div class="student-avatar">{{ $initials }}</div>
+                                
                                 <div class="student-details">
                                     <div class="name">{{ $sinhVien->HoTen }}</div>
                                     <div class="mssv">{{ $sinhVien->MSSV }}</div>

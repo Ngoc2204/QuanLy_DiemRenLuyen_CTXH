@@ -13,7 +13,7 @@ class SinhVien extends Model
 
     protected $fillable = [
         'MSSV', 'HoTen', 'Email', 'SDT', 'NgaySinh', 'GioiTinh',
-        'MaLop', 'ThoiGianTotNghiepDuKien', 'SoThich'
+        'MaLop', 'NamNhapHoc', 'ThoiGianTotNghiepDuKien'
     ];
 
     public function lop()
